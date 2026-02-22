@@ -1,10 +1,8 @@
-import BaseBlockContent from '@sanity/block-content-to-react'
-import React from 'react'
-import clientConfig from '../../client-config'
-import serializers from './serializers'
+import {PortableText} from '@portabletext/react'
+import portableTextComponents from './portable-text-components'
 
 const BlockContent = ({blocks}) => (
-  <BaseBlockContent blocks={blocks} serializers={serializers} {...clientConfig.sanity} />
+  <PortableText value={blocks} components={portableTextComponents} />
 )
 
 export default BlockContent

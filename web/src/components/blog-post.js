@@ -1,15 +1,13 @@
-import {format, distanceInWords, differenceInDays} from 'date-fns'
-import React from 'react'
+import {format, formatDistance, differenceInDays} from 'date-fns'
 import {buildImageObj} from '../lib/helpers'
 import {imageUrlFor} from '../lib/image-url'
 import BlockContent from './block-content'
 import Container from './container'
-import AuthorList from './author-list'
 
 import styles from './blog-post.module.css'
 
 function BlogPost (props) {
-  const {_rawBody, authors, categories, title, mainImage, publishedAt} = props
+  const {body, authors, categories, title, mainImage, publishedAt} = props
   return (
     <article className={styles.root}>
       {mainImage && mainImage.asset && (
@@ -31,11 +29,11 @@ function BlogPost (props) {
           {publishedAt && (
             <div className={styles.publishedAt}>
               {differenceInDays(new Date(publishedAt), new Date()) > 3
-                ? distanceInWords(new Date(publishedAt), new Date())
-                : format(new Date(publishedAt), 'MMMM Do, YYYY')}
+                ? formatDistance(new Date(publishedAt), new Date())
+                : format(new Date(publishedAt), 'MMMM do, yyyy')}
             </div>
           )}
-          {_rawBody && <BlockContent blocks={_rawBody} />}
+          {body && <BlockContent blocks={body} />}
         </div>
       </Container>
     </article>

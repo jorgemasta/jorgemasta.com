@@ -1,20 +1,13 @@
-import React from 'react'
 import BlockContent from './block-content'
 import styles from './introduction.module.css'
 
-function Introduction (props) {
+function Introduction ({title = '', description}) {
   return (
     <div className={styles.root}>
-      {props.title && <h1>{props.title}</h1>}
-      {props.description && <BlockContent blocks={props.description} />}
+      {title && <h1>{title}</h1>}
+      {description && <BlockContent blocks={description} />}
     </div>
   )
-}
-
-Introduction.defaultProps = {
-  title: '',
-  nodes: [],
-  browseMoreHref: ''
 }
 
 export default Introduction

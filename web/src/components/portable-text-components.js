@@ -1,11 +1,11 @@
 import Figure from './figure'
 import Code from './code'
 
-const serializers = {
+const portableTextComponents = {
   types: {
     figure: Figure,
     code: Code
   }
 }
 
-export default serializers
+export default portableTextComponents

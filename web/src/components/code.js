@@ -1,4 +1,5 @@
-import React from 'react'
+'use client'
+
 import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
 import {atomDark} from 'react-syntax-highlighter/dist/esm/styles/prism'
 
@@ -7,9 +8,9 @@ function parseLanguage (language) {
   return language
 }
 
-export default ({node}) => {
-  if (!node || !node.code) { return null }
-  const {language, code} = node
+export default function Code ({value}) {
+  if (!value || !value.code) { return null }
+  const {language, code} = value
   return (
     <SyntaxHighlighter
       language={parseLanguage(language) || 'text'}

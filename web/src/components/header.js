@@ -1,14 +1,13 @@
-import {Link} from 'gatsby'
-import React from 'react'
+import Link from 'next/link'
 import Icon from './icon'
 
 import styles from './header.module.css'
 
-const Header = ({onHideNav, onShowNav, showNav, siteTitle}) => (
+const Header = ({siteTitle}) => (
   <div className={styles.root}>
     <div className={styles.wrapper}>
       <div className={styles.branding}>
-        <Link to='/' className={styles.zigzag}><span>{siteTitle}</span></Link>
+        <Link href='/' className={styles.zigzag}><span>{siteTitle}</span></Link>
       </div>
 
       <a className={styles.socialLink} href='https://twitter.com/jorgemasta' aria-label='Visit my Twitter'>

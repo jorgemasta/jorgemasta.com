@@ -1,6 +1,5 @@
 import {format} from 'date-fns'
-import {Link} from 'gatsby'
-import React from 'react'
+import Link from 'next/link'
 import {buildImageObj, cn, getBlogUrl} from '../lib/helpers'
 import {imageUrlFor} from '../lib/image-url'
 import BlockContent from './block-content'
@@ -12,7 +11,7 @@ function BlogPostPreview (props) {
   return (
     <Link
       className={props.isInList ? styles.inList : styles.inGrid}
-      to={getBlogUrl(props.publishedAt, props.slug.current)}
+      href={getBlogUrl(props.publishedAt, props.slug.current)}
     >
       <div className={styles.leadMediaThumb}>
         {props.mainImage && props.mainImage.asset && (
@@ -28,12 +27,12 @@ function BlogPostPreview (props) {
       </div>
       <div className={styles.text}>
         <h3 className={cn(responsiveTitle3, styles.title)}>{props.title}</h3>
-        {props._rawExcerpt && (
+        {props.excerpt && (
           <div className={styles.excerpt}>
-            <BlockContent blocks={props._rawExcerpt} />
+            <BlockContent blocks={props.excerpt} />
           </div>
         )}
-        <div className={styles.date}>{format(props.publishedAt, 'MMMM Do, YYYY')}</div>
+        <div className={styles.date}>{format(new Date(props.publishedAt), 'MMMM do, yyyy')}</div>
       </div>
     </Link>
   )

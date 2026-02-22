@@ -61,7 +61,7 @@
   color: var(--color-gray);
 }
 
-blockquote {
+:global(blockquote) {
   padding-left: 1rem;
   margin-left: 0px;
   margin-right: 0px;

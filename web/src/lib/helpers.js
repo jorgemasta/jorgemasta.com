@@ -4,21 +4,16 @@ export function cn (...args) {
   return args.filter(Boolean).join(' ')
 }
 
-export function mapEdgesToNodes (data) {
-  if (!data.edges) return []
-  return data.edges.map(edge => edge.node)
-}
-
 export function filterOutDocsWithoutSlugs ({slug}) {
   return (slug || {}).current
 }
 
 export function filterOutDocsPublishedInTheFuture ({publishedAt}) {
-  return !isFuture(publishedAt)
+  return !isFuture(new Date(publishedAt))
 }
 
 export function getBlogUrl (publishedAt, slug) {
-  return `/blog/${format(publishedAt, 'YYYY/MM')}/${slug.current || slug}/`
+  return `/blog/${format(new Date(publishedAt), 'yyyy/MM')}/${slug.current || slug}/`
 }
 
 export function buildImageObj (source) {
