@@ -15,6 +15,10 @@ export function getBlogUrl(id: string, publishedAt: string | Date) {
   return `/blog/${year}/${month}/${id}/`;
 }
 
+export function getProjectUrl(id: string) {
+  return `/projects/${id}/`;
+}
+
 export function formatDate(date: Date) {
   return date.toLocaleDateString("en-US", {
     year: "numeric",

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getProjects } from "../../lib/content";
+import { getProjectUrl } from "../../lib/utils";
 
 const projects = await getProjects();
 ---
@@ -20,7 +21,7 @@ const projects = await getProjects();
       {
         projects.map((project) => (
           <a
-            href={`/projects/${project.id}/`}
+            href={getProjectUrl(project.id)}
             class="card block no-underline hover:no-underline"
           >
             {project.data.mainImage && (

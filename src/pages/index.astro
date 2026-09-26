@@ -13,6 +13,7 @@ import {
 } from "../lib/consts";
 import {
   getBlogUrl,
+  getProjectUrl,
   formatDate,
   isOlderThanOneYear,
 } from "../lib/utils";
@@ -102,7 +103,7 @@ const projects = await getProjects();
         {
           projects.map((project) => (
             <a
-              href={`/projects/${project.id}/`}
+              href={getProjectUrl(project.id)}
               class="overflow-hidden rounded-xl border no-underline hover:no-underline"
               style="border-color: var(--color-card-border)"
             >
