@@ -12,6 +12,7 @@ const { title, description, image = "/favicon.png" } = Astro.props;
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#F4F0E8" />
 <link rel="icon" type="image/png" href="/favicon.png" />
 <meta name="generator" content={Astro.generator} />
 
@@ -44,19 +45,3 @@ const { title, description, image = "/favicon.png" } = Astro.props;
   title="Jorge Masta - RSS Feed"
   href="/rss.xml"
 />
-
-<!-- Theme detection (prevents FOUC). Reapplied after every view transition,
-     because the swapped-in document arrives without the class. -->
-<script is:inline>
-  (function () {
-    function applyTheme() {
-      const stored = localStorage.getItem("theme");
-      const light =
-        stored === "light" ||
-        (!stored && window.matchMedia("(prefers-color-scheme: light)").matches);
-      document.documentElement.classList.toggle("light", light);
-    }
-    applyTheme();
-    document.addEventListener("astro:after-swap", applyTheme);
-  })();
-</script>
