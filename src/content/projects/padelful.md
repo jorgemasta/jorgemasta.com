@@ -1,0 +1,26 @@
+---
+title: "Padelful"
+publishedAt: 2023-01-01
+status: building
+url: "https://www.padelful.com"
+excerpt: "Racket reviews, ratings and price tracking for padel players, in English and Spanish."
+mainImage:
+  src: "/images/building/padelful.webp"
+  alt: "Padelful homepage: a racket search box above the latest racket reviews, each with a score"
+stats:
+  - value: "1,708"
+    label: "rackets tracked"
+  - value: "2"
+    label: "languages"
+  - value: "2023"
+    label: "live since"
+links:
+  - label: "API docs"
+    url: "https://docs.padelful.com"
+  - label: "MCP server"
+    url: "https://www.npmjs.com/package/@padelful/mcp-server"
+---
+
+The same racket sells in dozens of shops, each under a slightly different name. Padelful crawls stores and affiliate feeds, and a matcher ties every listing to the right racket. When the matcher isn't sure, an agent investigates the listing.
+
+The problem I'm exploring is how far that agent can go on messy catalogue data before a person has to step in. The same data is open to other developers through a public API and an MCP server.

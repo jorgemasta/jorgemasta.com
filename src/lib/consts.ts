@@ -1,53 +1,30 @@
-export const SITE_TITLE = "@jorgemasta";
+export const SITE_TITLE = "Jorge Masta";
 export const SITE_DESCRIPTION =
-  "I build AI-native products, systems, and workflows that replace traditional SaaS.";
+  "Product engineer building digital products at the intersection of frontend, product, and AI.";
 export const SITE_URL = "https://jorgemasta.com";
 export const SITE_AUTHOR = "Jorge Masta";
+export const SITE_SOURCE = "https://github.com/jorgemasta/jorgemasta.com";
+
+export const EMAIL = "jorge.mastana@gmail.com";
 
 export const SOCIAL_LINKS = {
   github: "https://github.com/jorgemasta",
-  twitter: "https://twitter.com/jorgemasta",
-  devto: "https://dev.to/jorgemasta",
+  x: "https://x.com/jorgemasta",
+  linkedin: "https://www.linkedin.com/in/jorgemasta",
 } as const;
 
-export const HERO_HEADLINE = "AI-native systems > SaaS";
-
-export const HERO_SUBTEXT =
-  "I build products, workflows, and systems designed for the AI era — not retrofitted into it.";
-
-export const HERO_IDENTITY = "Jorge Masta — engineer, founder";
-
-export const HERO_PROOF = "Real products. Real constraints. Real lessons.";
-
-export const BIO_SECTIONS = {
-  subtext: [
-    "Most teams are adding AI on top of broken systems. I focus on the opposite:",
-    "Fewer tools. More leverage. Systems that actually scale.",
-  ],
-  whoIAm: {
-    intro: "Senior Frontend Engineer turned AI builder and founder.",
-    focus: "I work at the intersection of product, engineering, and applied AI.",
-    built: [
-      "AI-powered systems for teams (meetings, knowledge, execution)",
-      "Products like Padelful (SEO + marketplace dynamics)",
-      "Internal tools that replace entire workflows, not just automate steps",
-    ],
-  },
-  whatIThink: [
-    "SaaS is getting fragmented — systems will win",
-    "AI is not a feature — it's a new layer of abstraction",
-    "Speed is the main competitive advantage now",
-    "Most teams are optimizing the wrong things",
-  ],
-  whatYoullFind: [
-    "How to build products faster with AI",
-    "Real architectures (Supabase, agents, workflows)",
-    "Lessons from building and shipping",
-    "Opinions on where software is going",
-  ],
-  whoThisIsFor: [
-    "Founders building AI products",
-    "Engineers who want more leverage",
-    "Operators tired of tool chaos",
+export const TOKENIZADOS = {
+  site: "https://tokenizadospodcast.com",
+  platforms: [
+    {
+      name: "Apple Podcasts",
+      url: "https://podcasts.apple.com/es/podcast/tokenizados-noticias-de-ia-desde-canarias/id1895926027",
+    },
+    { name: "Spotify", url: "https://open.spotify.com/show/3FXdNAmADKiVtEiFCROwID" },
+    { name: "YouTube", url: "https://www.youtube.com/@TokenizadosIA" },
+    {
+      name: "iVoox",
+      url: "https://www.ivoox.com/podcast-tokenizados-noticias-ia-desde-canarias_sq_f13190681_1.html",
+    },
   ],
 } as const;

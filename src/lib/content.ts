@@ -1,4 +1,5 @@
 import { getCollection, type CollectionEntry } from "astro:content";
+import { getProjectUrl, isOlderThanOneYear } from "./utils";
 
 /** Drafts are visible while developing, never in a build. */
 const isVisible = ({ data }: { data: { draft: boolean } }) =>
@@ -17,4 +18,16 @@ export async function getPosts(): Promise<CollectionEntry<"blog">[]> {
 /** Projects that belong on the site, newest first. */
 export async function getProjects(): Promise<CollectionEntry<"projects">[]> {
   return (await getCollection("projects", isVisible)).sort(newestFirst);
+}
+
+/** Published entries recent enough not to be Archive, newest first. */
+export async function getCurrentPosts(): Promise<CollectionEntry<"blog">[]> {
+  return (await getPosts()).filter((post) => !isOlderThanOneYear(post.data.publishedAt));
+}
+
+/** Building projects link out to their live site; earlier ones to their detail page. */
+export function getProjectHref(project: CollectionEntry<"projects">): string {
+  return project.data.status === "building" && project.data.url
+    ? project.data.url
+    : getProjectUrl(project.id);
 }

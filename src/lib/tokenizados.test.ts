@@ -1,8 +1,6 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import feed from "./__fixtures__/podcast.xml?raw";
 import { FEED_URL, SITE_URL, getPodcast } from "./tokenizados";
-
-const feed = readFileSync(new URL("./__fixtures__/podcast.xml", import.meta.url), "utf8");
 
 /** The Tokenizados homepage links every episode page as /episodios/NN-slug/. */
 const homepage = `
