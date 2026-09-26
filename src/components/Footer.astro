@@ -1,21 +1,34 @@
 ---
+import { EMAIL, SITE_AUTHOR, SITE_SOURCE, SOCIAL_LINKS } from "../lib/consts";
+
 const year = new Date().getFullYear();
+const links = [
+  { label: EMAIL, href: `mailto:${EMAIL}` },
+  { label: "LinkedIn", href: SOCIAL_LINKS.linkedin },
+  { label: "X", href: SOCIAL_LINKS.x },
+  { label: "View source", href: SITE_SOURCE },
+];
 ---
 
-<footer
-  class="mx-auto mt-12 max-w-6xl border-t px-6 py-6 text-center text-sm"
-  style="border-color: var(--color-card-border); color: var(--color-text-muted)"
->
-  &copy; {year} Jorge Masta &middot; Built with Astro + shadcn &middot;
-  <a
-    href="https://github.com/jorgemasta/jorgemasta.com"
-    target="_blank"
-    rel="noopener noreferrer">View Source</a
+<footer class="mx-auto mt-24 max-w-5xl px-4 sm:px-6">
+  <div
+    class="flex flex-col gap-3 border-t border-rule py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between"
   >
-  &middot;
-  <a
-    href="https://github.com/jorgemasta/jorgemasta.com"
-    target="_blank"
-    rel="noopener noreferrer">Fork this site</a
-  >
+    <p>&copy; {year} {SITE_AUTHOR}</p>
+    <ul class="flex flex-wrap gap-x-5 gap-y-2">
+      {
+        links.map(({ label, href }) => (
+          <li>
+            <a
+              href={href}
+              class="text-muted no-underline hover:text-green hover:underline"
+              {...(href.startsWith("http") && { target: "_blank", rel: "noopener noreferrer" })}
+            >
+              {label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
 </footer>

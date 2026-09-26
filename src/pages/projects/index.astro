@@ -1,49 +1,52 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { getProjects } from "../../lib/content";
-import { getProjectUrl } from "../../lib/utils";
+import { getProjectHref, getProjects } from "../../lib/content";
 
 const projects = await getProjects();
+const sections = [
+  { heading: "Building now", projects: projects.filter((p) => p.data.status === "building") },
+  { heading: "Earlier work", projects: projects.filter((p) => p.data.status === "earlier") },
+].filter((section) => section.projects.length > 0);
 ---
 
-<BaseLayout
-  title="Projects | @jorgemasta"
-  description="Projects by Jorge Masta"
->
-  <div class="mx-auto max-w-3xl px-6 py-12">
-    <h1
-      class="mb-8 text-3xl font-bold"
-      style="color: var(--color-text-primary)"
-    >
-      Projects
-    </h1>
-    <div class="grid gap-6 sm:grid-cols-2">
-      {
-        projects.map((project) => (
-          <a
-            href={getProjectUrl(project.id)}
-            class="card block no-underline hover:no-underline"
-          >
-            {project.data.mainImage && (
-              <img
-                src={project.data.mainImage.src}
-                alt={project.data.mainImage.alt}
-                class="mb-3 h-36 w-full rounded-lg object-cover"
-                loading="lazy"
-              />
-            )}
-            <h2
-              class="mb-1 text-base font-semibold"
-              style="color: var(--color-text-primary)"
-            >
-              {project.data.title}
-            </h2>
-            <p class="text-sm" style="color: var(--color-text-muted)">
-              {project.data.excerpt}
-            </p>
-          </a>
-        ))
-      }
-    </div>
+<BaseLayout title="Projects | Jorge Masta" description="Projects by Jorge Masta">
+  <div class="mx-auto max-w-5xl px-4 pt-16 sm:px-6 sm:pt-24">
+    <h1 class="text-5xl tracking-tight sm:text-6xl">Projects</h1>
+
+    {
+      sections.map((section) => (
+        <section class="mt-16">
+          <h2 class="eyebrow font-sans">{section.heading}</h2>
+          <ul class="mt-6 grid gap-x-10 gap-y-12 sm:grid-cols-2">
+            {section.projects.map((project) => {
+              const external = project.data.status === "building";
+              return (
+                <li>
+                  <a
+                    href={getProjectHref(project)}
+                    class="group block no-underline"
+                    {...(external && { target: "_blank", rel: "noopener noreferrer" })}
+                  >
+                    {project.data.mainImage && (
+                      <img
+                        src={project.data.mainImage.src}
+                        alt={project.data.mainImage.alt}
+                        class="aspect-[16/10] w-full rounded-md border border-rule object-cover object-top"
+                        loading="lazy"
+                      />
+                    )}
+                    <h3 class="mt-4 text-2xl group-hover:underline">
+                      {project.data.title}
+                      {external && <span aria-hidden="true"> ↗</span>}
+                    </h3>
+                    <p class="mt-1 leading-relaxed text-charcoal">{project.data.excerpt}</p>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))
+    }
   </div>
 </BaseLayout>

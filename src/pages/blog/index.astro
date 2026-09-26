@@ -6,61 +6,35 @@ import { getBlogUrl, formatDate, isOlderThanOneYear } from "../../lib/utils";
 const posts = await getPosts();
 ---
 
-<BaseLayout title="Blog | @jorgemasta" description="Blog posts by Jorge Masta">
-  <div class="mx-auto max-w-3xl px-6 py-12">
-    <h1
-      class="mb-8 text-3xl font-bold"
-      style="color: var(--color-text-primary)"
-    >
-      Blog
-    </h1>
-    <div class="flex flex-col gap-6">
+<BaseLayout title="Writing | Jorge Masta" description="Notes and articles by Jorge Masta">
+  <div class="mx-auto max-w-5xl px-4 pt-16 sm:px-6 sm:pt-24">
+    <h1 class="text-5xl tracking-tight sm:text-6xl">Writing</h1>
+    <ul class="mt-12 border-t border-rule">
       {
-        posts.map((post) => {
-          const url = getBlogUrl(post.id, post.data.publishedAt);
-          const isArchive = isOlderThanOneYear(
-            new Date(post.data.publishedAt)
-          );
-          return (
-            <a href={url} class="card block no-underline hover:no-underline">
-              <div class="flex items-start gap-6">
-                {post.data.mainImage && (
-                  <img
-                    src={post.data.mainImage.src}
-                    alt={post.data.mainImage.alt}
-                    class="hidden h-24 w-40 shrink-0 rounded-lg object-cover sm:block"
-                    loading="lazy"
-                  />
+        posts.map((post) => (
+          <li class="border-b border-rule">
+            <a
+              href={getBlogUrl(post.id, post.data.publishedAt)}
+              class="group grid gap-1 py-6 no-underline sm:grid-cols-12 sm:gap-6"
+            >
+              <span class="flex items-center gap-2 text-sm text-muted tabular-nums sm:col-span-3 sm:flex-col sm:items-start sm:pt-1.5">
+                <time datetime={post.data.publishedAt.toISOString()}>
+                  {formatDate(post.data.publishedAt)}
+                </time>
+                {isOlderThanOneYear(post.data.publishedAt) && (
+                  <span class="badge-archive">Archive</span>
                 )}
-                <div>
-                  <div class="mb-1 flex items-center gap-2">
-                    <span
-                      class="text-xs"
-                      style="color: var(--color-text-muted)"
-                    >
-                      {formatDate(new Date(post.data.publishedAt))}
-                    </span>
-                    {isArchive && (
-                      <span class="badge-archive rounded-full px-2 py-0.5 text-[10px]">
-                        Archive
-                      </span>
-                    )}
-                  </div>
-                  <h2
-                    class="mb-2 text-lg font-semibold"
-                    style="color: var(--color-text-primary)"
-                  >
-                    {post.data.title}
-                  </h2>
-                  <p class="text-sm" style="color: var(--color-text-muted)">
-                    {post.data.excerpt}
-                  </p>
-                </div>
-              </div>
+              </span>
+              <span class="sm:col-span-9">
+                <span class="font-serif text-2xl text-green group-hover:underline">
+                  {post.data.title}
+                </span>
+                <span class="mt-1 block leading-relaxed text-charcoal">{post.data.excerpt}</span>
+              </span>
             </a>
-          );
-        })
+          </li>
+        ))
       }
-    </div>
+    </ul>
   </div>
 </BaseLayout>
