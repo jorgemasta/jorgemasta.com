@@ -1,0 +1,8 @@
+/portfolio/              /projects/           301
+/portfolio               /projects/           301
+/project/batch-cooking   /projects/batch-cooking  301
+/project/woonivers       /projects/woonivers      301
+/project/my-project      /projects/food-to-bento  301
+/project/aq-studio       /projects/aq-estudio-de-arquitectura  301
+/project/kontroloo       /projects/kontroloo      301
+/project/*               /projects/:splat         301

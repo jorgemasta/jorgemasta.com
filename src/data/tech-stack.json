@@ -1,0 +1,8 @@
+[
+  { "name": "TypeScript", "label": "TS" },
+  { "name": "React", "label": "React" },
+  { "name": "React Native", "label": "RN" },
+  { "name": "Node.js", "label": "Node" },
+  { "name": "Astro", "label": "Astro" },
+  { "name": "AWS", "label": "AWS" }
+]

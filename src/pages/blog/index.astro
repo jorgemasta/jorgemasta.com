@@ -1,0 +1,66 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getPosts } from "../../lib/content";
+import { getBlogUrl, formatDate, isOlderThanOneYear } from "../../lib/utils";
+
+const posts = await getPosts();
+---
+
+<BaseLayout title="Blog | @jorgemasta" description="Blog posts by Jorge Masta">
+  <div class="mx-auto max-w-3xl px-6 py-12">
+    <h1
+      class="mb-8 text-3xl font-bold"
+      style="color: var(--color-text-primary)"
+    >
+      Blog
+    </h1>
+    <div class="flex flex-col gap-6">
+      {
+        posts.map((post) => {
+          const url = getBlogUrl(post.id, post.data.publishedAt);
+          const isArchive = isOlderThanOneYear(
+            new Date(post.data.publishedAt)
+          );
+          return (
+            <a href={url} class="card block no-underline hover:no-underline">
+              <div class="flex items-start gap-6">
+                {post.data.mainImage && (
+                  <img
+                    src={post.data.mainImage.src}
+                    alt={post.data.mainImage.alt}
+                    class="hidden h-24 w-40 shrink-0 rounded-lg object-cover sm:block"
+                    loading="lazy"
+                  />
+                )}
+                <div>
+                  <div class="mb-1 flex items-center gap-2">
+                    <span
+                      class="text-xs"
+                      style="color: var(--color-text-muted)"
+                    >
+                      {formatDate(new Date(post.data.publishedAt))}
+                    </span>
+                    {isArchive && (
+                      <span class="badge-archive rounded-full px-2 py-0.5 text-[10px]">
+                        Archive
+                      </span>
+                    )}
+                  </div>
+                  <h2
+                    class="mb-2 text-lg font-semibold"
+                    style="color: var(--color-text-primary)"
+                  >
+                    {post.data.title}
+                  </h2>
+                  <p class="text-sm" style="color: var(--color-text-muted)">
+                    {post.data.excerpt}
+                  </p>
+                </div>
+              </div>
+            </a>
+          );
+        })
+      }
+    </div>
+  </div>
+</BaseLayout>

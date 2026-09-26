@@ -1,0 +1,48 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getProjects } from "../../lib/content";
+
+const projects = await getProjects();
+---
+
+<BaseLayout
+  title="Projects | @jorgemasta"
+  description="Projects by Jorge Masta"
+>
+  <div class="mx-auto max-w-3xl px-6 py-12">
+    <h1
+      class="mb-8 text-3xl font-bold"
+      style="color: var(--color-text-primary)"
+    >
+      Projects
+    </h1>
+    <div class="grid gap-6 sm:grid-cols-2">
+      {
+        projects.map((project) => (
+          <a
+            href={`/projects/${project.id}/`}
+            class="card block no-underline hover:no-underline"
+          >
+            {project.data.mainImage && (
+              <img
+                src={project.data.mainImage.src}
+                alt={project.data.mainImage.alt}
+                class="mb-3 h-36 w-full rounded-lg object-cover"
+                loading="lazy"
+              />
+            )}
+            <h2
+              class="mb-1 text-base font-semibold"
+              style="color: var(--color-text-primary)"
+            >
+              {project.data.title}
+            </h2>
+            <p class="text-sm" style="color: var(--color-text-muted)">
+              {project.data.excerpt}
+            </p>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,51 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { render } from "astro:content";
+import { getProjects } from "../../lib/content";
+import { formatDate } from "../../lib/utils";
+
+export async function getStaticPaths() {
+  const projects = await getProjects();
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+---
+
+<BaseLayout
+  title={`${project.data.title} | @jorgemasta`}
+  description={project.data.excerpt}
+>
+  <article class="mx-auto max-w-3xl px-6 py-12">
+    {
+      project.data.mainImage && (
+        <img
+          src={project.data.mainImage.src}
+          alt={project.data.mainImage.alt}
+          class="mb-8 w-full rounded-xl object-cover"
+          style="max-height: 400px"
+        />
+      )
+    }
+    <h1
+      class="mb-2 text-3xl font-bold sm:text-4xl"
+      style="color: var(--color-text-primary)"
+    >
+      {project.data.title}
+    </h1>
+    <time
+      class="mb-8 block text-sm"
+      style="color: var(--color-text-muted)"
+      datetime={project.data.publishedAt.toISOString()}
+    >
+      {formatDate(new Date(project.data.publishedAt))}
+    </time>
+    <div class="prose prose-lg max-w-none dark:prose-invert">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>

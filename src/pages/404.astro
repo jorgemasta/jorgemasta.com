@@ -1,0 +1,29 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="404 | @jorgemasta" description="Page not found">
+  <div class="mx-auto max-w-3xl px-6 py-24 text-center">
+    <div
+      class="card mx-auto max-w-md p-8 font-mono"
+      style="background: var(--color-card)"
+    >
+      <div class="mb-4 text-sm" style="color: var(--color-accent)">
+        $ cat this-page
+      </div>
+      <div class="mb-6 text-4xl font-bold" style="color: var(--color-text-primary)">
+        404
+      </div>
+      <p class="mb-6 text-sm" style="color: var(--color-text-muted)">
+        cat: this-page: No such file or directory
+      </p>
+      <a
+        href="/"
+        class="inline-block rounded-md px-4 py-2 text-sm no-underline hover:no-underline"
+        style="background: var(--color-accent-subtle); color: var(--color-accent)"
+      >
+        cd ~
+      </a>
+    </div>
+  </div>
+</BaseLayout>
