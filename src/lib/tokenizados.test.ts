@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import feed from "./__fixtures__/podcast.xml?raw";
-import { FEED_URL, SITE_URL, getPodcast } from "./tokenizados";
+import { FEED_URL, HOMEPAGE_URL, getPodcast } from "./tokenizados";
 
 /** The Tokenizados homepage links every episode page as /episodios/NN-slug/. */
 const homepage = `
@@ -25,7 +25,7 @@ describe("getPodcast", () => {
   it("returns the latest episodes newest-first with number, title, date and link", async () => {
     const { episodes } = await getPodcast({
       limit: 3,
-      fetch: fakeFetch({ [FEED_URL]: ok(feed), [SITE_URL]: ok(homepage) }),
+      fetch: fakeFetch({ [FEED_URL]: ok(feed), [HOMEPAGE_URL]: ok(homepage) }),
     });
 
     expect(episodes).toEqual([
@@ -53,7 +53,7 @@ describe("getPodcast", () => {
 
   it("returns the channel cover-art URL", async () => {
     const { coverArt } = await getPodcast({
-      fetch: fakeFetch({ [FEED_URL]: ok(feed), [SITE_URL]: ok(homepage) }),
+      fetch: fakeFetch({ [FEED_URL]: ok(feed), [HOMEPAGE_URL]: ok(homepage) }),
     });
 
     expect(coverArt).toBe("https://tokenizadospodcast.com/podcast/tokenizados-portada.jpeg");
@@ -65,7 +65,7 @@ describe("getPodcast", () => {
 
     const { episodes } = await getPodcast({
       limit: 2,
-      fetch: fakeFetch({ [FEED_URL]: ok(shuffled), [SITE_URL]: ok(homepage) }),
+      fetch: fakeFetch({ [FEED_URL]: ok(shuffled), [HOMEPAGE_URL]: ok(homepage) }),
     });
 
     expect(episodes.map((e) => e.number)).toEqual([25, 24]);
@@ -87,7 +87,7 @@ describe("getPodcast", () => {
     ["something that is not a feed", { [FEED_URL]: ok("<html><body>Hello</body></html>") }],
     ["an empty feed", { [FEED_URL]: ok('<rss version="2.0"><channel><title>T</title></channel></rss>') }],
   ])("returns no episodes and does not throw on %s", async (_, routes) => {
-    const podcast = await getPodcast({ fetch: fakeFetch({ [SITE_URL]: ok(homepage), ...routes }) });
+    const podcast = await getPodcast({ fetch: fakeFetch({ [HOMEPAGE_URL]: ok(homepage), ...routes }) });
 
     expect(podcast.episodes).toEqual([]);
   });

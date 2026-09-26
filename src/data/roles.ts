@@ -23,7 +23,7 @@ export const ROLES: Role[] = [
     title: "Senior Software Engineer",
     start: "Mar 2024",
     end: "Jun 2026",
-    impact: "Connected the company's products to each other and worked on the checkout.",
+    impact: "Built integrations between projects and worked on the checkout experience.",
     url: "https://www.liquidweb.com",
   },
   {
@@ -33,7 +33,7 @@ export const ROLES: Role[] = [
     start: "2025",
     end: "Aug 2026",
     impact:
-      "Built an organisational OS that puts AI at the centre of how a company works, and helped many companies become AI-native.",
+      "Built an organisational OS that put AI at the centre of how a company works, and helped many companies become AI-native.",
   },
   {
     company: "Modern Tribe",

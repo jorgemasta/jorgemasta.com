@@ -1,7 +1,7 @@
 ---
 import { render } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { getCurrentPosts, getProjects } from "../lib/content";
+import { getCurrentPosts, getProjects, isBuilding } from "../lib/content";
 import { getPodcast } from "../lib/tokenizados";
 import { ROLES } from "../data/roles";
 import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
@@ -9,7 +9,7 @@ import { formatDate, getBlogUrl, getProjectUrl } from "../lib/utils";
 
 const building = await Promise.all(
   (await getProjects())
-    .filter((p) => p.data.status === "building")
+    .filter(isBuilding)
     .reverse() // Oldest first: the longest-running product leads.
     .map(async (project) => ({ project, Content: (await render(project)).Content }))
 );
@@ -143,7 +143,7 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
           Antonio Sejas.
         </p>
         <p class="mt-2 text-paper/70">
-          {episodeCount} episodes since March 2026, each 45 to 75 minutes long.
+          {episodeCount} episodes since March 2026, each about 45 to 75 minutes long.
         </p>
 
         {

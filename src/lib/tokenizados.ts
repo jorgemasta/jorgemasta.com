@@ -1,6 +1,6 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 
-export const SITE_URL = "https://tokenizadospodcast.com/";
+export const HOMEPAGE_URL = "https://tokenizadospodcast.com/";
 export const FEED_URL = "https://tokenizadospodcast.com/podcast.xml";
 
 export type Episode = {
@@ -40,7 +40,7 @@ export async function getPodcast({ limit = 3, fetch = globalThis.fetch }: Option
     return res.text();
   };
 
-  const [feed, homepage] = await Promise.allSettled([get(FEED_URL), get(SITE_URL)]);
+  const [feed, homepage] = await Promise.allSettled([get(FEED_URL), get(HOMEPAGE_URL)]);
   if (feed.status === "rejected") return EMPTY;
 
   try {
@@ -90,7 +90,7 @@ function parseFeed(xml: string): Podcast {
 function episodePages(html: string): Map<number, string> {
   const pages = new Map<number, string>();
   for (const [, path, number] of html.matchAll(/href="(\/episodios\/0*(\d+)-[^"]*)"/g)) {
-    pages.set(Number(number), new URL(path, SITE_URL).href);
+    pages.set(Number(number), new URL(path, HOMEPAGE_URL).href);
   }
   return pages;
 }

@@ -14,6 +14,6 @@ stats:
     label: "sources read every day"
 ---
 
-Each day it reads 26 newsletters and 9 outlets and condenses them into a few stories, each with context and an honest opinion.
+Each day it reads 26 newsletters, plus 9 outlets directly, and condenses them into a few stories, each with context and an honest opinion.
 
-The problem I'm exploring is filtering by judgment rather than keywords: out of a whole day of news, which few stories deserve a reader's time. A spin-off built on the same filtering is in private testing.
+The problem I'm exploring is filtering by judgment rather than keywords: out of a whole day of news, which few stories deserve a reader's time. A spin-off is in private testing.
