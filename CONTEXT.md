@@ -1,14 +1,16 @@
 # jorgemasta.com
 
-The personal site of Jorge Masta. Its job is credibility — proof of work for
-someone who has just heard the name and searched for it. All content lives in
-the repository as markdown; there is no CMS.
+The personal site of Jorge Masta. It presents a product engineer who builds
+AI-native products — for product companies first, other builders second.
+Current positioning lives in `docs/positioning.md` and is expected to change.
+All content lives in the repository as markdown; there is no CMS.
 
 ## Language
 
 **Note**:
-A short English write-up, usually derived from a Tokenizados episode. The
-default kind of blog entry (`type: note`).
+A short English write-up of something Jorge built, tested, or observed first-hand.
+Sometimes it comes out of a Tokenizados episode, but that is one source among
+others. The default kind of blog entry (`type: note`).
 _Avoid_: post, article (for this kind), tweet
 
 **Article**:
@@ -22,9 +24,15 @@ A Tokenizados podcast episode. A Note may link to the one it came from via the
 _Avoid_: show, recording
 
 **Project**:
-A thing Jorge built, shown as proof of work. Distinct from a blog entry: a
-Project is the artefact, a Note or Article is writing about one.
+A thing Jorge built, shown as proof of work. Either something he is building
+now or Earlier work. Distinct from a blog entry: a Project is the artefact, a
+Note or Article is writing about one.
 _Avoid_: portfolio item, case study, work
+
+**Role**:
+A position Jorge held at a company, as an employee or a co-founder. Distinct
+from a Project: a Role is where he worked, a Project is what he built.
+_Avoid_: job, selected work, position
 
 **Earlier work**:
 Projects from 2017–2019, framed as history rather than current focus.
