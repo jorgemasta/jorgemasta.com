@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+	<channel>
+		<title><![CDATA[Tokenizados - Podcast de Inteligencia Artificial]]></title>
+		<description><![CDATA[Trimmed.]]></description>
+		<link>https://tokenizadospodcast.com</link>
+		<generator>Tokenizados</generator>
+		<lastBuildDate>Sat, 19 Sep 2026 16:39:58 GMT</lastBuildDate>
+		<atom:link href="https://tokenizadospodcast.com/podcast.xml" rel="self" type="application/rss+xml"/>
+		<author><![CDATA[Jorge Masta y Antonio Sejas]]></author>
+		<copyright><![CDATA[Jorge Masta y Antonio Sejas]]></copyright>
+		<language><![CDATA[es]]></language>
+		<itunes:author>Jorge Masta y Antonio Sejas</itunes:author>
+		<itunes:summary>Trimmed.</itunes:summary>
+		<itunes:type>episodic</itunes:type>
+		<itunes:owner>
+			<itunes:name>Jorge Masta y Antonio Sejas</itunes:name>
+			<itunes:email>info@tokenizadospodcast.com</itunes:email>
+		</itunes:owner>
+		<itunes:explicit>false</itunes:explicit>
+		<itunes:category text="Technology"/>
+		<itunes:keywords>inteligencia artificial, IA, tecnología, software, programación, agentes, LLM, modelos de lenguaje, desarrollo, Canarias</itunes:keywords>
+		<itunes:image href="https://tokenizadospodcast.com/podcast/tokenizados-portada.jpeg"/>
+				<item>
+			<title><![CDATA[Tokenizados #25: El Sistema 1 que decide pero no razona, el freno a la IA y el hackeo a OpenAI con Claude]]></title>
+			<description><![CDATA[<p>Trimmed.</p>]]></description>
+			<link>https://tokenizadospodcast.com/podcast/tokenizados-25.mp3</link>
+			<guid isPermaLink="false">0d59187c-5bfb-4181-8263-d23575a1ad61</guid>
+			<dc:creator><![CDATA[Jorge Masta y Antonio Sejas]]></dc:creator>
+			<pubDate>Sat, 19 Sep 2026 16:39:58 GMT</pubDate>
+			<enclosure url="https://tokenizadospodcast.com/podcast/tokenizados-25.mp3" length="87491098" type="audio/mpeg"/>
+<itunes:explicit>false</itunes:explicit>
+			<itunes:duration>01:00:45</itunes:duration>
+			<itunes:image href="https://tokenizadospodcast.com/podcast/covers/tokenizados-25.jpg"/>
+			<itunes:season>1</itunes:season>
+			<itunes:episode>25</itunes:episode>
+			<itunes:episodeType>full</itunes:episodeType>
+		</item>
+		<item>
+			<title><![CDATA[Tokenizados #24: Navier-Stokes Resuelto, una mosca conduciendo coches y el Ascenso de Alexander Wang]]></title>
+			<description><![CDATA[<p>Trimmed.</p>]]></description>
+			<link>https://tokenizadospodcast.com/podcast/tokenizados-24.mp3</link>
+			<guid isPermaLink="false">19f4ce6e-7253-4787-bdf6-1face5216752</guid>
+			<dc:creator><![CDATA[Jorge Masta y Antonio Sejas]]></dc:creator>
+			<pubDate>Sun, 13 Sep 2026 21:21:04 GMT</pubDate>
+			<enclosure url="https://tokenizadospodcast.com/podcast/tokenizados-24.mp3" length="101475226" type="audio/mpeg"/>
+<itunes:explicit>false</itunes:explicit>
+			<itunes:duration>01:10:28</itunes:duration>
+			<itunes:image href="https://tokenizadospodcast.com/podcast/covers/tokenizados-24.jpg"/>
+			<itunes:season>1</itunes:season>
+			<itunes:episode>24</itunes:episode>
+			<itunes:episodeType>full</itunes:episodeType>
+		</item>
+		<item>
+			<title><![CDATA[Tokenizados #23: El Gran Escape de OpenAI, Emails Agénticos y la Venta de Hugging Face]]></title>
+			<description><![CDATA[<p>Trimmed.</p>]]></description>
+			<link>https://tokenizadospodcast.com/podcast/tokenizados-23.mp3</link>
+			<guid isPermaLink="false">977ae400-6b05-4afe-b54f-7cf7bea5f63b</guid>
+			<dc:creator><![CDATA[Jorge Masta y Antonio Sejas]]></dc:creator>
+			<pubDate>Mon, 07 Sep 2026 06:42:23 GMT</pubDate>
+			<enclosure url="https://tokenizadospodcast.com/podcast/tokenizados-23.mp3" length="101504026" type="audio/mpeg"/>
+<itunes:explicit>false</itunes:explicit>
+			<itunes:duration>01:10:29</itunes:duration>
+			<itunes:image href="https://tokenizadospodcast.com/podcast/tokenizados-portada.jpeg"/>
+			<itunes:season>1</itunes:season>
+			<itunes:episode>23</itunes:episode>
+			<itunes:episodeType>full</itunes:episodeType>
+		</item>
+		<item>
+			<title><![CDATA[Tokenizados #22: Psicohistoria con IA, el fin de DeepMind y el Hack de Bitcoin]]></title>
+			<description><![CDATA[<p>Trimmed.</p>]]></description>
+			<link>https://tokenizadospodcast.com/podcast/tokenizados-22.mp3</link>
+			<guid isPermaLink="false">e49a6dbc-e8c6-4d8a-86e1-310920b8a10a</guid>
+			<dc:creator><![CDATA[Jorge Masta y Antonio Sejas]]></dc:creator>
+			<pubDate>Sun, 16 Aug 2026 17:00:28 GMT</pubDate>
+			<enclosure url="https://tokenizadospodcast.com/podcast/tokenizados-22.mp3" length="88767980" type="audio/mpeg"/>
+<itunes:explicit>false</itunes:explicit>
+			<itunes:duration>01:01:38</itunes:duration>
+			<itunes:image href="https://tokenizadospodcast.com/podcast/tokenizados-portada.jpeg"/>
+			<itunes:season>1</itunes:season>
+			<itunes:episode>22</itunes:episode>
+			<itunes:episodeType>full</itunes:episodeType>
+		</item>
+	</channel>
+</rss>
