@@ -1,337 +1,157 @@
 ---
+import { render } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { getPosts, getProjects } from "../lib/content";
-import {
-  SITE_TITLE,
-  SITE_DESCRIPTION,
-  SOCIAL_LINKS,
-  HERO_HEADLINE,
-  HERO_SUBTEXT,
-  HERO_IDENTITY,
-  HERO_PROOF,
-  BIO_SECTIONS,
-} from "../lib/consts";
-import {
-  getBlogUrl,
-  getProjectUrl,
-  formatDate,
-  isOlderThanOneYear,
-} from "../lib/utils";
+import { getCurrentPosts, getProjects } from "../lib/content";
+import { getPodcast } from "../lib/tokenizados";
+import { ROLES } from "../data/roles";
+import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
+import { formatDate, getBlogUrl, getProjectUrl } from "../lib/utils";
 
-const posts = await getPosts();
-const latestPost = posts[0];
-const latestPostUrl = latestPost
-  ? getBlogUrl(latestPost.id, latestPost.data.publishedAt)
-  : null;
-const isArchive = latestPost
-  ? isOlderThanOneYear(new Date(latestPost.data.publishedAt))
-  : false;
+const building = await Promise.all(
+  (await getProjects())
+    .filter((p) => p.data.status === "building")
+    .reverse() // Oldest first: the longest-running product leads.
+    .map(async (project) => ({ project, Content: (await render(project)).Content }))
+);
 
-const projects = await getProjects();
+const podcast = await getPodcast({ limit: 3 });
+// The latest episode number is the episode count; the fallback is the count on 2026-09-26.
+const episodeCount = podcast.episodes[0]?.number ?? 25;
+
+// Rendered only when there is recent writing, so the site never looks abandoned.
+const notes = (await getCurrentPosts()).slice(0, 5);
 ---
 
-<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
-  <div class="mx-auto max-w-[680px] px-6">
-    <!-- Hero -->
-    <div class="py-16 pb-8">
-      <h1
-        class="mb-5 text-3xl font-bold tracking-tight sm:text-4xl"
-        style="color: var(--color-text-primary); line-height: 1.15"
-      >
-        {HERO_HEADLINE}
-      </h1>
-      <p
-        class="mb-4 text-base leading-relaxed"
-        style="color: var(--color-text-secondary)"
-      >
-        {HERO_SUBTEXT}
-      </p>
-      <p class="mb-1 text-sm font-medium" style="color: var(--color-text-primary)">
-        {HERO_IDENTITY}
-      </p>
-      <p class="mb-8 text-sm" style="color: var(--color-text-muted)">
-        {HERO_PROOF}
-      </p>
-      <div class="flex flex-wrap gap-2.5">
-        <a
-          href={SOCIAL_LINKS.github}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm no-underline hover:no-underline"
-          style="border-color: var(--color-card-border); color: var(--color-text-secondary)"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
-            ><path
-              d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-            ></path></svg
-          >
-          GitHub
-        </a>
-        <a
-          href={SOCIAL_LINKS.twitter}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm no-underline hover:no-underline"
-          style="border-color: var(--color-card-border); color: var(--color-text-secondary)"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
-            ><path
-              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-            ></path></svg
-          >
-          Twitter
-        </a>
-        <a
-          href={SOCIAL_LINKS.devto}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm no-underline hover:no-underline"
-          style="border-color: var(--color-card-border); color: var(--color-text-secondary)"
-        >
-          Dev.to
-        </a>
-      </div>
-    </div>
-
-    <!-- Projects -->
-    <section
-      class="py-10"
-      style="border-top: 1px solid var(--color-card-border)"
-    >
-      <div class="section-label">Projects</div>
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {
-          projects.map((project) => (
-            <a
-              href={getProjectUrl(project.id)}
-              class="overflow-hidden rounded-xl border no-underline hover:no-underline"
-              style="border-color: var(--color-card-border)"
-            >
-              {project.data.mainImage && (
-                <img
-                  src={project.data.mainImage.src}
-                  alt={project.data.mainImage.alt}
-                  class="h-28 w-full object-cover"
-                  loading="lazy"
-                />
-              )}
-              <div class="p-3.5">
-                <h3
-                  class="mb-1 text-sm font-semibold"
-                  style="color: var(--color-text-primary)"
-                >
-                  {project.data.title}
-                </h3>
-                <p
-                  class="text-xs leading-relaxed"
-                  style="color: var(--color-text-muted)"
-                >
-                  {project.data.excerpt}
-                </p>
-              </div>
-            </a>
-          ))
-        }
-      </div>
-    </section>
-
-    <!-- Subtext -->
-    <section
-      class="py-10"
-      style="border-top: 1px solid var(--color-card-border)"
-    >
-      <p
-        class="mb-3 text-base leading-relaxed"
-        style="color: var(--color-text-secondary)"
-      >
-        {BIO_SECTIONS.subtext[0]}
-      </p>
-      <p class="text-base font-medium" style="color: var(--color-text-primary)">
-        {BIO_SECTIONS.subtext[1]}
-      </p>
-    </section>
-
-    <!-- Who I Am -->
-    <section
-      class="py-10"
-      style="border-top: 1px solid var(--color-card-border)"
-    >
-      <div class="section-label">Who I am</div>
-      <p
-        class="mb-2 text-base font-medium"
-        style="color: var(--color-text-primary)"
-      >
-        {BIO_SECTIONS.whoIAm.intro}
-      </p>
-      <p
-        class="mb-4 text-sm leading-relaxed"
-        style="color: var(--color-text-secondary)"
-      >
-        {BIO_SECTIONS.whoIAm.focus}
-      </p>
-      <p
-        class="mb-2 text-sm"
-        style="color: var(--color-text-muted)"
-      >
-        I've built:
-      </p>
-      <ul class="space-y-1.5">
-        {BIO_SECTIONS.whoIAm.built.map((item) => (
-          <li
-            class="flex items-start gap-2 text-sm"
-            style="color: var(--color-text-secondary)"
-          >
-            <span style="color: var(--color-accent)" class="mt-0.5 shrink-0">-</span>
-            {item}
-          </li>
-        ))}
-      </ul>
-    </section>
-
-    <!-- What I Think -->
-    <section
-      class="py-10"
-      style="border-top: 1px solid var(--color-card-border)"
-    >
-      <div class="section-label">What I think</div>
-      <ul class="space-y-2">
-        {BIO_SECTIONS.whatIThink.map((item) => (
-          <li
-            class="flex items-start gap-2 text-sm"
-            style="color: var(--color-text-secondary)"
-          >
-            <span style="color: var(--color-accent)" class="mt-0.5 shrink-0">-</span>
-            {item}
-          </li>
-        ))}
-      </ul>
-    </section>
-
-    <!-- What You'll Find -->
-    <section
-      class="py-10"
-      style="border-top: 1px solid var(--color-card-border)"
-    >
-      <div class="section-label">What you'll find here</div>
-      <ul class="space-y-2">
-        {BIO_SECTIONS.whatYoullFind.map((item) => (
-          <li
-            class="flex items-start gap-2 text-sm"
-            style="color: var(--color-text-secondary)"
-          >
-            <span style="color: var(--color-accent)" class="mt-0.5 shrink-0">-</span>
-            {item}
-          </li>
-        ))}
-      </ul>
-      <p class="mt-3 text-sm font-medium" style="color: var(--color-text-muted)">
-        No fluff. No generic tutorials.
-      </p>
-    </section>
-
-    <!-- Latest Post -->
+<BaseLayout title={`${SITE_TITLE} · Product engineer`} description={SITE_DESCRIPTION}>
+  <section>
+    <h1>I build thoughtful digital products.</h1>
+    <p>Product engineer working at the intersection of frontend, product, and AI.</p>
+    <a href="#building">See what I'm building →</a>
     {
-      latestPost && (
-        <section
-          class="py-10"
-          style="border-top: 1px solid var(--color-card-border)"
-        >
-          <div class="section-label">Latest Post</div>
-          <a
-            href={latestPostUrl}
-            class="flex gap-5 overflow-hidden rounded-xl border no-underline hover:no-underline"
-            style="border-color: var(--color-card-border)"
-          >
-            {latestPost.data.mainImage && (
-              <img
-                src={latestPost.data.mainImage.src}
-                alt={latestPost.data.mainImage.alt}
-                class="hidden h-28 w-44 shrink-0 object-cover sm:block"
-                loading="lazy"
-              />
-            )}
-            <div class="px-1 py-4 sm:py-4 sm:pr-4 sm:pl-0">
-              <div
-                class="mb-1.5 flex items-center gap-2 text-xs"
-                style="color: var(--color-text-muted)"
-              >
-                {formatDate(new Date(latestPost.data.publishedAt))}
-                {isArchive && (
-                  <span class="badge-archive rounded-full px-2 py-0.5 text-[10px]">
-                    Archive
-                  </span>
-                )}
-              </div>
-              <h3
-                class="mb-1.5 text-base font-semibold leading-snug"
-                style="color: var(--color-text-primary)"
-              >
-                {latestPost.data.title}
-              </h3>
-              <p
-                class="text-sm leading-relaxed"
-                style="color: var(--color-text-muted)"
-              >
-                {latestPost.data.excerpt}
-              </p>
-            </div>
-          </a>
-        </section>
+      notes.length > 0 ? (
+        <a href="/blog/">Read my writing →</a>
+      ) : (
+        <a href={TOKENIZADOS.site}>Listen to Tokenizados →</a>
       )
     }
+  </section>
 
-    <!-- CTA -->
-    <section
-      class="py-10"
-      style="border-top: 1px solid var(--color-card-border)"
-    >
-      <div class="section-label">Who this is for</div>
-      <ul class="mb-6 space-y-2">
-        {BIO_SECTIONS.whoThisIsFor.map((item) => (
-          <li
-            class="flex items-start gap-2 text-sm"
-            style="color: var(--color-text-secondary)"
-          >
-            <span style="color: var(--color-accent)" class="mt-0.5 shrink-0">-</span>
-            {item}
+  <section id="building">
+    <h2>What I'm building</h2>
+    {
+      building.map(({ project, Content }) => (
+        <article>
+          {project.data.mainImage && (
+            <img src={project.data.mainImage.src} alt={project.data.mainImage.alt} />
+          )}
+          <h3>{project.data.title}</h3>
+          <p>{project.data.excerpt}</p>
+          <Content />
+          <dl>
+            {project.data.stats.map((stat) => (
+              <div>
+                <dt>{stat.label}</dt>
+                <dd>{stat.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <a href={project.data.url}>Visit {project.data.title} →</a>
+          {project.data.links.map((link) => (
+            <a href={link.url}>{link.label}</a>
+          ))}
+        </article>
+      ))
+    }
+  </section>
+
+  <section id="tokenizados">
+    <h2>Tokenizados</h2>
+    <img src="/images/tokenizados/cover.webp" alt="Tokenizados podcast cover art" />
+    <p>
+      A weekly podcast in Spanish about AI, recorded in the Canary Islands. I host it with Antonio
+      Sejas.
+    </p>
+    <p>{episodeCount} episodes since March 2026, each 45 to 75 minutes long.</p>
+    {
+      podcast.episodes.length > 0 && (
+        <>
+          <h3>Latest episodes</h3>
+          <ol>
+            {podcast.episodes.map((episode) => (
+              <li>
+                <a href={episode.link}>
+                  #{episode.number} {episode.title}
+                </a>
+                <time datetime={episode.date.toISOString()}>{formatDate(episode.date)}</time>
+              </li>
+            ))}
+          </ol>
+        </>
+      )
+    }
+    <ul>
+      {
+        TOKENIZADOS.platforms.map((platform) => (
+          <li>
+            <a href={platform.url}>{platform.name}</a>
           </li>
-        ))}
-      </ul>
-      <p
-        class="mb-4 text-sm leading-relaxed"
-        style="color: var(--color-text-muted)"
-      >
-        If you're building, scaling, or rethinking how software should work:
-      </p>
-      <div class="flex gap-3">
-        <a
-          href={SOCIAL_LINKS.twitter}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-block rounded-md px-4 py-2 text-sm font-medium no-underline hover:no-underline"
-          style="background: var(--color-accent-subtle); color: var(--color-accent)"
-        >
-          Follow along
-        </a>
-        <a
-          href={`mailto:jorge@jorgemasta.com`}
-          class="inline-block rounded-md border px-4 py-2 text-sm no-underline hover:no-underline"
-          style="border-color: var(--color-card-border); color: var(--color-text-secondary)"
-        >
-          Reach out
-        </a>
-      </div>
-    </section>
-  </div>
-</BaseLayout>
+        ))
+      }
+    </ul>
+  </section>
 
-<style>
-  .section-label {
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--color-text-muted);
-    margin-bottom: 20px;
-    font-weight: 600;
+  {
+    notes.length > 0 && (
+      <section>
+        <h2>Notes from building</h2>
+        <ul>
+          {notes.map((note) => (
+            <li>
+              <a href={getBlogUrl(note.id, note.data.publishedAt)}>{note.data.title}</a>
+              <p>{note.data.excerpt}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
   }
-</style>
+
+  <section>
+    <h2>Experience</h2>
+    <ol>
+      {
+        ROLES.map((role) => (
+          <li>
+            <h3>
+              {role.title}, {role.url ? <a href={role.url}>{role.company}</a> : role.company}
+            </h3>
+            <p>
+              {role.start} – {role.end ?? "now"}
+            </p>
+            <p>{role.impact}</p>
+          </li>
+        ))
+      }
+    </ol>
+    <p>
+      Before that, I co-founded <a href={getProjectUrl("kontroloo")}>Kontroloo</a>, NFC access control
+      and cashless payments for events (2017), and <a href={getProjectUrl("food-to-bento")}
+        >Food to Bento</a
+      >, an app against food waste (2018–2019), both in Las Palmas.
+    </p>
+  </section>
+
+  <section>
+    <h2>About</h2>
+    <p>
+      I'm Jorge, a product-minded engineer based in the Canary Islands. I've spent the last nine
+      years building web and mobile products, mostly on the frontend and product side.
+    </p>
+    <p>
+      Lately I've been exploring what changes when AI is part of the product itself instead of a
+      feature added on top. I like simple interfaces and opinionated products, and I like turning
+      messy ideas into things people can actually use.
+    </p>
+    <p>The best way to reach me is email: <a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
+  </section>
+</BaseLayout>

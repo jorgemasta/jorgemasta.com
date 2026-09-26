@@ -5,7 +5,8 @@ import { getProjects } from "../../lib/content";
 import { formatDate } from "../../lib/utils";
 
 export async function getStaticPaths() {
-  const projects = await getProjects();
+  // Building projects link out to their live site and have no detail page yet.
+  const projects = (await getProjects()).filter((p) => p.data.status === "earlier");
   return projects.map((project) => ({
     params: { slug: project.id },
     props: { project },
