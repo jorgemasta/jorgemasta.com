@@ -25,9 +25,13 @@ export async function getCurrentPosts(): Promise<CollectionEntry<"blog">[]> {
   return (await getPosts()).filter((post) => !isOlderThanOneYear(post.data.publishedAt));
 }
 
+/** A building project is current work: it links out and has no detail page yet. */
+export const isBuilding = (project: CollectionEntry<"projects">) =>
+  project.data.status === "building";
+
 /** Building projects link out to their live site; earlier ones to their detail page. */
 export function getProjectHref(project: CollectionEntry<"projects">): string {
-  return project.data.status === "building" && project.data.url
+  return isBuilding(project) && project.data.url
     ? project.data.url
     : getProjectUrl(project.id);
 }

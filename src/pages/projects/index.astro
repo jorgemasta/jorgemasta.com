@@ -1,11 +1,11 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { getProjectHref, getProjects } from "../../lib/content";
+import { getProjectHref, getProjects, isBuilding } from "../../lib/content";
 
 const projects = await getProjects();
 const sections = [
-  { heading: "Building now", projects: projects.filter((p) => p.data.status === "building") },
-  { heading: "Earlier work", projects: projects.filter((p) => p.data.status === "earlier") },
+  { heading: "Building now", projects: projects.filter(isBuilding) },
+  { heading: "Earlier work", projects: projects.filter((p) => !isBuilding(p)) },
 ].filter((section) => section.projects.length > 0);
 ---
 
@@ -19,7 +19,7 @@ const sections = [
           <h2 class="eyebrow font-sans">{section.heading}</h2>
           <ul class="mt-6 grid gap-x-10 gap-y-12 sm:grid-cols-2">
             {section.projects.map((project) => {
-              const external = project.data.status === "building";
+              const external = isBuilding(project);
               return (
                 <li>
                   <a

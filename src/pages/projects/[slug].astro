@@ -1,12 +1,11 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { render } from "astro:content";
-import { getProjects } from "../../lib/content";
+import { getProjects, isBuilding } from "../../lib/content";
 import { formatDate } from "../../lib/utils";
 
 export async function getStaticPaths() {
-  // Building projects link out to their live site and have no detail page yet.
-  const projects = (await getProjects()).filter((p) => p.data.status === "earlier");
+  const projects = (await getProjects()).filter((p) => !isBuilding(p));
   return projects.map((project) => ({
     params: { slug: project.id },
     props: { project },
