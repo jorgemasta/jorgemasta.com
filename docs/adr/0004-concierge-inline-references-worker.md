@@ -16,8 +16,9 @@ The model call runs in a Worker script on the same domain, in front of the
 static assets (the "API route later" that ADR 0003 left room for). The Worker
 sends requests through Cloudflare AI Gateway, which provides the spend budget,
 logging and the switch between providers. Every page stays statically built.
-The whole site uses Astro's `ClientRouter` with the Concierge panel persisted,
-so the conversation stays on screen while the page changes beside it.
+The site already navigates with Astro's `ClientRouter`; the Concierge panel is
+persisted across those navigations, so the conversation stays on screen while
+the page changes beside it.
 
 ## Considered options
 
@@ -35,6 +36,6 @@ so the conversation stays on screen while the page changes beside it.
 
 The site is no longer purely static: it now depends on a Worker script and a
 model provider. If either fails, the Concierge goes away but the canonical site
-keeps working. Client-side routing affects every page's scripts, scroll
-restoration and analytics. Answers depend on the model sticking to the `[[id]]`
-format; a malformed reference loses one stop but never breaks the page.
+keeps working. Any page script the Concierge adds must survive client-side
+navigation. Answers depend on the model sticking to the `[[id]]` format; a
+malformed reference loses one stop but never breaks the page.
