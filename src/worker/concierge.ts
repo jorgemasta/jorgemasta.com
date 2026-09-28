@@ -7,6 +7,7 @@ import {
   type LanguageModel,
   type UIMessage,
 } from "ai";
+import { messageText } from "../lib/references";
 import type { Target } from "../lib/registry";
 import { systemPrompt } from "./prompt";
 
@@ -27,9 +28,6 @@ export type ConciergeDeps = {
 
 const failure = (status: number) => Response.json({ error: CONCIERGE_ERROR }, { status });
 
-const text = (message: UIMessage) =>
-  message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
-
 /** The conversation, if it's one a visitor could have sent: ends with their question. */
 async function conversation(request: Request): Promise<UIMessage[] | undefined> {
   const body: unknown = await request.json().catch(() => undefined);
@@ -42,7 +40,7 @@ async function conversation(request: Request): Promise<UIMessage[] | undefined> 
   const fromVisitorOrConcierge = messages.every(
     (message) => message.role === "user" || message.role === "assistant"
   );
-  if (!fromVisitorOrConcierge || last?.role !== "user" || !text(last).trim()) return;
+  if (!fromVisitorOrConcierge || last?.role !== "user" || !messageText(last).trim()) return;
   return messages;
 }
 

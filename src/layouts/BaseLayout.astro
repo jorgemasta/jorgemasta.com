@@ -3,7 +3,7 @@ import { ClientRouter } from "astro:transitions";
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
-import Concierge from "../components/Concierge";
+import Concierge, { chipTarget } from "../components/Concierge";
 import { getRegistry } from "../lib/content";
 import "../styles/global.css";
 
@@ -15,8 +15,7 @@ interface Props {
 
 const { title, description, image } = Astro.props;
 
-// The chips only need to name a target and find it; the text stays with the Worker.
-const targets = (await getRegistry()).map(({ id, label, path, anchor }) => ({ id, label, path, anchor }));
+const targets = (await getRegistry()).map(chipTarget);
 ---
 
 <!doctype html>

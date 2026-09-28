@@ -1,13 +1,16 @@
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import { DefaultChatTransport } from "ai";
 import { navigate } from "astro:transitions/client";
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
 import { CONCIERGE_ENDPOINT, EMAIL } from "../lib/consts";
-import { parseAnswer } from "../lib/references";
+import { messageText, parseAnswer } from "../lib/references";
 import type { Target } from "../lib/registry";
 
 /** What the client needs to show a chip and take the visitor to its target. */
 export type ChipTarget = Pick<Target, "id" | "label" | "path" | "anchor">;
+
+/** A target without its text, which stays with the Worker. */
+export const chipTarget = ({ id, label, path, anchor }: Target): ChipTarget => ({ id, label, path, anchor });
 
 /** The same four on every page (#28). */
 const SUGGESTED_PROMPTS = [
@@ -16,9 +19,6 @@ const SUGGESTED_PROMPTS = [
   "Show me his AI work",
   "What has he done with frontend and DX?",
 ];
-
-const messageText = (message: UIMessage) =>
-  message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
 
 const samePage = (path: string) => location.pathname.replace(/\/?$/, "/") === path;
 
@@ -33,7 +33,7 @@ function goTo(target: ChipTarget) {
 }
 
 /**
- * The Concierge: a panel that answers questions about Jorge's work in a few
+ * The Concierge: a panel that answers questions about Jorge's work in one to three
  * sentences, with a chip for every place on the site the answer points at.
  * Persisted across `ClientRouter` navigations, so the conversation stays put.
  */
@@ -93,7 +93,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
         <div>
           <p className="font-serif text-xl text-green">Ask about Jorge's work</p>
           <p className="mt-1 text-xs text-muted">
-            An AI guide that answers from this site. Questions are logged to improve it.
+            An AI that answers from this site. Questions are logged to improve it.
           </p>
         </div>
         <button

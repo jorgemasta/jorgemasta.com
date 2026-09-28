@@ -4,6 +4,12 @@
  * every streamed update, so a reference split across chunks resolves as soon
  * as it's complete.
  */
+import type { UIMessage } from "ai";
+
+/** A chat message's text, with any non-text parts left out. */
+export const messageText = (message: UIMessage) =>
+  message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
+
 export type AnswerPart = { type: "text"; text: string } | { type: "reference"; id: string };
 
 export type Answer = {

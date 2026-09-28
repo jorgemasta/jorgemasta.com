@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { CONCIERGE_ENDPOINT } from "../lib/consts";
+import { CONCIERGE_ENDPOINT, REGISTRY_PATH } from "../lib/consts";
 import type { Target } from "../lib/registry";
 import { handleConcierge } from "./concierge";
 
@@ -17,8 +17,8 @@ type Env = {
 
 /** Built with the site, so it only changes on deploy: read once per isolate. */
 let registry: Promise<Target[]> | undefined;
-const getRegistry = (env: Env, url: string) =>
-  (registry ??= env.ASSETS.fetch(new URL("/concierge/registry.json", url).toString()).then((response) => {
+const loadRegistry = (env: Env, url: string) =>
+  (registry ??= env.ASSETS.fetch(new URL(REGISTRY_PATH, url).toString()).then((response) => {
     if (!response.ok) throw new Error(`Registry responded ${response.status}`);
     return response.json() as Promise<Target[]>;
   })).catch((error) => {
@@ -45,7 +45,7 @@ export default {
 
     return handleConcierge(request, {
       model: gateway(env)(env.CONCIERGE_MODEL),
-      registry: () => getRegistry(env, request.url),
+      registry: () => loadRegistry(env, request.url),
       providerOptions: env.CONCIERGE_REASONING_EFFORT
         ? { gateway: { reasoningEffort: env.CONCIERGE_REASONING_EFFORT } }
         : undefined,
