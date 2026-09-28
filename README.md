@@ -42,6 +42,7 @@ ADR-0002 before changing that.
 | `npm run dev`    | Dev server on `localhost:4321`, drafts shown  |
 | `npm run build`  | Static build into `./dist/`                   |
 | `npm run preview`| Serve the build locally                       |
+| `npm run dev:worker` | Build, then serve it with the Concierge Worker (`wrangler dev`) |
 | `npm run deploy` | Build, then `wrangler deploy` to Cloudflare   |
 
 Every push to `main` deploys through `.github/workflows/deploy.yml`, which also
@@ -60,3 +61,7 @@ limit, and fill everything in, run:
 ```sh
 ./scripts/setup-concierge.sh
 ```
+
+The Concierge's endpoint only exists in the Worker, so `npm run dev` shows the
+panel but can't answer. Use `npm run dev:worker` to try it locally. The model id
+and reasoning effort are `vars` in `wrangler.jsonc`.

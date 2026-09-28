@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { AstroIntegration } from "astro";
+import { REGISTRY_PATH } from "../lib/consts";
 import { findMissingAnchors, type Target } from "../lib/registry";
 
 /**
@@ -13,7 +14,7 @@ export default function checkRegistry(): AstroIntegration {
     hooks: {
       "astro:build:done": ({ dir }) => {
         const file = (path: string) => fileURLToPath(new URL(`.${path}`, dir));
-        const registry: Target[] = JSON.parse(readFileSync(file("/concierge/registry.json"), "utf8"));
+        const registry: Target[] = JSON.parse(readFileSync(file(REGISTRY_PATH), "utf8"));
         const readPage = (path: string) => {
           const page = file(`${path}index.html`);
           return existsSync(page) ? readFileSync(page, "utf8") : undefined;

@@ -17,6 +17,8 @@ export type Target = {
   path: string;
   /** The element id of the target on that page. */
   anchor: string;
+  /** A short name for the target, shown on its chip. */
+  label: string;
   /** What the Concierge may say about it: only what the page shows. */
   text: string;
 };
@@ -65,6 +67,7 @@ const factTargets = (owner: { id: string; title: string; path: string }, facts: 
       kind: "fact",
       path: owner.path,
       anchor: anchors.fact(owner.id, fact.name),
+      label: fact.text,
       text: `${owner.title}: ${fact.text}`,
     };
   });
@@ -88,6 +91,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
         kind: "project",
         path,
         anchor: anchors.project(project.id),
+        label: project.title,
         text: paragraphs(
           `${project.title} (${building ? "building now" : "Earlier work"}): ${project.excerpt}`,
           withoutFactMarkup(project.body).trim(),
@@ -106,6 +110,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
         kind: "entry",
         path,
         anchor: anchors.entry(entry.id),
+        label: entry.title,
         text: paragraphs(
           `${entry.title} (${entry.publishedAt.toISOString().slice(0, 10)}${
             isOlderThanOneYear(entry.publishedAt) ? ", Archive" : ""
@@ -121,6 +126,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
         kind: "role",
         path: "/",
         anchor: anchors.role(role.id),
+        label: role.company,
         text: `${role.title}, ${role.company}, ${role.start} – ${role.end ?? "now"}. ${proseText(role.impact)}`,
       },
       ...factTargets({ id: role.id, title: role.company, path: "/" }, factsInProse(role.impact)),
@@ -130,6 +136,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
       kind: "episode",
       path: "/",
       anchor: anchors.episode(episode.number),
+      label: `Tokenizados #${episode.number}`,
       text: `Tokenizados #${episode.number} (${episode.date.toISOString().slice(0, 10)}): ${episode.title}`,
     })),
     {
@@ -137,6 +144,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
       kind: "tokenizados",
       path: "/",
       anchor: anchors.tokenizados,
+      label: "Tokenizados",
       text: `Tokenizados: ${TOKENIZADOS.about} ${TOKENIZADOS.episodesSince(input.episodeCount)}`,
     },
     ...factTargets({ id: ABOUT_ID, title: "About Jorge", path: "/" }, input.about.flatMap(factsInProse)),

@@ -32,3 +32,9 @@ export const TOKENIZADOS = {
     },
   ],
 } as const;
+
+/** The built target registry: read by the Worker and checked after the build. */
+export const REGISTRY_PATH = "/concierge/registry.json";
+
+/** The Concierge's endpoint, served by the Worker; also listed in `wrangler.jsonc`. */
+export const CONCIERGE_ENDPOINT = "/concierge/chat";
