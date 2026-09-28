@@ -77,8 +77,51 @@
     }
   }
 
+  /*
+   * A Focus (see focus-dom.ts): the current stop is spotlit and raised above
+   * a veil that dims the rest of the page slightly, only while the stop is in
+   * view. Both sit below the Focus bar and the Concierge.
+   */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--color-paper) 55%, transparent);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  body:has([data-focus-dim])::after {
+    opacity: 1;
+  }
+
+  [data-focus-spot] {
+    position: relative;
+    z-index: 20;
+    border-radius: 0.5rem;
+    outline: 2px solid color-mix(in srgb, var(--color-terracotta) 55%, transparent);
+    outline-offset: 0.75rem;
+  }
+
+  /* Raised above the veil, a stop in the podcast band needs the band's colour under it. */
+  #tokenizados [data-focus-spot] {
+    background: var(--color-green);
+  }
+
+  /* A Fact is a passage in running text: highlight it in place instead of boxing it. */
+  span[data-focus-spot] {
+    border-radius: 0.2rem;
+    outline: none;
+    background: color-mix(in srgb, var(--color-terracotta) 16%, var(--color-paper));
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    body {
+    body,
+    body::after {
       transition: none;
     }
   }
