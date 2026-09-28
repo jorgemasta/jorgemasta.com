@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { currentStop, focusReducer, isActive, route, type FocusEvent, type FocusState, type Stop } from "./focus";
+import {
+  currentStop,
+  focusReducer,
+  focusSearch,
+  isActive,
+  restoreFocus,
+  route,
+  type FocusEvent,
+  type FocusState,
+  type Stop,
+} from "./focus";
 
 const home = (id: string, anchor: string): Stop => ({ id, path: "/", anchor });
 const padelful = home("padelful", "project-padelful");
@@ -141,5 +151,80 @@ describe("route", () => {
 
   it("treats a page without its trailing slash as the same page", () => {
     expect(route(woonivers, "/projects/woonivers")).toEqual({ type: "scroll", anchor: "project-woonivers" });
+  });
+});
+
+describe("focusSearch", () => {
+  const focus = after(
+    { type: "asked", question: "What is he building?" },
+    { type: "answered", stops: [padelful, { id: "padelful/mcp", path: "/", anchor: "fact-padelful-mcp" }] }
+  );
+
+  it("carries the Focus as its stop ids only, in order, never the label", () => {
+    expect(focusSearch("", focus)).toBe("?focus=padelful,padelful/mcp");
+  });
+
+  it("keeps the page's other parameters", () => {
+    expect(focusSearch("?ref=newsletter&focus=nexcess", focus)).toBe("?ref=newsletter&focus=padelful,padelful/mcp");
+  });
+
+  it("drops the Focus from the URL when it's cleared", () => {
+    expect(focusSearch("?ref=newsletter&focus=padelful", null)).toBe("?ref=newsletter");
+    expect(focusSearch("?focus=padelful", null)).toBe("");
+  });
+
+  it("round-trips through restoreFocus", () => {
+    const stopFor = (id: string) => focus?.stops.find((stop) => stop.id === id);
+
+    expect(restoreFocus(null, focusSearch("", focus), stopFor)?.stops).toEqual(focus?.stops);
+  });
+});
+
+describe("restoreFocus", () => {
+  const known = new Map([padelful, destilados, nexcess, woonivers].map((stop) => [stop.id, stop]));
+  const stopFor = (id: string) => known.get(id);
+
+  it("builds a shared Focus from the link's ids, in order, under a generic label", () => {
+    expect(restoreFocus(null, "?focus=woonivers,padelful", stopFor)).toEqual({
+      label: "Shared focus",
+      stops: [woonivers, padelful],
+      current: null,
+    });
+  });
+
+  it("skips ids that no longer exist", () => {
+    expect(restoreFocus(null, "?focus=gone,nexcess,padelful/old-fact", stopFor)?.stops).toEqual([nexcess]);
+  });
+
+  it("shows no Focus when none of the link's ids exist", () => {
+    expect(restoreFocus(null, "?focus=gone,also-gone", stopFor)).toBeNull();
+  });
+
+  it("never takes the label from the link", () => {
+    expect(restoreFocus(null, "?focus=padelful&label=Hire+someone+else", stopFor)?.label).toBe("Shared focus");
+  });
+
+  describe("after a refresh", () => {
+    const saved = after(
+      { type: "asked", question: "Frontend work?" },
+      { type: "answered", stops: [padelful, woonivers] },
+      { type: "next" }
+    );
+
+    it("keeps the Focus saved in this tab when the URL carries the same stops", () => {
+      expect(restoreFocus(saved, "?focus=padelful,woonivers", stopFor)).toEqual(saved);
+    });
+
+    it("keeps the saved Focus on a page whose URL carries none", () => {
+      expect(restoreFocus(saved, "", stopFor)).toEqual(saved);
+    });
+
+    it("replaces the saved Focus with a different one opened from a link", () => {
+      expect(restoreFocus(saved, "?focus=nexcess", stopFor)).toEqual({
+        label: "Shared focus",
+        stops: [nexcess],
+        current: null,
+      });
+    });
   });
 });

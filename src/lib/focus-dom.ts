@@ -5,7 +5,17 @@
  * `global.css`, under `[data-focus-spot]`.
  */
 import { navigate } from "astro:transitions/client";
-import { route, type Stop } from "./focus";
+import { focusSearch, route, type FocusState, type Stop } from "./focus";
+
+/**
+ * Reflects the Focus in the URL, so it can be shared, without adding a
+ * history entry. Keeps `ClientRouter`'s history state and the page's hash.
+ */
+export function showInUrl(focus: FocusState) {
+  const search = focusSearch(location.search, focus);
+  if (search === location.search) return;
+  history.replaceState(history.state, "", `${location.pathname}${search}${location.hash}`);
+}
 
 const prefersReducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 

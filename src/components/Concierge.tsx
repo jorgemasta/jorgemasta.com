@@ -2,8 +2,16 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
 import { CONCIERGE_ENDPOINT, EMAIL, MAX_QUESTION_LENGTH } from "../lib/consts";
-import { currentStop, focusReducer, isActive, type Focus, type FocusEvent, type FocusState } from "../lib/focus";
-import { goTo, spotlight } from "../lib/focus-dom";
+import {
+  currentStop,
+  focusReducer,
+  isActive,
+  restoreFocus,
+  type Focus,
+  type FocusEvent,
+  type FocusState,
+} from "../lib/focus";
+import { goTo, showInUrl, spotlight } from "../lib/focus-dom";
 import { messageText, parseAnswer } from "../lib/references";
 import type { Target } from "../lib/registry";
 
@@ -28,6 +36,29 @@ const SUGGESTED_PROMPTS = [
 function latestReferences(messages: UIMessage[], isKnown: (id: string) => boolean) {
   const last = messages.at(-1);
   return last?.role === "assistant" ? parseAnswer(messageText(last), isKnown).references : [];
+}
+
+/** What survives a refresh within the tab: the conversation and the Focus. */
+type Session = { messages: UIMessage[]; focus: FocusState };
+
+const SESSION_KEY = "concierge";
+
+/** The session saved in this tab, if any. Storage can be missing or blocked, and the server has none. */
+function loadSession(): Session | null {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "null");
+    return Array.isArray(saved?.messages) ? { messages: saved.messages, focus: saved.focus ?? null } : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(session: Session) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // Without storage, a refresh starts over; the Concierge works the same.
+  }
 }
 
 /**
@@ -64,15 +95,25 @@ function usePageLoads() {
  */
 export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   const byId = useMemo(() => new Map(targets.map((target) => [target.id, target])), [targets]);
+  const isKnown = (id: string) => byId.has(id);
   const available = useAvailable();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
+  // The conversation saved in this tab, so a refresh picks up where the visitor was.
+  const [saved] = useState(loadSession);
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: CONCIERGE_ENDPOINT }),
+    messages: saved?.messages,
   });
   const busy = status === "submitted" || status === "streaming";
 
   const [focus, setFocus] = useState<FocusState>(null);
+  // Restored once the page's URL can be read: the saved Focus, or the one a shared link carries.
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    setFocus(restoreFocus(saved?.focus ?? null, location.search, (id) => byId.get(id)));
+    setRestored(true);
+  }, []);
   const send = (event: FocusEvent) => setFocus((focus) => focusReducer(focus, event));
   /** Sends an event that may change the stop, and takes the visitor to the new one. */
   const move = (event: FocusEvent) => {
@@ -84,9 +125,13 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
 
   // The stops of the latest answer form the Focus, growing as the answer streams in.
   // Keyed on the ids, so the Focus updates when a reference completes, not on every streamed token.
-  const references = latestReferences(messages, (id) => byId.has(id));
+  // A restored answer is already in the restored Focus, or deliberately not (cleared, or replaced by a shared link).
+  const references = latestReferences(messages, isKnown);
   const referencesKey = references.join(" ");
+  const answeredKey = useRef(latestReferences(saved?.messages ?? [], isKnown).join(" "));
   useEffect(() => {
+    if (referencesKey === answeredKey.current) return;
+    answeredKey.current = referencesKey;
     send({ type: "answered", stops: references.map((id) => byId.get(id)!) });
   }, [referencesKey, byId]);
 
@@ -94,6 +139,15 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   const stop = currentStop(focus);
   const pageLoads = usePageLoads();
   useEffect(() => (stop ? spotlight(stop) : undefined), [stop, pageLoads]);
+
+  // Keep the conversation and Focus for a refresh, and the Focus in the URL for sharing,
+  // on every page. Not before the Focus is restored, so the link being opened isn't overwritten.
+  useEffect(() => {
+    if (restored) saveSession({ messages, focus });
+  }, [restored, messages, focus]);
+  useEffect(() => {
+    if (restored) showInUrl(focus);
+  }, [restored, focus, pageLoads]);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
@@ -200,7 +254,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
                 </li>
               ) : (
                 <li key={message.id} className="leading-relaxed text-charcoal">
-                  {parseAnswer(messageText(message), (id) => byId.has(id)).parts.map((part, i) =>
+                  {parseAnswer(messageText(message), isKnown).parts.map((part, i) =>
                     part.type === "text" ? (
                       <span key={i}>{part.text}</span>
                     ) : (
