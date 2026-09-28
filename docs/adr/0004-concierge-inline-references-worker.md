@@ -20,8 +20,12 @@ The site already navigates with Astro's `ClientRouter`; the Concierge panel is
 persisted across those navigations, so the conversation stays on screen while
 the page changes beside it.
 
-Both ends use the AI SDK: `streamText` in the Worker, routed through AI Gateway
-with Cloudflare's `ai-gateway-provider`, and `useChat` in the panel. The panel is
+Both ends use the AI SDK: `streamText` in the Worker, with an OpenAI-compatible
+provider pointed at AI Gateway's `/compat` endpoint, and `useChat` in the panel.
+Models are paid through AI Gateway's Unified Billing, so the Worker holds only a
+gateway token, not a provider key. We don't use `ai-gateway-provider` with a
+native provider route: those routes don't get billing credentials for every
+model (see #34). The panel is
 therefore a React island, the site's only one. The `[[id]]` protocol is ours;
 the AI SDK only carries the stream.
 
@@ -30,7 +34,7 @@ the AI SDK only carries the stream.
 - **Tool calls or JSON-schema actions** (`focus`, `navigate`, `clear`, …). These
   are cleaner to validate, but actions only arrive once the model has finished
   them, so text and page can't move together. Structured-output passthrough on
-  AI Gateway's OpenAI-compatible endpoint was also unverified, and not every
+  AI Gateway's OpenAI-compatible endpoint is unverified, and not every
   candidate model supports it. With plain text, any OpenAI-compatible model
   works.
 - **Full page loads with the conversation restored from `sessionStorage`.**
