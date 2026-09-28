@@ -112,6 +112,10 @@ function useNarrow() {
   return narrow;
 }
 
+/** A small round icon control in the panel's header. */
+const PANEL_CONTROL =
+  "grid size-8 place-items-center rounded-full text-muted transition-colors hover:bg-paper-deep hover:text-green";
+
 /** How long a finished answer stays on screen before the sheet gives the page back. */
 const COLLAPSE_DELAY = 1200;
 
@@ -296,21 +300,25 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
         onKeyDown={(event) => event.key === "Escape" && setOpen(false)}
         className="fixed inset-x-0 bottom-0 z-40 flex h-[68dvh] flex-col rounded-t-2xl border-t border-rule bg-paper shadow-[0_-12px_32px_-12px_rgb(23_63_53/0.35)] lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:h-auto lg:w-(--concierge-width) lg:rounded-none lg:border-t-0 lg:border-l lg:shadow-none"
       >
-        <header className="flex items-baseline justify-between gap-4 border-b border-rule px-5 py-4">
-          <div>
+        <header className="flex items-start justify-between gap-4 border-b border-rule py-4 pr-3 pl-5">
+          <div className="pt-1">
             <p className="font-serif text-xl text-green">Ask about Jorge's work</p>
             <p className="mt-1 text-xs text-muted">
               An AI that answers from this site. Questions are logged to improve it.
             </p>
           </div>
-          <div className="flex shrink-0 items-baseline gap-4">
+          <div className="flex shrink-0 items-center gap-0.5">
             {messages.length > 0 && (
               <button
                 type="button"
                 onClick={startOver}
-                className="text-sm text-muted underline-offset-4 transition-colors hover:text-green hover:underline"
+                aria-label="New conversation"
+                title="New conversation"
+                className={PANEL_CONTROL}
               >
-                New conversation
+                <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 fill-none stroke-current stroke-[1.5]">
+                  <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             )}
             <button
@@ -319,7 +327,8 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
               aria-expanded="true"
               aria-controls="concierge"
               aria-label="Close"
-              className="text-xl leading-none text-muted hover:text-green"
+              title="Close"
+              className={`${PANEL_CONTROL} text-xl leading-none`}
             >
               ×
             </button>
@@ -392,39 +401,45 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
           )}
         </div>
 
-        <form onSubmit={onSubmit} className="flex items-end gap-2 border-t border-rule px-5 py-4">
-          <label htmlFor="concierge-question" className="sr-only">
-            Your question
-          </label>
-          <textarea
-            id="concierge-question"
-            ref={inputRef}
-            rows={2}
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                ask(input);
-              }
-            }}
-            placeholder="Ask about my work…"
-            maxLength={MAX_QUESTION_LENGTH}
-            aria-describedby="concierge-question-length"
-            className="flex-1 resize-none rounded-lg border border-rule bg-paper px-3 py-2 text-sm text-charcoal placeholder:text-muted focus:border-green focus:outline-none"
-          />
-          <div className="flex flex-col items-end gap-1.5">
-            <p id="concierge-question-length" className="text-xs text-muted tabular-nums">
-              <span className="sr-only">Up to {MAX_QUESTION_LENGTH} characters: </span>
-              {input.length}/{MAX_QUESTION_LENGTH}
-            </p>
-            <button
-              type="submit"
-              disabled={busy || !input.trim()}
-              className="button px-4 py-2 text-sm disabled:opacity-50"
-            >
-              Ask
-            </button>
+        <form onSubmit={onSubmit} className="border-t border-rule px-4 py-4">
+          <div className="rounded-2xl border border-rule bg-paper transition-colors focus-within:border-green/60">
+            <label htmlFor="concierge-question" className="sr-only">
+              Your question
+            </label>
+            <textarea
+              id="concierge-question"
+              ref={inputRef}
+              rows={2}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  ask(input);
+                }
+              }}
+              placeholder="Ask about my work…"
+              maxLength={MAX_QUESTION_LENGTH}
+              aria-describedby="concierge-question-length"
+              className="block w-full resize-none bg-transparent px-4 pt-3 text-sm text-charcoal placeholder:text-muted focus:outline-none"
+            />
+            <div className="flex items-center justify-between py-2 pr-2 pl-4">
+              <p id="concierge-question-length" className="text-xs text-muted/80 tabular-nums">
+                <span className="sr-only">Up to {MAX_QUESTION_LENGTH} characters: </span>
+                {input.length}/{MAX_QUESTION_LENGTH}
+              </p>
+              <button
+                type="submit"
+                disabled={busy || !input.trim()}
+                aria-label="Ask"
+                title="Ask"
+                className="grid size-8 place-items-center rounded-full bg-green text-paper transition-colors hover:bg-green-soft disabled:bg-rule disabled:text-muted"
+              >
+                <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 fill-none stroke-current stroke-[1.75]">
+                  <path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
           </div>
         </form>
       </aside>
