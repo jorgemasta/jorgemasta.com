@@ -116,5 +116,7 @@ export type Route = { type: "scroll"; anchor: string } | { type: "navigate"; url
 
 /** How to reach a stop from `pathname`: a scroll if it's on this page, otherwise a navigation to it. */
 export function route(stop: Stop, pathname: string): Route {
-  return isSamePage(stop.path, pathname) ?{ type: "scroll", anchor: stop.anchor } : { type: "navigate", url: `${stop.path}#${stop.anchor}` };
+  return isSamePage(stop.path, pathname)
+    ? { type: "scroll", anchor: stop.anchor }
+    : { type: "navigate", url: `${stop.path}#${stop.anchor}` };
 }

@@ -12,8 +12,12 @@ const prefersReducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)"
 /** Calm and quick: the same 200ms as the dimming in `global.css`. */
 const SCROLL_MS = 200;
 
+/** The scroll in progress, so a new one replaces it rather than fighting it. */
+let scrolling = 0;
+
 /** Scrolls the page to `top`, easing out over 200ms, or at once under reduced motion. */
 function scrollPage(top: number) {
+  cancelAnimationFrame(scrolling);
   const start = scrollY;
   // "instant", because the page's own `scroll-behavior: smooth` would stretch every step.
   if (prefersReducedMotion() || start === top) return window.scrollTo({ top, behavior: "instant" });
@@ -21,9 +25,9 @@ function scrollPage(top: number) {
   const step = (now: number) => {
     const progress = Math.min((now - began) / SCROLL_MS, 1);
     window.scrollTo({ top: start + (top - start) * (1 - (1 - progress) ** 3), behavior: "instant" });
-    if (progress < 1) requestAnimationFrame(step);
+    if (progress < 1) scrolling = requestAnimationFrame(step);
   };
-  requestAnimationFrame(step);
+  scrolling = requestAnimationFrame(step);
 }
 
 /** Room above a stop too tall to centre, so its spotlight outline stays in view. */
