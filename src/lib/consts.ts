@@ -32,3 +32,6 @@ export const TOKENIZADOS = {
     },
   ],
 } as const;
+
+/** The Concierge's endpoint, served by the Worker; also listed in `wrangler.jsonc`. */
+export const CONCIERGE_ENDPOINT = "/concierge/chat";

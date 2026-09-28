@@ -97,6 +97,20 @@ describe("buildRegistry", () => {
     expect(byId("tokenizados")!.text).toContain("25 episodes");
   });
 
+  it("gives every target a short label a chip can show", () => {
+    const labels = Object.fromEntries(buildRegistry(input()).map((target) => [target.id, target.label]));
+
+    expect(labels).toEqual({
+      padelful: "Padelful",
+      kontroloo: "Kontroloo",
+      "appcenter-bugsnag": "App Center + Bugsnag",
+      nexcess: "Nexcess",
+      "episode-25": "Tokenizados #25",
+      tokenizados: "Tokenizados",
+      "about/canary-islands": "the Canary Islands",
+    });
+  });
+
   it("gives a Fact annotated in a Project's body an owner-namespaced id on the Project's page", () => {
     const registry = buildRegistry(
       input({
@@ -114,6 +128,7 @@ describe("buildRegistry", () => {
       kind: "fact",
       path: "/",
       anchor: "fact-padelful--mcp",
+      label: "a public API and an MCP server",
       text: "Padelful: a public API and an MCP server",
     });
   });
@@ -163,6 +178,7 @@ describe("buildRegistry", () => {
       kind: "fact",
       path: "/",
       anchor: "fact-nexcess--portal",
+      label: "the customer portal",
       text: "Nexcess: the customer portal",
     });
     expect(registry.find((target) => target.id === "nexcess")!.text).toContain(
@@ -176,6 +192,7 @@ describe("buildRegistry", () => {
       kind: "fact",
       path: "/",
       anchor: "fact-about--canary-islands",
+      label: "the Canary Islands",
       text: "About Jorge: the Canary Islands",
     });
   });

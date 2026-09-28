@@ -3,6 +3,8 @@ import { ClientRouter } from "astro:transitions";
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import Concierge from "../components/Concierge";
+import { getRegistry } from "../lib/content";
 import "../styles/global.css";
 
 interface Props {
@@ -12,6 +14,9 @@ interface Props {
 }
 
 const { title, description, image } = Astro.props;
+
+// The chips only need to name a target and find it; the text stays with the Worker.
+const targets = (await getRegistry()).map(({ id, label, path, anchor }) => ({ id, label, path, anchor }));
 ---
 
 <!doctype html>
@@ -29,5 +34,6 @@ const { title, description, image } = Astro.props;
       <slot />
     </main>
     <Footer />
+    <Concierge client:load transition:persist targets={targets} />
   </body>
 </html>

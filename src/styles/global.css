@@ -21,6 +21,8 @@
   --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-serif: "Newsreader Variable", Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --concierge-width: 26rem;
 }
 
 @layer base {
@@ -62,6 +64,23 @@
   :focus-visible {
     outline: 2px solid var(--color-terracotta);
     outline-offset: 3px;
+  }
+
+  /* On desktop the open Concierge pushes the page aside instead of covering it. */
+  @media (width >= 64rem) {
+    body {
+      transition: margin-right 0.2s ease;
+    }
+
+    body:has([data-concierge-open]) {
+      margin-right: var(--concierge-width);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body {
+      transition: none;
+    }
   }
 
   ::selection {
