@@ -1,5 +1,10 @@
 /** A Role is where Jorge worked, as an employee or a co-founder. */
 export type Role = {
+  /**
+   * Stable id, used as a Focus stop and in shared links, so never rename it.
+   * Usually the company, but unique across Projects too (see `woonivers-role`).
+   */
+  id: string;
   company: string;
   title: string;
   start: string;
@@ -12,6 +17,7 @@ export type Role = {
 /** Most recent first. */
 export const ROLES: Role[] = [
   {
+    id: "nexcess",
     company: "Nexcess",
     title: "Engineer III",
     start: "Jun 2026",
@@ -19,6 +25,7 @@ export const ROLES: Role[] = [
     url: "https://www.nexcess.net",
   },
   {
+    id: "liquid-web",
     company: "Liquid Web",
     title: "Senior Software Engineer",
     start: "Mar 2024",
@@ -28,6 +35,7 @@ export const ROLES: Role[] = [
   },
   {
     // No link: its site still carries the old "replace your SaaS" message.
+    id: "aios",
     company: "AIOS",
     title: "Co-founder",
     start: "2025",
@@ -36,6 +44,7 @@ export const ROLES: Role[] = [
       "Built an organisational OS that put AI at the centre of how a company works, and helped many companies become AI-native.",
   },
   {
+    id: "modern-tribe",
     company: "Modern Tribe",
     title: "Senior UI Developer",
     start: "Mar 2020",
@@ -44,6 +53,7 @@ export const ROLES: Role[] = [
     url: "https://moderntribe.com",
   },
   {
+    id: "woonivers-role",
     company: "Woonivers",
     title: "React Native Developer",
     start: "Oct 2018",
@@ -53,6 +63,7 @@ export const ROLES: Role[] = [
     url: "https://woonivers.com",
   },
   {
+    id: "secret-source",
     company: "Secret Source",
     title: "Software Developer",
     start: "Jun 2017",

@@ -2,6 +2,8 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/newsreader/opsz.css";
 @plugin "@tailwindcss/typography";
+/* Tests never render, so their strings must not generate classes. */
+@source not "../**/*.test.ts";
 
 /* Light only. The palette and type follow docs/positioning.md. */
 @theme {
