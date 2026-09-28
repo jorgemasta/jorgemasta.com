@@ -15,6 +15,10 @@ export const SOCIAL_LINKS = {
 
 export const TOKENIZADOS = {
   site: "https://tokenizadospodcast.com",
+  /** Shown in the podcast band and given to the Concierge, so both say the same. */
+  about: "A weekly podcast in Spanish about AI, recorded in the Canary Islands. I host it with Antonio Sejas.",
+  length: (episodeCount: number) =>
+    `${episodeCount} episodes since March 2026, each about 45 to 75 minutes long.`,
   platforms: [
     {
       name: "Apple Podcasts",
