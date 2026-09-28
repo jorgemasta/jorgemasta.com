@@ -1,6 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
+import { track } from "../lib/analytics";
 import { CONCIERGE_ENDPOINT, EMAIL, MAX_QUESTION_LENGTH } from "../lib/consts";
 import {
   currentStop,
@@ -233,6 +234,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
 
   /** Starts over: no conversation, no Focus, and the suggested prompts again. The page stays where it is. */
   const startOver = () => {
+    track("concierge_restarted");
     stopAnswering();
     setMessages([]);
     send({ type: "cleared" });
@@ -240,8 +242,13 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
     inputRef.current?.focus();
   };
 
-  const ask = (question: string) => {
+  /** Asks a question, typed or one of the suggested prompts. Analytics get the kind, not the text. */
+  const ask = (question: string, suggested = false) => {
     if (!question.trim() || busy) return;
+    track("concierge_question_asked", {
+      suggested,
+      turn: messages.filter((message) => message.role === "user").length + 1,
+    });
     send({ type: "asked", question, from: { path: location.pathname, scrollY } });
     sendMessage({ text: question.trim() });
     setInput("");
@@ -249,6 +256,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   const back = returnPoint(focus);
   const goBackToWhereTheyAsked = () => {
     if (!back) return;
+    track("concierge_returned");
     send({ type: "returned" });
     goBack(back);
   };
@@ -262,10 +270,22 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
     <FocusBar
       focus={focus}
       panelOpen={open}
-      onReopen={() => setOpen(true)}
-      onPrevious={() => move({ type: "previous" })}
-      onNext={() => move({ type: "next" })}
-      onClear={() => send({ type: "cleared" })}
+      onReopen={() => {
+        track("concierge_opened", { from: "focus_bar" });
+        setOpen(true);
+      }}
+      onPrevious={() => {
+        track("concierge_focus_step", { direction: "previous" });
+        move({ type: "previous" });
+      }}
+      onNext={() => {
+        track("concierge_focus_step", { direction: "next" });
+        move({ type: "next" });
+      }}
+      onClear={() => {
+        track("concierge_focus_exited");
+        send({ type: "cleared" });
+      }}
     />
   );
 
@@ -278,7 +298,10 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
         {focusBar}
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            track("concierge_opened", { from: "button" });
+            setOpen(true);
+          }}
           aria-expanded="false"
           aria-controls="concierge"
           data-concierge-bar={focusBar ? undefined : ""}
@@ -344,7 +367,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
                 <li key={prompt}>
                   <button
                     type="button"
-                    onClick={() => ask(prompt)}
+                    onClick={() => ask(prompt, true)}
                     className="rounded-full border border-rule px-3.5 py-1.5 text-left text-sm text-charcoal transition-colors hover:border-green hover:text-green"
                   >
                     {prompt}
@@ -370,6 +393,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
                         key={i}
                         type="button"
                         onClick={() => {
+                          track("concierge_chip_clicked", { target: part.id });
                           send({ type: "picked", id: part.id });
                           goTo(byId.get(part.id)!);
                           // On a phone the sheet would hide the stop, so it gives the page back.

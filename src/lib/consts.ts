@@ -7,6 +7,9 @@ export const SITE_SOURCE = "https://github.com/jorgemasta/jorgemasta.com";
 
 export const EMAIL = "jorge.mastana@gmail.com";
 
+/** OpenPanel's client id for the site. Public: it only lets a browser send events. */
+export const OPENPANEL_CLIENT_ID = "cb59ebf9-a7a8-483b-9cd4-be4d14a9f34f";
+
 export const SOCIAL_LINKS = {
   github: "https://github.com/jorgemasta",
   x: "https://x.com/jorgemasta",
