@@ -109,6 +109,14 @@
     opacity: 1;
   }
 
+  /*
+   * A whole section needs more contrast than a Fact in running text: the page
+   * around it darkens, so the section stands on its own paper.
+   */
+  body:has([data-focus-dim]:not(span))::after {
+    background: color-mix(in srgb, var(--color-green) 22%, transparent);
+  }
+
   [data-focus-spot] {
     --focus-ground: var(--color-paper);
     position: relative;
