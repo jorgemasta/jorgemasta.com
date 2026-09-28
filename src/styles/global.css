@@ -88,9 +88,10 @@
   }
 
   /*
-   * A Focus (see focus-dom.ts): the current stop is spotlit and raised above
-   * a veil that dims the rest of the page slightly, only while the stop is in
-   * view. Both sit below the Focus bar and the Concierge.
+   * A Focus (see focus-dom.ts): the rest of the page goes slightly out of
+   * focus behind a veil, only while the current stop is in view, and the stop
+   * is raised above it, sharp, on its own paper. Its note sits beside it.
+   * All of it stays below the Focus bar and the Concierge.
    */
   body::after {
     content: "";
@@ -98,7 +99,8 @@
     inset: 0;
     z-index: 19;
     pointer-events: none;
-    background: color-mix(in srgb, var(--color-paper) 55%, transparent);
+    background: color-mix(in srgb, var(--color-paper) 30%, transparent);
+    backdrop-filter: blur(1.5px) saturate(0.85);
     opacity: 0;
     transition: opacity 0.2s ease;
   }
@@ -108,22 +110,55 @@
   }
 
   [data-focus-spot] {
+    --focus-ground: var(--color-paper);
     position: relative;
     z-index: 20;
     border-radius: 0.5rem;
-    outline: 2px solid color-mix(in srgb, var(--color-terracotta) 55%, transparent);
-    outline-offset: 0.75rem;
+    background: var(--focus-ground);
+    /* The stop's own paper reaches a little past it, then a soft lift off the page. */
+    box-shadow:
+      0 0 0 0.75rem var(--focus-ground),
+      0 1.5rem 3rem -1.5rem rgb(23 63 53 / 0.35);
   }
 
-  /* Raised above the veil, a stop in the podcast band needs the band's colour under it. */
+  /* Raised above the veil, a stop in the podcast band keeps the band's colour. */
   #tokenizados [data-focus-spot] {
-    background: var(--color-green);
+    --focus-ground: var(--color-green);
+  }
+
+  /* The Concierge's note beside the current stop: why it answers the question. */
+  [data-focus-note] {
+    position: absolute;
+    z-index: 25;
+    border-left: 2px solid var(--color-terracotta);
+    border-radius: 0 0.5rem 0.5rem 0;
+    background: var(--color-paper);
+    padding: 0.625rem 0.875rem;
+    box-shadow: 0 0.75rem 2rem -1rem rgb(23 63 53 / 0.35);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--color-charcoal);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  [data-focus-note][data-shown] {
+    opacity: 1;
+  }
+
+  [data-focus-note] > p:first-child {
+    margin-bottom: 0.2rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-terracotta);
   }
 
   /* A Fact is a passage in running text: highlight it in place instead of boxing it. */
   span[data-focus-spot] {
     border-radius: 0.2rem;
-    outline: none;
+    box-shadow: none;
     background: color-mix(in srgb, var(--color-terracotta) 16%, var(--color-paper));
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
@@ -136,7 +171,8 @@
     }
 
     body,
-    body::after {
+    body::after,
+    [data-focus-note] {
       transition: none;
     }
   }

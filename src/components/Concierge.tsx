@@ -11,6 +11,7 @@ import {
   type Focus,
   type FocusEvent,
   type FocusState,
+  type Stop,
 } from "../lib/focus";
 import { goBack, goTo, showInUrl, spotlight, whenVisitorTakesOver } from "../lib/focus-dom";
 import { messageText, parseAnswer } from "../lib/references";
@@ -31,13 +32,19 @@ const SUGGESTED_PROMPTS = [
 ];
 
 /**
- * The ids the latest answer references, in order. Empty while a new question
- * waits for its answer, so the previous answer's stops don't carry over.
+ * The stops the latest answer references, in order, each with its note. Empty
+ * while a new question waits for its answer, so the previous answer's stops
+ * don't carry over.
  */
-function latestReferences(messages: UIMessage[], isKnown: (id: string) => boolean) {
+function latestStops(messages: UIMessage[], byId: Map<string, ChipTarget>): Stop[] {
   const last = messages.at(-1);
-  return last?.role === "assistant" ? parseAnswer(messageText(last), isKnown).references : [];
+  if (last?.role !== "assistant") return [];
+  const { references, notes } = parseAnswer(messageText(last), (id) => byId.has(id));
+  return references.map((id) => ({ ...byId.get(id)!, note: notes[id] }));
 }
+
+/** A key that changes when a stop or its note does, not on every streamed token. */
+const stopsKey = (stops: Stop[]) => JSON.stringify(stops.map(({ id, note }) => [id, note]));
 
 /** What survives a refresh within the tab: the conversation and the Focus. */
 type Session = { messages: UIMessage[]; focus: FocusState };
@@ -154,18 +161,18 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   };
 
   // The stops of the latest answer form the Focus, growing as the answer streams in.
-  // Keyed on the ids, so the Focus updates when a reference completes, not on every streamed token.
+  // Keyed on the ids and notes, so the Focus updates when a reference completes, not on every streamed token.
   // The first stop to arrive takes the answer's one automatic move.
   // A restored answer is already in the restored Focus, or deliberately not (cleared, or replaced by a shared link).
-  const references = latestReferences(messages, isKnown);
-  const referencesKey = references.join(" ");
-  const answeredKey = useRef(latestReferences(saved?.messages ?? [], isKnown).join(" "));
+  const stops = latestStops(messages, byId);
+  const answerKey = stopsKey(stops);
+  const answeredKey = useRef(stopsKey(latestStops(saved?.messages ?? [], byId)));
   useEffect(() => {
-    if (referencesKey === answeredKey.current) return;
-    answeredKey.current = referencesKey;
-    const [previous, next] = send({ type: "answered", stops: references.map((id) => byId.get(id)!) });
+    if (answerKey === answeredKey.current) return;
+    answeredKey.current = answerKey;
+    const [previous, next] = send({ type: "answered", stops });
     if (previous?.move === "pending" && next?.move === "used") goTo(currentStop(next)!);
-  }, [referencesKey, byId]);
+  }, [answerKey, byId]);
 
   // Until then, the visitor scrolling, tapping or typing while the answer streams cancels it.
   const movePending = busy && focus?.move === "pending";

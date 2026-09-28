@@ -58,9 +58,10 @@ _Avoid_: claim, proof point, metric (a Project's stats are a different thing)
 **Focus**:
 An ordered set of places on the site that answer one visitor's question —
 Projects, Roles, Facts, entries — which the visitor steps through one at a time
-while the rest of the page is dimmed. Nothing is reordered: a Focus points at
-the canonical site rather than rearranging it. It stays active across pages
-until the visitor clears it; the canonical site has no Focus.
+while the rest of the page is blurred slightly. Beside each stop, a short note
+from the Concierge says why it answers the question. Nothing is reordered: a
+Focus points at the canonical site rather than rearranging it. It stays active
+across pages until the visitor clears it; the canonical site has no Focus.
 _Avoid_: filter, mode, view, lens, adapted view
 
 **Concierge**:

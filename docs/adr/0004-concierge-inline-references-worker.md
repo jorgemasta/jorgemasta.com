@@ -12,6 +12,14 @@ parses references as they arrive, turns each one into a chip and a stop in the
 Focus, and drops any id the site doesn't know about. That drop is the grounding
 guarantee: the Concierge can only point at things that exist on the site.
 
+A reference may carry a short note, `[[id|note]]`: why that place answers the
+visitor's question. The note isn't shown in the chat; it sits beside the stop
+while it's spotlit, because the stop is what the visitor is looking at. This is
+the one piece of model-written text shown on the page itself, so it's marked as
+the Concierge's, set as plain text, cut to about 140 characters, and the prompt
+holds it to claims the stop's content supports. Shared Focus links carry ids
+only, so a shared Focus has no notes.
+
 The model call runs in a Worker script on the same domain, in front of the
 static assets (the "API route later" that ADR 0003 left room for). The Worker
 sends requests through Cloudflare AI Gateway, which provides the spend budget,
@@ -47,4 +55,7 @@ The site is no longer purely static: it now depends on a Worker script and a
 model provider. If either fails, the Concierge goes away but the canonical site
 keeps working. Any page script the Concierge adds must survive client-side
 navigation. Answers depend on the model sticking to the `[[id]]` format; a
-malformed reference loses one stop but never breaks the page.
+malformed reference loses one stop but never breaks the page. A note is
+generated text next to Jorge's own content: an ungrounded note would read as if
+the site said it. The "Concierge" mark, the length cap and the grounding rule
+contain that risk; they don't remove it.

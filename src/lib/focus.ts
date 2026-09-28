@@ -5,8 +5,11 @@
  */
 import type { Target } from "./registry";
 
-/** A place in the tour: where it lives and the element to spotlight. */
-export type Stop = Pick<Target, "id" | "path" | "anchor">;
+/**
+ * A place in the tour: where it lives, the element to spotlight, and the
+ * Concierge's note on why it answers the question. A shared link carries no notes.
+ */
+export type Stop = Pick<Target, "id" | "path" | "anchor"> & { note?: string };
 
 /** A page, and how far down it the visitor had scrolled. */
 export type Place = { path: string; scrollY: number };

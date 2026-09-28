@@ -15,6 +15,7 @@ describe("parseAnswer", () => {
     expect(parse("Jorge builds products.")).toEqual({
       parts: [{ type: "text", text: "Jorge builds products." }],
       references: [],
+      notes: {},
     });
   });
 
@@ -28,6 +29,7 @@ describe("parseAnswer", () => {
         { type: "text", text: "." },
       ],
       references: ["padelful", "destilados"],
+      notes: {},
     });
   });
 
@@ -70,6 +72,42 @@ describe("parseAnswer", () => {
       "He builds Padelful {padelful} and more",
       "He builds Padelful {padelful} and more.",
     ]);
+  });
+
+  it("keeps a reference's note for its stop, out of the text the visitor reads", () => {
+    const answer = parse("He builds Padelful [[padelful|What he is building now]] and more.");
+
+    expect(answer.references).toEqual(["padelful"]);
+    expect(answer.notes).toEqual({ padelful: "What he is building now" });
+    expect(shown("He builds Padelful [[padelful|What he is building now]] and more.")).toBe(
+      "He builds Padelful {padelful} and more."
+    );
+  });
+
+  it("keeps the first note an id gets, and tolerates spaces around the bar", () => {
+    const answer = parse("[[padelful]] [[ padelful | Built with MCP ]] [[padelful|Later note]] [[destilados|  ]]");
+
+    expect(answer.references).toEqual(["padelful", "destilados"]);
+    expect(answer.notes).toEqual({ padelful: "Built with MCP" });
+  });
+
+  it("drops the note of an id the site doesn't have", () => {
+    expect(parse("See [[made-up|Invented claim]].").notes).toEqual({});
+  });
+
+  it("cuts a note too long to sit beside a stop", () => {
+    const long = "word ".repeat(60).trim();
+    const note = parse(`[[padelful|${long}]]`).notes.padelful;
+
+    expect(note.length).toBeLessThanOrEqual(141);
+    expect(note.endsWith("…")).toBe(true);
+  });
+
+  it("never shows a reference whose note is still streaming", () => {
+    for (const partial of ["Padelful [[padelful|", "Padelful [[padelful|What he", "Padelful [[padelful|What he is]"]) {
+      expect(shown(partial)).toBe("Padelful ");
+      expect(parse(partial).notes).toEqual({});
+    }
   });
 
   it("keeps a single bracket that isn't at the end", () => {
