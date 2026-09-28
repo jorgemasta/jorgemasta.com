@@ -17,6 +17,17 @@
   // locally and `wrangler secret`s when deployed; see .dev.vars.example.
   "vars": {
     "CONCIERGE_MODEL": "openai/gpt-6-luna",
-    "CONCIERGE_REASONING_EFFORT": "none"
-  }
+    "CONCIERGE_REASONING_EFFORT": "none",
+    // The kill switch: "true" refuses every question and hides the entry point
+    // on every page. The rest of the site is unaffected.
+    "CONCIERGE_DISABLED": "false"
+  },
+  // Per visitor IP. AI Gateway's own rate limit is gateway-wide (spec #30).
+  "ratelimits": [
+    {
+      "name": "CONCIERGE_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ]
 }

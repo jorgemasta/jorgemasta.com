@@ -65,3 +65,9 @@ limit, and fill everything in, run:
 The Concierge's endpoint only exists in the Worker, so `npm run dev` shows the
 panel but can't answer. Use `npm run dev:worker` to try it locally. The model id
 and reasoning effort are `vars` in `wrangler.jsonc`.
+
+To turn the Concierge off, set `CONCIERGE_DISABLED` to `true` in
+`wrangler.jsonc` and deploy (or change the variable in the Cloudflare
+dashboard). The endpoint then refuses every question and no page shows the entry
+point. Locally: `npx wrangler dev --var CONCIERGE_DISABLED:true`. The per-IP rate
+limit is the `CONCIERGE_RATE_LIMITER` binding in the same file.

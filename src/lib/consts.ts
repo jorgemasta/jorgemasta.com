@@ -38,3 +38,9 @@ export const REGISTRY_PATH = "/concierge/registry.json";
 
 /** The Concierge's endpoint, served by the Worker; also listed in `wrangler.jsonc`. */
 export const CONCIERGE_ENDPOINT = "/concierge/chat";
+
+/** The longest question the Concierge takes, in characters: shown by the input, enforced by the Worker. */
+export const MAX_QUESTION_LENGTH = 500;
+
+/** The most questions in one Concierge conversation. */
+export const MAX_TURNS = 10;
