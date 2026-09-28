@@ -47,3 +47,15 @@ ADR-0002 before changing that.
 Every push to `main` deploys through `.github/workflows/deploy.yml`, which also
 rebuilds weekly so the Tokenizados episode list stays fresh. It needs the
 `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
+
+## Concierge secrets
+
+The Concierge Worker calls xAI through Cloudflare AI Gateway. It needs
+`CF_ACCOUNT_ID`, `CF_AI_GATEWAY`, `CF_AIG_TOKEN` and `XAI_API_KEY`: in a
+gitignored `.dev.vars` for `wrangler dev`, and as Worker secrets in production.
+Names are in `.dev.vars.example`. To create the gateway, spend limit and key and
+fill everything in, run:
+
+```sh
+./scripts/setup-concierge.sh
+```
