@@ -36,7 +36,7 @@ function useAvailable() {
   return available;
 }
 
-const samePage =(path: string) => location.pathname.replace(/\/?$/, "/") === path;
+const samePage = (path: string) => location.pathname.replace(/\/?$/, "/") === path;
 
 /** Scrolls to a target on this page, or navigates to its page, which then scrolls to it. */
 function goTo(target: ChipTarget) {

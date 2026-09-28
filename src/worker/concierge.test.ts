@@ -258,7 +258,20 @@ describe("handleConcierge", () => {
 
     expect(on.status).toBe(204);
     expect(off.status).toBe(503);
+    // Never cached, so flipping the kill switch takes effect on the next page load.
+    expect(on.headers.get("cache-control")).toBe("no-store");
+    expect(off.headers.get("cache-control")).toBe("no-store");
     expect(await off.json()).toEqual({ error: CONCIERGE_ERROR });
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it("only takes GET and POST", async () => {
+    const model = streaming("Ok.");
+    const request = new Request("https://jorgemasta.com/concierge/chat", { method: "DELETE" });
+
+    const response = await handleConcierge(request, deps(model));
+
+    expect(response.status).toBe(405);
     expect(model.doStreamCalls).toHaveLength(0);
   });
 

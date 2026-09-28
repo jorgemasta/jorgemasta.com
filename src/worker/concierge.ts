@@ -37,7 +37,10 @@ export type ConciergeDeps = {
  */
 const MAX_ANSWER_LENGTH = 2000;
 
-const failure = (status: number) => Response.json({ error: CONCIERGE_ERROR }, { status });
+/** Never cached, so the kill switch and limits apply to the very next request. */
+const NO_STORE = { "cache-control": "no-store" };
+
+const failure = (status: number) => Response.json({ error: CONCIERGE_ERROR }, { status, headers: NO_STORE });
 
 /**
  * The conversation, if it's one a visitor could have sent: ends with their
@@ -78,7 +81,7 @@ export async function handleConcierge(request: Request, deps: ConciergeDeps): Pr
     return new Response(null, { status: 405, headers: { allow: "GET, POST" } });
   }
   if (deps.disabled) return failure(503);
-  if (request.method === "GET") return new Response(null, { status: 204 });
+  if (request.method === "GET") return new Response(null, { status: 204, headers: NO_STORE });
 
   const visitor = request.headers.get("cf-connecting-ip") ?? "unknown";
   try {
