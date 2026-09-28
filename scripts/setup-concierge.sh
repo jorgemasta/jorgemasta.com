@@ -190,21 +190,27 @@ finish() {
 # Replace the example below. Set the two totals to match the stages you write.
 # ──────────────────────────────────────────────────────────────────────────
 
-# Provisions what the Concierge needs outside the repo (#34): an authenticated
-# AI Gateway with logging and a spend limit, an xAI key, and the Worker secrets
-# in .dev.vars (for `wrangler dev`) and on the deployed Worker.
+# Provisions what the Concierge needs outside the repo (#34): Cloudflare AI
+# Gateway with Unified Billing (Cloudflare credits pay the model provider, so
+# there's no provider key), logging, authentication and a spend limit, plus the
+# Worker secrets in .dev.vars (for `wrangler dev`) and on the deployed Worker.
 # Run from anywhere: ./scripts/setup-concierge.sh
 
 cd "$(dirname "$0")/.."
 ENV_FILE=".dev.vars"
 
-TOTAL_STAGES=7
-TOTAL_MINUTES=15
+TOTAL_STAGES=6
+TOTAL_MINUTES=12
 
-GATEWAY_DEFAULT="jorgemasta-com"
-MODEL="grok-4.3"
+# The `default` gateway is created automatically on the first authenticated
+# request; the dashboard has no "Create gateway" button any more.
+GATEWAY="default"
+# Chosen on 2026-09-28 by benchmarking through the gateway (see #34): fastest
+# model that kept the [[id]] format. OpenAI models need max_completion_tokens.
+MODEL="openai/gpt-6-luna"
+REASONING_EFFORT="none"
 
-banner "Concierge: AI Gateway + xAI setup"
+banner "Concierge: AI Gateway setup"
 
 # ── 1. Account ID ─────────────────────────────────────────────────────────
 stage "Cloudflare account ID" 1
@@ -219,87 +225,73 @@ else
 fi
 ask CF_ACCOUNT_ID "Paste the account ID:"
 write_env CF_ACCOUNT_ID "$CF_ACCOUNT_ID"
+write_env CF_AI_GATEWAY "$GATEWAY"
 pause
 
-# ── 2. Create the gateway ─────────────────────────────────────────────────
-stage "Create the AI Gateway" 2
+# ── 2. Gateway token ──────────────────────────────────────────────────────
+stage "Create the gateway token" 2
 open_url "https://dash.cloudflare.com/${CF_ACCOUNT_ID}/ai/ai-gateway"
-step "Click 'Create Gateway' and name it ${BOLD}${GATEWAY_DEFAULT}${RESET} (or your own name)."
-step "Open the gateway → Settings → make sure log collection is ON."
-note "Logs keep visitors' questions and answers, which feed future evals (spec #30, story 53)."
-ask CF_AI_GATEWAY "Gateway name (ID) you created [${GATEWAY_DEFAULT}]:"
-CF_AI_GATEWAY="${CF_AI_GATEWAY:-$GATEWAY_DEFAULT}"
-write_env CF_AI_GATEWAY "$CF_AI_GATEWAY"
-pause
-
-# ── 3. Authenticated gateway ──────────────────────────────────────────────
-stage "Lock the gateway with a token" 2
-say "Without this, anyone who knows the account ID and gateway name can route"
-say "requests through it and pollute your logs."
-step "Gateway → Settings → 'Create authentication token' (it gets the AI Gateway Run permission)."
-step "Copy the token now. It is shown only once."
-step "Turn ON 'Authenticated Gateway' on the same settings page."
+step "Click 'Create authentication token'. Name it jorgemasta-com-concierge."
+step "Permissions: keep only Account → AI Gateway → Run. Remove the Workers AI rows (✕)."
+step "Account Resources: include only this account. Create, then copy the token (shown once)."
 warn "The token is account-scoped: it can run any gateway in this account."
 ask_secret CF_AIG_TOKEN "Paste the gateway token (hidden):"
 write_env CF_AIG_TOKEN "$CF_AIG_TOKEN"
 pause
 
-# ── 4. Spend limit ────────────────────────────────────────────────────────
-stage "Add a spend limit" 2
-say "A budget, so a traffic spike or abuse can't produce a surprise bill."
-step "Gateway → Settings → Spend limits → add a rule."
-step "Scope: the whole gateway (no provider/model/metadata dimension)."
-step "Pick an amount and window you're comfortable with (e.g. \$10, monthly)."
-note "Spend limits only count models with known pricing. Stage 6 checks that grok requests show a cost."
-pause "Press Enter once the rule is saved"
+# ── 3. Credits ────────────────────────────────────────────────────────────
+stage "Load Unified Billing credits" 2
+say "Cloudflare pays the model provider and deducts from these credits,"
+say "so no OpenAI/xAI key is needed. Credit purchases carry a 5% fee."
+step "On the AI Gateway page, add credits (e.g. \$10)."
+step "Leave auto top-up OFF, so the credits are a hard ceiling on spend."
+pause "Press Enter once credits are loaded"
 
-# ── 5. xAI key ────────────────────────────────────────────────────────────
-stage "Create the xAI API key" 2
-open_url "https://console.x.ai/"
-step "Pick the team → API Keys → Create API key (name it e.g. jorgemasta-com-concierge)."
-step "If it offers model restrictions, allow ${MODEL}."
-step "Make sure the team has credits, or requests will fail with 4xx."
-ask_secret XAI_API_KEY "Paste the xAI key (hidden, starts xai-):"
-write_env XAI_API_KEY "$XAI_API_KEY"
-pause
-
-# ── 6. Smoke test ─────────────────────────────────────────────────────────
-stage "Test ${MODEL} through the gateway" 3
-url="https://gateway.ai.cloudflare.com/v1/${CF_ACCOUNT_ID}/${CF_AI_GATEWAY}/grok/v1/chat/completions"
+# ── 4. Smoke test ─────────────────────────────────────────────────────────
+stage "Test ${MODEL} through the gateway" 2
+url="https://gateway.ai.cloudflare.com/v1/${CF_ACCOUNT_ID}/${GATEWAY}/compat/chat/completions"
 say "POST $url"
+note "The first authenticated request creates the '${GATEWAY}' gateway."
 body=$(mktemp)
 code=$(curl -sS -o "$body" -w '%{http_code}' "$url" \
   -H 'content-type: application/json' \
-  -H "Authorization: Bearer ${XAI_API_KEY}" \
   -H "cf-aig-authorization: Bearer ${CF_AIG_TOKEN}" \
-  --data "{\"model\":\"${MODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply with exactly: gateway ok\"}]}" \
+  --data "{\"model\":\"${MODEL}\",\"reasoning_effort\":\"${REASONING_EFFORT}\",\"max_completion_tokens\":20,\"messages\":[{\"role\":\"user\",\"content\":\"Reply with exactly: gateway ok\"}]}" \
   || echo "000")
 if [[ "$code" == "200" ]]; then
   printf '  %s✓ HTTP 200%s  reply: %s\n' "$GREEN" "$RESET" \
-    "$(grep -o '"content":"[^"]*"' "$body" | head -n1 | cut -d'"' -f4)"
+    "$(grep -o '"content": *"[^"]*"' "$body" | head -n1 | sed 's/.*: *"//; s/"$//')"
 else
   warn "HTTP $code. Response:"
   note "$(head -c 600 "$body")"
-  note "401 from Cloudflare → token/Authenticated Gateway. 4xx from xAI → key, credits or model name."
+  note "401 → token. 'No credentials presented' → no credits, or the model isn't on Unified Billing."
   SKIPPED+=("Smoke test failed (HTTP $code): fix, then re-run this wizard (Enter keeps saved values)")
 fi
 rm -f "$body"
+pause
+
+# ── 5. Gateway settings ───────────────────────────────────────────────────
+stage "Lock down the '${GATEWAY}' gateway" 3
 open_url "https://dash.cloudflare.com/${CF_ACCOUNT_ID}/ai/ai-gateway"
-step "Open ${CF_AI_GATEWAY} → Logs: the request should be there, with tokens and a cost."
-if ! confirm "Does the log entry show a cost (so the spend limit can enforce)?"; then
-  SKIPPED+=("No cost on ${MODEL} logs: the spend limit won't count it. Check AI Gateway pricing support / custom costs")
+step "Open '${GATEWAY}' → Logs: the test request should be there, with a cost."
+step "Settings → make sure log collection is ON (questions feed future evals)."
+step "Settings → Authenticated Gateway → toggle ON."
+step "Settings → Spend limits → add rule: \$1, window 1 day, Sliding, no provider/model/metadata."
+note "~\$0.0003 per question on ${MODEL}; \$1/day also stops an abuse spike draining all credits."
+if ! confirm "Logs show a cost, authentication is on and the spend limit is saved?"; then
+  SKIPPED+=("Gateway settings: logs, Authenticated Gateway and spend limit on '${GATEWAY}'")
 fi
 
-# ── 7. Deployed Worker secrets ────────────────────────────────────────────
-stage "Push secrets to the deployed Worker" 3
-say "Sets CF_ACCOUNT_ID, CF_AI_GATEWAY, CF_AIG_TOKEN and XAI_API_KEY as secrets"
-say "on the production Worker (jorgemasta-com). The site itself doesn't change."
-if confirm "Push the 4 secrets to the deployed Worker now?"; then
+# ── 6. Deployed Worker secrets ────────────────────────────────────────────
+stage "Push secrets to the deployed Worker" 2
+say "Sets CF_ACCOUNT_ID, CF_AI_GATEWAY and CF_AIG_TOKEN as secrets on the"
+say "production Worker (jorgemasta-com). Only needed once the Concierge ships."
+if confirm "Push the 3 secrets to the deployed Worker now?"; then
   if ! npx --no-install wrangler whoami >/dev/null 2>&1; then
     warn "wrangler isn't logged in. Run: npx wrangler login, then re-run this wizard."
     SKIPPED+=("Deployed Worker secrets (wrangler not logged in)")
   else
-    for name in CF_ACCOUNT_ID CF_AI_GATEWAY CF_AIG_TOKEN XAI_API_KEY; do
+    for name in CF_ACCOUNT_ID CF_AI_GATEWAY CF_AIG_TOKEN; do
       if printf '%s' "${!name}" | npx --no-install wrangler secret put "$name" >/dev/null 2>&1; then
         printf '  %s✓ set%s Worker secret %s\n' "$GREEN" "$RESET" "$name"
       else

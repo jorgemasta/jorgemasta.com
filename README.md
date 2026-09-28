@@ -50,11 +50,12 @@ rebuilds weekly so the Tokenizados episode list stays fresh. It needs the
 
 ## Concierge secrets
 
-The Concierge Worker calls xAI through Cloudflare AI Gateway. It needs
-`CF_ACCOUNT_ID`, `CF_AI_GATEWAY`, `CF_AIG_TOKEN` and `XAI_API_KEY`: in a
-gitignored `.dev.vars` for `wrangler dev`, and as Worker secrets in production.
-Names are in `.dev.vars.example`. To create the gateway, spend limit and key and
-fill everything in, run:
+The Concierge Worker calls its model through Cloudflare AI Gateway, paid from
+Cloudflare credits (Unified Billing), so there's no model-provider key. It needs
+`CF_ACCOUNT_ID`, `CF_AI_GATEWAY` and `CF_AIG_TOKEN`: in a gitignored `.dev.vars`
+for `wrangler dev`, and as Worker secrets in production. Names are in
+`.dev.vars.example`. To set up the gateway token, credits, logging and spend
+limit, and fill everything in, run:
 
 ```sh
 ./scripts/setup-concierge.sh
