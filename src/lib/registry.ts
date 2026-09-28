@@ -44,7 +44,7 @@ export const anchors = {
   tokenizados: "tokenizados",
 };
 
-const lines = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join("\n\n");
+const paragraphs = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join("\n\n");
 
 /**
  * Every place on the site a Focus can point at, in page order.
@@ -62,7 +62,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
         // Building projects link out and are shown on the homepage; Earlier work has its own page.
         path: building ? "/" : getProjectUrl(project.id),
         anchor: anchors.project(project.id),
-        text: lines(
+        text: paragraphs(
           `${project.title} (${building ? "building now" : "Earlier work"}): ${project.excerpt}`,
           project.body.trim(),
           // Stats are only rendered for building projects.
@@ -77,9 +77,9 @@ export function buildRegistry(input: RegistryInput): Target[] {
       kind: "entry",
       path: getBlogUrl(entry.id, entry.publishedAt),
       anchor: anchors.entry(entry.id),
-      text: lines(
+      text: paragraphs(
         `${entry.title} (${entry.publishedAt.toISOString().slice(0, 10)}${
-          isOlderThanOneYear(entry.publishedAt) ? ", Archive: no longer current" : ""
+          isOlderThanOneYear(entry.publishedAt) ? ", Archive" : ""
         }): ${entry.excerpt}`,
         entry.body.trim()
       ),
@@ -103,7 +103,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
       kind: "tokenizados",
       path: "/",
       anchor: anchors.tokenizados,
-      text: `Tokenizados: ${TOKENIZADOS.about} ${TOKENIZADOS.length(input.episodeCount)}`,
+      text: `Tokenizados: ${TOKENIZADOS.about} ${TOKENIZADOS.episodesSince(input.episodeCount)}`,
     },
   ];
 
@@ -113,7 +113,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
     if (first) {
       throw new Error(
         `Duplicate target id "${target.id}": used by a ${first.kind} and a ${target.kind}. ` +
-          "Focus ids must be unique across the site; give one of them a different id."
+          "Target ids must be unique across the site; give one of them a different id."
       );
     }
     seen.set(target.id, target);

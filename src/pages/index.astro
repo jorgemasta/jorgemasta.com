@@ -147,7 +147,7 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
         <p class="eyebrow text-[#e2a283]">Podcast</p>
         <h2 class="mt-2 text-4xl text-paper sm:text-5xl">Tokenizados</h2>
         <p class="mt-5 max-w-xl text-lg leading-relaxed text-paper/90">{TOKENIZADOS.about}</p>
-        <p class="mt-2 text-paper/70">{TOKENIZADOS.length(episodeCount)}</p>
+        <p class="mt-2 text-paper/70">{TOKENIZADOS.episodesSince(episodeCount)}</p>
 
         {
           podcast.episodes.length > 0 && (
