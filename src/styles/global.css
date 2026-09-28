@@ -99,8 +99,8 @@
     inset: 0;
     z-index: 19;
     pointer-events: none;
-    background: color-mix(in srgb, var(--color-paper) 30%, transparent);
-    backdrop-filter: blur(1.5px) saturate(0.85);
+    background: color-mix(in srgb, var(--color-paper) 50%, transparent);
+    backdrop-filter: blur(2px) saturate(0.7);
     opacity: 0;
     transition: opacity 0.2s ease;
   }
