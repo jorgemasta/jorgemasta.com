@@ -42,10 +42,10 @@ export type FocusEvent =
  * The label of a Focus opened from a link. Links carry ids only, never text,
  * so a link can't be crafted to show arbitrary words on the site.
  */
-export const SHARED_LABEL = "Shared focus";
+const SHARED_LABEL = "Shared focus";
 
 /** The query parameter that carries the Focus: its stop ids, in order, comma-separated. */
-export const FOCUS_PARAM = "focus";
+const FOCUS_PARAM = "focus";
 
 /** Long enough to recognise the question, short enough for one line of the bar. */
 const LABEL_LENGTH = 56;
