@@ -375,9 +375,16 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
                           // On a phone the sheet would hide the stop, so it gives the page back.
                           if (narrow) setOpen(false);
                         }}
-                        className="mx-0.5 inline-block max-w-56 truncate rounded-full border border-green/30 bg-paper-deep px-2 align-baseline text-sm text-green transition-colors hover:border-green"
+                        className="group mx-0.5 inline-flex max-w-56 cursor-pointer items-center gap-1 rounded-full border border-green/45 bg-paper-deep py-px pr-1.5 pl-2.5 align-baseline text-sm font-medium text-green transition-colors hover:border-green hover:bg-green hover:text-paper"
                       >
-                        {byId.get(part.id)!.label}
+                        <span className="truncate">{byId.get(part.id)!.label}</span>
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 16 16"
+                          className="size-3.5 shrink-0 fill-none stroke-current stroke-2 transition-transform group-hover:translate-x-0.5"
+                        >
+                          <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                       </button>
                     )
                   )}
