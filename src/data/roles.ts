@@ -24,7 +24,12 @@ export const ROLES: Role[] = [
     company: "Nexcess",
     title: "Engineer III",
     start: "Jun 2026",
-    impact: "Modernising the customer portal.",
+    impact: [
+      { fact: "portal", text: "Moving the customer portal from legacy code to a modern UI" },
+      ". I also ",
+      { fact: "ai-coding", text: "help the team get up to speed with programming with AI" },
+      ".",
+    ],
     url: "https://www.nexcess.net",
   },
   {
@@ -34,8 +39,9 @@ export const ROLES: Role[] = [
     start: "Mar 2024",
     end: "Jun 2026",
     impact: [
-      "Built integrations between projects and worked on ",
-      { fact: "checkout", text: "the checkout experience" },
+      { fact: "salesforce", text: "Integrated Salesforce into the customer portal and the checkout" },
+      ", and ",
+      { fact: "checkout", text: "built a new checkout in React that back-office and marketing teams can configure" },
       ".",
     ],
     url: "https://www.liquidweb.com",
@@ -47,8 +53,25 @@ export const ROLES: Role[] = [
     title: "Co-founder",
     start: "2025",
     end: "Aug 2026",
-    impact:
-      "Built an organisational OS that put AI at the centre of how a company works, and helped many companies become AI-native.",
+    impact: [
+      "Built ",
+      { fact: "organisational-os", text: "an organisational OS that reshapes how a company is organised to put AI at the centre" },
+      ", and ",
+      { fact: "companies", text: "helped more than 10 companies become AI-native" },
+      ".",
+    ],
+  },
+  {
+    id: "code-at-light-speed",
+    company: "Code at Light Speed",
+    title: "Instructor",
+    start: "Feb 2025",
+    end: "Jun 2025",
+    impact: [
+      { fact: "courses", text: "Taught live courses on programming with AI to engineering teams, such as XRF's" },
+      ", working in their own codebases.",
+    ],
+    url: "https://codeatlightspeed.com/en",
   },
   {
     id: "modern-tribe",
@@ -56,7 +79,17 @@ export const ROLES: Role[] = [
     title: "Senior UI Developer",
     start: "Mar 2020",
     end: "Mar 2024",
-    impact: "Agency work: products and sites for Harvard, Vimeo, BigCommerce and Steelcase.",
+    impact: [
+      "Agency work: ",
+      { fact: "clients", text: "products and sites for Harvard, Vimeo, BigCommerce and Steelcase" },
+      ". I built ",
+      { fact: "harvard", text: "the program brochure on Harvard.edu, where students discover what to study" },
+      ", ",
+      { fact: "vimeo", text: "a WordPress plugin for Vimeo" },
+      ", and ",
+      { fact: "bigcommerce", text: "React hooks alongside BigCommerce's engineers" },
+      ".",
+    ],
     url: "https://moderntribe.com",
   },
   {
@@ -65,8 +98,11 @@ export const ROLES: Role[] = [
     title: "React Native Developer",
     start: "Oct 2018",
     end: "Mar 2020",
-    impact:
-      "Joined the original team at one of Madrid's top startups and co-built the app that digitised tax-free shopping in Spain.",
+    impact: [
+      "Joined the original team at one of Madrid's top startups and ",
+      { fact: "tax-free-app", text: "co-built the app that digitised tax-free shopping in Spain" },
+      ".",
+    ],
     url: "https://woonivers.com",
   },
   {
@@ -75,6 +111,6 @@ export const ROLES: Role[] = [
     title: "Software Developer",
     start: "Jun 2017",
     end: "Oct 2018",
-    impact: "My first job, where I started with React and React Native.",
+    impact: ["My first job, where I ", { fact: "react", text: "started with React and React Native" }, "."],
   },
 ];

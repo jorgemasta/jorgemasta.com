@@ -21,6 +21,8 @@ links:
     url: "https://www.npmjs.com/package/@padelful/mcp-server"
 ---
 
-Padelful crawls stores and affiliate feeds, and a matcher ties each listing to the right racket. When a listing is ambiguous, an agent investigates it.
+Padelful <span data-fact="matcher">crawls more than 20 stores every day, plus affiliate feeds, and a matcher ties each listing to the right racket</span>. <span data-fact="agent">When a listing is ambiguous, an agent investigates it.</span>
 
-The problem I'm exploring is how far that agent can go on messy catalogue data before a person has to step in. The same data is open to other developers through <span data-fact="mcp">a public API and an MCP server</span>.
+The problem I'm exploring is how far that agent can go on messy catalogue data before a person has to step in. The same data is open to other developers through <span data-fact="mcp">a public API and an MCP server</span>, and <span data-fact="api-feedback">developers using the API already send feedback</span>.
+
+<span data-fact="traffic">More than 40,000 people used it in September 2026, most of them arriving from organic search.</span>

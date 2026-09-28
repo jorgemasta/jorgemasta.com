@@ -7,7 +7,9 @@ mainImage:
   alt: "music festival with Kontroloo RFID technology"
 ---
 
-Kontroloo was a Startup born in Las Palmas de Gran Canaria that offered technological solutions for festivals and live events. Our technology helped event organizers reduce costs, increase revenues and improve the event experience for attendees.
+<span data-fact="co-founder">I co-founded Kontroloo in 2017. We built NFC-based access control and cashless payments</span> for festivals and live events.
+
+Kontroloo was <span data-fact="live-events">a Startup born in Las Palmas de Gran Canaria that offered technological solutions for festivals and live events</span>. Our technology helped event organizers reduce costs, increase revenues and improve the event experience for attendees.
 
 Our mission was to improve the way organizers and attendees experience live events by linking technology with real-life experiences. We strive to provide promoters with the necessary tools to interact and add value to attendees beyond the physical boundaries of the event.
 
