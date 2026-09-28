@@ -1,0 +1,26 @@
+---
+import { segments, type Prose } from "../lib/facts";
+import { anchors } from "../lib/registry";
+
+/**
+ * Renders prose as plain text, giving each marked Fact its anchor and nothing
+ * else, so it reads exactly like the text around it.
+ */
+interface Props {
+  /** Namespaces the Facts: a Role's id, or `ABOUT_ID`. */
+  owner: string;
+  prose: Prose;
+}
+
+const { owner, prose } = Astro.props;
+---
+
+{
+  segments(prose).map((segment) =>
+    typeof segment === "string" ? (
+      segment
+    ) : (
+      <span id={anchors.fact(owner, segment.fact)}>{segment.text}</span>
+    )
+  )
+}

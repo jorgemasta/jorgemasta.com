@@ -1,5 +1,7 @@
+import { ABOUT_ID } from "../data/about";
 import type { Role } from "../data/roles";
 import { TOKENIZADOS } from "./consts";
+import { factsInMarkdown, factsInProse, proseText, withoutFactMarkup, type Fact, type Prose } from "./facts";
 import type { Episode } from "./tokenizados";
 import { getBlogUrl, getProjectUrl, isOlderThanOneYear } from "./utils";
 
@@ -10,7 +12,7 @@ import { getBlogUrl, getProjectUrl, isOlderThanOneYear } from "./utils";
 export type Target = {
   /** Stable: it appears in `[[id]]` references and in shared links. */
   id: string;
-  kind: "project" | "entry" | "role" | "episode" | "tokenizados";
+  kind: "project" | "entry" | "role" | "fact" | "episode" | "tokenizados";
   /** The site-relative page the target is rendered on. */
   path: string;
   /** The element id of the target on that page. */
@@ -33,6 +35,8 @@ export type RegistryInput = {
   /** Only the Episodes the homepage shows. */
   episodes: Episode[];
   episodeCount: number;
+  /** The About paragraphs on the homepage. */
+  about: Prose[];
 };
 
 /** Element ids for targets, shared by the pages that render them and the registry. */
@@ -40,9 +44,30 @@ export const anchors = {
   project: (id: string) => `project-${id}`,
   entry: (id: string) => `entry-${id}`,
   role: (id: string) => `role-${id}`,
+  // `--` keeps `a-b` + `c` apart from `a` + `b-c`: names are slugs without it.
+  fact: (owner: string, name: string) => `fact-${owner}--${name}`,
   episode: (number: number) => `episode-${number}`,
   tokenizados: "tokenizados",
 };
+
+const FACT_NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** An owner's Facts, placed on the owner's page. */
+const factTargets = (owner: { id: string; title: string; path: string }, facts: Fact[]) =>
+  facts.map((fact): Target => {
+    if (!FACT_NAME.test(fact.name)) {
+      throw new Error(
+        `Fact "${owner.id}/${fact.name}" needs a lowercase slug name, like "mcp" or "canary-islands".`
+      );
+    }
+    return {
+      id: `${owner.id}/${fact.name}`,
+      kind: "fact",
+      path: owner.path,
+      anchor: anchors.fact(owner.id, fact.name),
+      text: `${owner.title}: ${fact.text}`,
+    };
+  });
 
 const paragraphs = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join("\n\n");
 
@@ -54,43 +79,52 @@ const paragraphs = (...parts: (string | false | undefined)[]) => parts.filter(Bo
  */
 export function buildRegistry(input: RegistryInput): Target[] {
   const targets: Target[] = [
-    ...input.projects.map((project): Target => {
+    ...input.projects.flatMap((project): Target[] => {
       const building = project.status === "building";
-      return {
+      // Building projects link out and are shown on the homepage; Earlier work has its own page.
+      const path = building ? "/" : getProjectUrl(project.id);
+      const target: Target = {
         id: project.id,
         kind: "project",
-        // Building projects link out and are shown on the homepage; Earlier work has its own page.
-        path: building ? "/" : getProjectUrl(project.id),
+        path,
         anchor: anchors.project(project.id),
         text: paragraphs(
           `${project.title} (${building ? "building now" : "Earlier work"}): ${project.excerpt}`,
-          project.body.trim(),
+          withoutFactMarkup(project.body).trim(),
           // Stats are only rendered for building projects.
           building &&
             project.stats.length > 0 &&
             project.stats.map((stat) => `${stat.value} ${stat.label}`).join("; ")
         ),
       };
+      return [target, ...factTargets({ ...project, path }, factsInMarkdown(project.id, project.body))];
     }),
-    ...input.entries.map((entry): Target => ({
-      id: entry.id,
-      kind: "entry",
-      path: getBlogUrl(entry.id, entry.publishedAt),
-      anchor: anchors.entry(entry.id),
-      text: paragraphs(
-        `${entry.title} (${entry.publishedAt.toISOString().slice(0, 10)}${
-          isOlderThanOneYear(entry.publishedAt) ? ", Archive" : ""
-        }): ${entry.excerpt}`,
-        entry.body.trim()
-      ),
-    })),
-    ...input.roles.map((role): Target => ({
-      id: role.id,
-      kind: "role",
-      path: "/",
-      anchor: anchors.role(role.id),
-      text: `${role.title}, ${role.company}, ${role.start} – ${role.end ?? "now"}. ${role.impact}`,
-    })),
+    ...input.entries.flatMap((entry): Target[] => {
+      const path = getBlogUrl(entry.id, entry.publishedAt);
+      const target: Target = {
+        id: entry.id,
+        kind: "entry",
+        path,
+        anchor: anchors.entry(entry.id),
+        text: paragraphs(
+          `${entry.title} (${entry.publishedAt.toISOString().slice(0, 10)}${
+            isOlderThanOneYear(entry.publishedAt) ? ", Archive" : ""
+          }): ${entry.excerpt}`,
+          withoutFactMarkup(entry.body).trim()
+        ),
+      };
+      return [target, ...factTargets({ ...entry, path }, factsInMarkdown(entry.id, entry.body))];
+    }),
+    ...input.roles.flatMap((role): Target[] => [
+      {
+        id: role.id,
+        kind: "role",
+        path: "/",
+        anchor: anchors.role(role.id),
+        text: `${role.title}, ${role.company}, ${role.start} – ${role.end ?? "now"}. ${proseText(role.impact)}`,
+      },
+      ...factTargets({ id: role.id, title: role.company, path: "/" }, factsInProse(role.impact)),
+    ]),
     ...input.episodes.map((episode): Target => ({
       id: anchors.episode(episode.number),
       kind: "episode",
@@ -105,6 +139,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
       anchor: anchors.tokenizados,
       text: `Tokenizados: ${TOKENIZADOS.about} ${TOKENIZADOS.episodesSince(input.episodeCount)}`,
     },
+    ...factTargets({ id: ABOUT_ID, title: "About Jorge", path: "/" }, input.about.flatMap(factsInProse)),
   ];
 
   const seen = new Map<string, Target>();

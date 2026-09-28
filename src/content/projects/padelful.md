@@ -23,4 +23,4 @@ links:
 
 Padelful crawls stores and affiliate feeds, and a matcher ties each listing to the right racket. When a listing is ambiguous, an agent investigates it.
 
-The problem I'm exploring is how far that agent can go on messy catalogue data before a person has to step in. The same data is open to other developers through a public API and an MCP server.
+The problem I'm exploring is how far that agent can go on messy catalogue data before a person has to step in. The same data is open to other developers through <span data-fact="mcp">a public API and an MCP server</span>.
