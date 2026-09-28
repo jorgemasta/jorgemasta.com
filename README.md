@@ -42,8 +42,32 @@ ADR-0002 before changing that.
 | `npm run dev`    | Dev server on `localhost:4321`, drafts shown  |
 | `npm run build`  | Static build into `./dist/`                   |
 | `npm run preview`| Serve the build locally                       |
+| `npm run dev:worker` | Build, then serve it with the Concierge Worker (`wrangler dev`) |
 | `npm run deploy` | Build, then `wrangler deploy` to Cloudflare   |
 
 Every push to `main` deploys through `.github/workflows/deploy.yml`, which also
 rebuilds weekly so the Tokenizados episode list stays fresh. It needs the
 `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
+
+## Concierge secrets
+
+The Concierge Worker calls its model through Cloudflare AI Gateway, paid from
+Cloudflare credits (Unified Billing), so there's no model-provider key. It needs
+`CF_ACCOUNT_ID`, `CF_AI_GATEWAY` and `CF_AIG_TOKEN`: in a gitignored `.dev.vars`
+for `wrangler dev`, and as Worker secrets in production. Names are in
+`.dev.vars.example`. To set up the gateway token, credits, logging and spend
+limit, and fill everything in, run:
+
+```sh
+./scripts/setup-concierge.sh
+```
+
+The Concierge's endpoint only exists in the Worker, so `npm run dev` shows the
+panel but can't answer. Use `npm run dev:worker` to try it locally. The model id
+and reasoning effort are `vars` in `wrangler.jsonc`.
+
+To turn the Concierge off, set `CONCIERGE_DISABLED` to `true` in
+`wrangler.jsonc` and deploy (or change the variable in the Cloudflare
+dashboard). The endpoint then refuses every question and no page shows the entry
+point. Locally: `npx wrangler dev --var CONCIERGE_DISABLED:true`. The per-IP rate
+limit is the `CONCIERGE_RATE_LIMITER` binding in the same file.

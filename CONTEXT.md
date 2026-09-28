@@ -46,3 +46,26 @@ _Avoid_: unpublished, hidden
 **Archive**:
 A published entry old enough to be marked as no longer current in the UI.
 _Avoid_: stale, outdated
+
+**Fact**:
+A short, verifiable passage Jorge has approved, visible in the body of the
+Project, blog entry, Role or About that backs it (e.g. "Padelful exposes a
+public API and an MCP server"). That body is the Fact's owner, and the Fact's
+id is namespaced by it (`padelful/mcp`). The smallest thing a Focus can point
+at, and the only kind of claim the Concierge may make.
+_Avoid_: claim, proof point, metric (a Project's stats are a different thing)
+
+**Focus**:
+An ordered set of places on the site that answer one visitor's question —
+Projects, Roles, Facts, entries — which the visitor steps through one at a time
+while the rest of the page is blurred slightly. Beside each stop, a short note
+from the Concierge says why it answers the question. Nothing is reordered: a
+Focus points at the canonical site rather than rearranging it. It stays active
+across pages until the visitor clears it; the canonical site has no Focus.
+_Avoid_: filter, mode, view, lens, adapted view
+
+**Concierge**:
+The AI layer that answers a visitor's question by putting the site into a
+Focus, navigating between pages, and replying in a sentence or two. It speaks
+about Jorge in the third person and never as him.
+_Avoid_: chatbot, copilot, assistant, guide, Ask Jorge, AI clone

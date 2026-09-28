@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { render } from "astro:content";
 import { getProjects, isBuilding } from "../../lib/content";
+import { anchors } from "../../lib/registry";
 import { formatDate } from "../../lib/utils";
 
 export async function getStaticPaths() {
@@ -17,7 +18,7 @@ const { Content } = await render(project);
 ---
 
 <BaseLayout title={`${project.data.title} | Jorge Masta`} description={project.data.excerpt}>
-  <article class="mx-auto max-w-2xl px-4 pt-16 sm:px-6 sm:pt-24">
+  <article id={anchors.project(project.id)} class="mx-auto max-w-2xl px-4 pt-16 sm:px-6 sm:pt-24">
     <time
       class="text-sm text-muted"
       datetime={project.data.publishedAt.toISOString()}

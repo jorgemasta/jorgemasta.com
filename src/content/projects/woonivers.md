@@ -7,4 +7,4 @@ mainImage:
   alt: "El caballero de la mano en el pecho with the woonivers app"
 ---
 
-Development from scratch of an android and iOS app that completely digitizes the tax-free sector for the first time in its history.
+Development from scratch of <span data-fact="tax-free-app">an Android and iOS app that completely digitizes the tax-free sector for the first time in its history</span>.

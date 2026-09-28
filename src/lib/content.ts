@@ -1,4 +1,8 @@
 import { getCollection, type CollectionEntry } from "astro:content";
+import { ABOUT } from "../data/about";
+import { ROLES } from "../data/roles";
+import { buildRegistry, type Target } from "./registry";
+import { getPodcast, type Podcast } from "./tokenizados";
 import { getProjectUrl, isOlderThanOneYear } from "./utils";
 
 /** Drafts are visible while developing, never in a build. */
@@ -34,4 +38,31 @@ export function getProjectHref(project: CollectionEntry<"projects">): string {
   return isBuilding(project) && project.data.url
     ? project.data.url
     : getProjectUrl(project.id);
+}
+
+/**
+ * The podcast as the homepage shows it. Fetched once per build, so the
+ * homepage and the registry always agree on which Episodes are shown.
+ */
+let podcast: Promise<Podcast> | undefined;
+export const getShownPodcast = () => (podcast ??= getPodcast({ limit: 3 }));
+
+/** The latest episode number is the episode count; the fallback is the count on 2026-09-26. */
+export const getEpisodeCount = ({ episodes }: Podcast) => episodes[0]?.number ?? 25;
+
+/** Every place on the built site a Focus can point at. */
+export async function getRegistry(): Promise<Target[]> {
+  const [projects, entries, shown] = await Promise.all([
+    getProjects(),
+    getPosts(),
+    getShownPodcast(),
+  ]);
+  return buildRegistry({
+    projects: projects.map((project) => ({ id: project.id, body: project.body ?? "", ...project.data })),
+    entries: entries.map((entry) => ({ id: entry.id, body: entry.body ?? "", ...entry.data })),
+    roles: ROLES,
+    episodes: shown.episodes,
+    episodeCount: getEpisodeCount(shown),
+    about: ABOUT,
+  });
 }

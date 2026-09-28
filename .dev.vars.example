@@ -1,0 +1,7 @@
+# Concierge Worker secrets (#34). Copy to .dev.vars for `wrangler dev`, or run
+# ./scripts/setup-concierge.sh to set up the gateway and fill it in.
+# The deployed Worker has the same names as `wrangler secret`s.
+# No model-provider key: AI Gateway Unified Billing pays from Cloudflare credits.
+CF_ACCOUNT_ID=
+CF_AI_GATEWAY=default
+CF_AIG_TOKEN=
