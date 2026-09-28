@@ -43,3 +43,7 @@ ADR-0002 before changing that.
 | `npm run build`  | Static build into `./dist/`                   |
 | `npm run preview`| Serve the build locally                       |
 | `npm run deploy` | Build, then `wrangler deploy` to Cloudflare   |
+
+Every push to `main` deploys through `.github/workflows/deploy.yml`, which also
+rebuilds weekly so the Tokenizados episode list stays fresh. It needs the
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
