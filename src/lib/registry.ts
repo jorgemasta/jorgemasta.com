@@ -1,3 +1,4 @@
+import { ABOUT_ID } from "../data/about";
 import type { Role } from "../data/roles";
 import { TOKENIZADOS } from "./consts";
 import { factsInMarkdown, factsInProse, proseText, withoutFactMarkup, type Fact, type Prose } from "./facts";
@@ -43,22 +44,30 @@ export const anchors = {
   project: (id: string) => `project-${id}`,
   entry: (id: string) => `entry-${id}`,
   role: (id: string) => `role-${id}`,
-  fact: (owner: string, name: string) => `fact-${owner}-${name}`,
+  // `--` keeps `a-b` + `c` apart from `a` + `b-c`: names are slugs without it.
+  fact: (owner: string, name: string) => `fact-${owner}--${name}`,
   episode: (number: number) => `episode-${number}`,
   tokenizados: "tokenizados",
 };
 
+const FACT_NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
 /** An owner's Facts, placed on the owner's page. */
 const factTargets = (owner: { id: string; title: string; path: string }, facts: Fact[]) =>
-  facts.map(
-    (fact): Target => ({
+  facts.map((fact): Target => {
+    if (!FACT_NAME.test(fact.name)) {
+      throw new Error(
+        `Fact "${owner.id}/${fact.name}" needs a lowercase slug name, like "mcp" or "canary-islands".`
+      );
+    }
+    return {
       id: `${owner.id}/${fact.name}`,
       kind: "fact",
       path: owner.path,
       anchor: anchors.fact(owner.id, fact.name),
       text: `${owner.title}: ${fact.text}`,
-    })
-  );
+    };
+  });
 
 const paragraphs = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join("\n\n");
 
@@ -88,7 +97,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
             project.stats.map((stat) => `${stat.value} ${stat.label}`).join("; ")
         ),
       };
-      return [target, ...factTargets({ ...project, path }, factsInMarkdown(project.body))];
+      return [target, ...factTargets({ ...project, path }, factsInMarkdown(project.id, project.body))];
     }),
     ...input.entries.flatMap((entry): Target[] => {
       const path = getBlogUrl(entry.id, entry.publishedAt);
@@ -104,7 +113,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
           withoutFactMarkup(entry.body).trim()
         ),
       };
-      return [target, ...factTargets({ ...entry, path }, factsInMarkdown(entry.body))];
+      return [target, ...factTargets({ ...entry, path }, factsInMarkdown(entry.id, entry.body))];
     }),
     ...input.roles.flatMap((role): Target[] => [
       {
@@ -130,7 +139,7 @@ export function buildRegistry(input: RegistryInput): Target[] {
       anchor: anchors.tokenizados,
       text: `Tokenizados: ${TOKENIZADOS.about} ${TOKENIZADOS.episodesSince(input.episodeCount)}`,
     },
-    ...factTargets({ id: "about", title: "About Jorge", path: "/" }, input.about.flatMap(factsInProse)),
+    ...factTargets({ id: ABOUT_ID, title: "About Jorge", path: "/" }, input.about.flatMap(factsInProse)),
   ];
 
   const seen = new Map<string, Target>();

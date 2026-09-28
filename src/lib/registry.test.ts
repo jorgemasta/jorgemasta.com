@@ -113,7 +113,7 @@ describe("buildRegistry", () => {
       id: "padelful/mcp",
       kind: "fact",
       path: "/",
-      anchor: "fact-padelful-mcp",
+      anchor: "fact-padelful--mcp",
       text: "Padelful: a public API and an MCP server",
     });
   });
@@ -129,11 +129,11 @@ describe("buildRegistry", () => {
 
     expect(byFactId("kontroloo/nfc")).toMatchObject({
       path: "/projects/kontroloo/",
-      anchor: "fact-kontroloo-nfc",
+      anchor: "fact-kontroloo--nfc",
     });
     expect(byFactId("appcenter-bugsnag/script")).toMatchObject({
       path: "/blog/2020/06/appcenter-bugsnag/",
-      anchor: "fact-appcenter-bugsnag-script",
+      anchor: "fact-appcenter-bugsnag--script",
       text: "App Center + Bugsnag: custom script",
     });
   });
@@ -162,7 +162,7 @@ describe("buildRegistry", () => {
       id: "nexcess/portal",
       kind: "fact",
       path: "/",
-      anchor: "fact-nexcess-portal",
+      anchor: "fact-nexcess--portal",
       text: "Nexcess: the customer portal",
     });
     expect(registry.find((target) => target.id === "nexcess")!.text).toContain(
@@ -175,7 +175,7 @@ describe("buildRegistry", () => {
       id: "about/canary-islands",
       kind: "fact",
       path: "/",
-      anchor: "fact-about-canary-islands",
+      anchor: "fact-about--canary-islands",
       text: "About Jorge: the Canary Islands",
     });
   });
@@ -186,6 +186,20 @@ describe("buildRegistry", () => {
     });
 
     expect(() => buildRegistry(clash)).toThrow(/Duplicate target id "about\/canary-islands".*fact.*fact/);
+  });
+
+  it("fails on a Fact name that isn't a lowercase slug", () => {
+    const badName = input({ about: [[{ fact: "Canary Islands", text: "the Canary Islands" }]] });
+
+    expect(() => buildRegistry(badName)).toThrow(/Fact "about\/Canary Islands"/);
+  });
+
+  it("fails on Fact markup in a markdown body that doesn't parse, rather than skipping it", () => {
+    const typo = input({
+      projects: [{ ...input().projects[0], body: "Open through <span data-fact='mcp'>an MCP server</span>." }],
+    });
+
+    expect(() => buildRegistry(typo)).toThrow(/padelful.*data-fact/);
   });
 
   it("fails on duplicate ids, naming the id and both kinds", () => {
@@ -202,7 +216,7 @@ describe("findMissingAnchors", () => {
   const pages: Record<string, string> = {
     "/": `<article id="project-padelful"></article><li id="role-nexcess"></li>
           <section id="tokenizados"><li id="episode-25"></li></section>
-          <p>Based in <span id="fact-about-canary-islands">the Canary Islands</span>.</p>`,
+          <p>Based in <span id="fact-about--canary-islands">the Canary Islands</span>.</p>`,
     "/projects/kontroloo/": `<article id="project-kontroloo"></article>`,
     "/blog/2020/06/appcenter-bugsnag/": `<article id=entry-appcenter-bugsnag></article>`,
   };

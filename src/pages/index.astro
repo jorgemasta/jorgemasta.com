@@ -10,7 +10,7 @@ import {
   isBuilding,
 } from "../lib/content";
 import { anchors } from "../lib/registry";
-import { ABOUT } from "../data/about";
+import { ABOUT, ABOUT_ID } from "../data/about";
 import { ROLES } from "../data/roles";
 import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
 import { formatDate, getBlogUrl, getProjectUrl } from "../lib/utils";
@@ -295,7 +295,7 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
           {
             ABOUT.map((paragraph) => (
               <p>
-                <Prose owner="about" prose={paragraph} />
+                <Prose owner={ABOUT_ID} prose={paragraph} />
               </p>
             ))
           }

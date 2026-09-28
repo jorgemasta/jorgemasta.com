@@ -1,6 +1,9 @@
 import type { Prose } from "../lib/facts";
 
-/** The About paragraphs on the homepage. May mark Facts, namespaced by `about`. */
+/** Namespaces the Facts marked in About: `about/canary-islands`. */
+export const ABOUT_ID = "about";
+
+/** The About paragraphs on the homepage. May mark Facts. */
 export const ABOUT: Prose[] = [
   [
     "I'm Jorge, a product-minded engineer based in ",

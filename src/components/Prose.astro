@@ -1,5 +1,5 @@
 ---
-import type { Prose } from "../lib/facts";
+import { segments, type Prose } from "../lib/facts";
 import { anchors } from "../lib/registry";
 
 /**
@@ -7,7 +7,7 @@ import { anchors } from "../lib/registry";
  * else, so it reads exactly like the text around it.
  */
 interface Props {
-  /** Namespaces the Facts: a Role's id, or `about`. */
+  /** Namespaces the Facts: a Role's id, or `ABOUT_ID`. */
   owner: string;
   prose: Prose;
 }
@@ -16,7 +16,7 @@ const { owner, prose } = Astro.props;
 ---
 
 {
-  (typeof prose === "string" ? [prose] : prose).map((segment) =>
+  segments(prose).map((segment) =>
     typeof segment === "string" ? (
       segment
     ) : (

@@ -49,9 +49,10 @@ _Avoid_: stale, outdated
 
 **Fact**:
 A short, verifiable passage Jorge has approved, visible in the body of the
-Project, Role or About that backs it (e.g. "Padelful exposes a public API and
-an MCP server"). The smallest thing a Focus can point at, and the only kind of
-claim the Concierge may make.
+Project, blog entry, Role or About that backs it (e.g. "Padelful exposes a
+public API and an MCP server"). That body is the Fact's owner, and the Fact's
+id is namespaced by it (`padelful/mcp`). The smallest thing a Focus can point
+at, and the only kind of claim the Concierge may make.
 _Avoid_: claim, proof point, metric (a Project's stats are a different thing)
 
 **Focus**:
