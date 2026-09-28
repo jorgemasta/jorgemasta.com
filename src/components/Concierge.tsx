@@ -2,8 +2,16 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
 import { CONCIERGE_ENDPOINT, EMAIL, MAX_QUESTION_LENGTH } from "../lib/consts";
-import { currentStop, focusReducer, isActive, type Focus, type FocusEvent, type FocusState } from "../lib/focus";
-import { goTo, spotlight } from "../lib/focus-dom";
+import {
+  currentStop,
+  focusReducer,
+  isActive,
+  returnPoint,
+  type Focus,
+  type FocusEvent,
+  type FocusState,
+} from "../lib/focus";
+import { goBack, goTo, spotlight, whenVisitorTakesOver } from "../lib/focus-dom";
 import { messageText, parseAnswer } from "../lib/references";
 import type { Target } from "../lib/registry";
 
@@ -73,22 +81,36 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   const busy = status === "submitted" || status === "streaming";
 
   const [focus, setFocus] = useState<FocusState>(null);
-  const send = (event: FocusEvent) => setFocus((focus) => focusReducer(focus, event));
+  // The latest Focus, updated as each event is sent, so events sent before the next render build on each other.
+  const focusRef = useRef<FocusState>(null);
+  /** Sends an event to the Focus, and returns the Focus before and after it. */
+  const send = (event: FocusEvent) => {
+    const previous = focusRef.current;
+    const next = focusReducer(previous, event);
+    focusRef.current = next;
+    setFocus(next);
+    return [previous, next] as const;
+  };
   /** Sends an event that may change the stop, and takes the visitor to the new one. */
   const move = (event: FocusEvent) => {
-    const next = focusReducer(focus, event);
-    setFocus(next);
+    const [previous, next] = send(event);
     const stop = currentStop(next);
-    if (stop && stop !== currentStop(focus)) goTo(stop);
+    if (stop && stop !== currentStop(previous)) goTo(stop);
   };
 
   // The stops of the latest answer form the Focus, growing as the answer streams in.
   // Keyed on the ids, so the Focus updates when a reference completes, not on every streamed token.
+  // The first stop to arrive takes the answer's one automatic move.
   const references = latestReferences(messages, (id) => byId.has(id));
   const referencesKey = references.join(" ");
   useEffect(() => {
-    send({ type: "answered", stops: references.map((id) => byId.get(id)!) });
+    const [previous, next] = send({ type: "answered", stops: references.map((id) => byId.get(id)!) });
+    if (previous?.move === "pending" && next?.move === "used") goTo(currentStop(next)!);
   }, [referencesKey, byId]);
+
+  // Until then, the visitor scrolling, tapping or typing while the answer streams cancels it.
+  const movePending = busy && focus?.move === "pending";
+  useEffect(() => (movePending ? whenVisitorTakesOver(() => send({ type: "interacted" })) : undefined), [movePending]);
 
   // Spotlight the current stop on whichever page the visitor is on.
   const stop = currentStop(focus);
@@ -108,10 +130,17 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
 
   const ask = (question: string) => {
     if (!question.trim() || busy) return;
-    send({ type: "asked", question });
+    send({ type: "asked", question, from: { path: location.pathname, scrollY } });
     sendMessage({ text: question.trim() });
     setInput("");
   };
+  const back = returnPoint(focus);
+  const goBackToWhereTheyAsked = () => {
+    if (!back) return;
+    send({ type: "returned" });
+    goBack(back);
+  };
+
   const onSubmit = (event: SubmitEvent) => {
     event.preventDefault();
     ask(input);
@@ -223,6 +252,15 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
           </ol>
 
           {status === "submitted" && <p className="mt-5 text-muted">…</p>}
+          {back && (
+            <button
+              type="button"
+              onClick={goBackToWhereTheyAsked}
+              className="mt-5 text-sm text-muted underline-offset-4 transition-colors hover:text-green hover:underline"
+            >
+              ← Back to where you were
+            </button>
+          )}
           {status === "error" && (
             <p className="mt-5 text-sm text-charcoal">
               The Concierge can't answer right now. You can email Jorge at <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
