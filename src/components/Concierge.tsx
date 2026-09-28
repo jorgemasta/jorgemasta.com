@@ -128,7 +128,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   const [input, setInput] = useState("");
   // The conversation saved in this tab, so a refresh picks up where the visitor was.
   const [saved] = useState(loadSession);
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, setMessages, status, stop: stopAnswering } = useChat({
     transport: new DefaultChatTransport({ api: CONCIERGE_ENDPOINT }),
     messages: saved?.messages,
   });
@@ -227,6 +227,15 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
     if (conversation) conversation.scrollTop = conversation.scrollHeight;
   }, [open, messages, status]);
 
+  /** Starts over: no conversation, no Focus, and the suggested prompts again. The page stays where it is. */
+  const startOver = () => {
+    stopAnswering();
+    setMessages([]);
+    send({ type: "cleared" });
+    setInput("");
+    inputRef.current?.focus();
+  };
+
   const ask = (question: string) => {
     if (!question.trim() || busy) return;
     send({ type: "asked", question, from: { path: location.pathname, scrollY } });
@@ -294,16 +303,27 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
               An AI that answers from this site. Questions are logged to improve it.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-expanded="true"
-            aria-controls="concierge"
-            aria-label="Close"
-            className="text-xl leading-none text-muted hover:text-green"
-          >
-            ×
-          </button>
+          <div className="flex shrink-0 items-baseline gap-4">
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={startOver}
+                className="text-sm text-muted underline-offset-4 transition-colors hover:text-green hover:underline"
+              >
+                New conversation
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-expanded="true"
+              aria-controls="concierge"
+              aria-label="Close"
+              className="text-xl leading-none text-muted hover:text-green"
+            >
+              ×
+            </button>
+          </div>
         </header>
 
         <div ref={conversationRef} className="flex-1 overflow-y-auto px-5 py-5" aria-live="polite">
