@@ -328,9 +328,11 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
               aria-controls="concierge"
               aria-label="Close"
               title="Close"
-              className={`${PANEL_CONTROL} text-xl leading-none`}
+              className={PANEL_CONTROL}
             >
-              ×
+              <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 fill-none stroke-current stroke-[1.5]">
+                <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
+              </svg>
             </button>
           </div>
         </header>
