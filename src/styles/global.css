@@ -130,6 +130,11 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    /* Includes landing on a stop's anchor after the Concierge navigates. */
+    html {
+      scroll-behavior: auto;
+    }
+
     body,
     body::after {
       transition: none;

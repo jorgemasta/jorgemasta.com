@@ -5,7 +5,7 @@
  * `global.css`, under `[data-focus-spot]`.
  */
 import { navigate } from "astro:transitions/client";
-import { focusSearch, route, type FocusState, type Stop } from "./focus";
+import { focusSearch, isSamePage, route, type FocusState, type Place, type Stop } from "./focus";
 
 /**
  * Reflects the Focus in the URL, so it can be shared, without adding a
@@ -19,10 +19,65 @@ export function showInUrl(focus: FocusState) {
 
 const prefersReducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/** Calm and quick: the same 200ms as the dimming in `global.css`. */
+const SCROLL_MS = 200;
+
+/** The scroll in progress, so a new one replaces it rather than fighting it. */
+let scrolling = 0;
+
+/** Scrolls the page to `top`, easing out over 200ms, or at once under reduced motion. */
+function scrollPage(top: number) {
+  cancelAnimationFrame(scrolling);
+  const start = scrollY;
+  // "instant", because the page's own `scroll-behavior: smooth` would stretch every step.
+  if (prefersReducedMotion() || start === top) return window.scrollTo({ top, behavior: "instant" });
+  const began = performance.now();
+  const step = (now: number) => {
+    const progress = Math.min((now - began) / SCROLL_MS, 1);
+    window.scrollTo({ top: start + (top - start) * (1 - (1 - progress) ** 3), behavior: "instant" });
+    if (progress < 1) scrolling = requestAnimationFrame(step);
+  };
+  scrolling = requestAnimationFrame(step);
+}
+
+/** Room above a stop too tall to centre, so its spotlight outline stays in view. */
+const TOP_MARGIN = 32;
+
 /** Scrolls a stop on this page into view: centred if it fits, from its top if it doesn't. */
 function scrollTo(element: HTMLElement) {
-  const fits = element.getBoundingClientRect().height < innerHeight * 0.8;
-  element.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: fits ? "center" : "start" });
+  const { top, height } = element.getBoundingClientRect();
+  const fits = height < innerHeight * 0.8;
+  scrollPage(scrollY + top - (fits ? (innerHeight - height) / 2 : TOP_MARGIN));
+}
+
+/** Takes the visitor back to a page and scroll position: a scroll on this page, or a navigation then a jump. */
+export function goBack(place: Place) {
+  if (isSamePage(place.path, location.pathname)) {
+    scrollPage(place.scrollY);
+    return;
+  }
+  document.addEventListener("astro:page-load", () => window.scrollTo({ top: place.scrollY, behavior: "instant" }), {
+    once: true,
+  });
+  navigate(place.path);
+}
+
+/** What counts as the visitor taking over: scrolling, tapping or typing. */
+const TAKEOVER_EVENTS = ["wheel", "touchmove", "pointerdown", "keydown"] as const;
+
+/**
+ * Calls `onTakeover` the first time the visitor scrolls, taps or types.
+ * Listens for their input rather than `scroll`, which the Concierge's own
+ * moves would fire. Returns what stops listening.
+ */
+export function whenVisitorTakesOver(onTakeover: () => void): () => void {
+  const listener = () => {
+    stop();
+    onTakeover();
+  };
+  const stop = () => TAKEOVER_EVENTS.forEach((type) => removeEventListener(type, listener, { capture: true }));
+  TAKEOVER_EVENTS.forEach((type) => addEventListener(type, listener, { capture: true, passive: true }));
+  return stop;
 }
 
 /** Takes the visitor to a stop: a scroll on this page, or a navigation that lands on it. */
