@@ -1,3 +1,5 @@
+import type { Prose } from "../lib/facts";
+
 /** A Role is where Jorge worked, as an employee or a co-founder. */
 export type Role = {
   /**
@@ -10,7 +12,8 @@ export type Role = {
   start: string;
   /** Omitted while the role is current. */
   end?: string;
-  impact: string;
+  /** May mark Facts, namespaced by the Role's id. */
+  impact: Prose;
   url?: string;
 };
 
@@ -30,7 +33,11 @@ export const ROLES: Role[] = [
     title: "Senior Software Engineer",
     start: "Mar 2024",
     end: "Jun 2026",
-    impact: "Built integrations between projects and worked on the checkout experience.",
+    impact: [
+      "Built integrations between projects and worked on ",
+      { fact: "checkout", text: "the checkout experience" },
+      ".",
+    ],
     url: "https://www.liquidweb.com",
   },
   {

@@ -1,4 +1,5 @@
 import { getCollection, type CollectionEntry } from "astro:content";
+import { ABOUT } from "../data/about";
 import { ROLES } from "../data/roles";
 import { buildRegistry, type Target } from "./registry";
 import { getPodcast, type Podcast } from "./tokenizados";
@@ -62,5 +63,6 @@ export async function getRegistry(): Promise<Target[]> {
     roles: ROLES,
     episodes: shown.episodes,
     episodeCount: getEpisodeCount(shown),
+    about: ABOUT,
   });
 }

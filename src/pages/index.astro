@@ -1,5 +1,6 @@
 ---
 import { render } from "astro:content";
+import Prose from "../components/Prose.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import {
   getCurrentPosts,
@@ -9,6 +10,7 @@ import {
   isBuilding,
 } from "../lib/content";
 import { anchors } from "../lib/registry";
+import { ABOUT } from "../data/about";
 import { ROLES } from "../data/roles";
 import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
 import { formatDate, getBlogUrl, getProjectUrl } from "../lib/utils";
@@ -258,7 +260,9 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
                   role.company
                 )}
               </h3>
-              <p class="mt-1 max-w-2xl leading-relaxed">{role.impact}</p>
+              <p class="mt-1 max-w-2xl leading-relaxed">
+                <Prose owner={role.id} prose={role.impact} />
+              </p>
             </div>
           </li>
         ))
@@ -288,15 +292,13 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
       <div class="md:col-span-8">
         <h2 class="text-4xl sm:text-5xl">About</h2>
         <div class="mt-6 max-w-xl space-y-4 text-lg leading-relaxed">
-          <p>
-            I'm Jorge, a product-minded engineer based in the Canary Islands. I've spent the last
-            nine years building web and mobile products, mostly on the frontend and product side.
-          </p>
-          <p>
-            Lately I've been exploring what changes when AI is part of the product itself instead
-            of a feature added on top. I like simple interfaces and opinionated products, and I
-            like turning messy ideas into things people can actually use.
-          </p>
+          {
+            ABOUT.map((paragraph) => (
+              <p>
+                <Prose owner="about" prose={paragraph} />
+              </p>
+            ))
+          }
           <p>
             The best way to reach me is email: <a href={`mailto:${EMAIL}`}
               class="font-serif text-xl">{EMAIL}</a
