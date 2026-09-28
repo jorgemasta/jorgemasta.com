@@ -6,12 +6,13 @@ import {
   currentStop,
   focusReducer,
   isActive,
+  restoreFocus,
   returnPoint,
   type Focus,
   type FocusEvent,
   type FocusState,
 } from "../lib/focus";
-import { goBack, goTo, spotlight, whenVisitorTakesOver } from "../lib/focus-dom";
+import { goBack, goTo, showInUrl, spotlight, whenVisitorTakesOver } from "../lib/focus-dom";
 import { messageText, parseAnswer } from "../lib/references";
 import type { Target } from "../lib/registry";
 
@@ -36,6 +37,29 @@ const SUGGESTED_PROMPTS = [
 function latestReferences(messages: UIMessage[], isKnown: (id: string) => boolean) {
   const last = messages.at(-1);
   return last?.role === "assistant" ? parseAnswer(messageText(last), isKnown).references : [];
+}
+
+/** What survives a refresh within the tab: the conversation and the Focus. */
+type Session = { messages: UIMessage[]; focus: FocusState };
+
+const SESSION_KEY = "concierge";
+
+/** The session saved in this tab, if any. Storage can be missing or blocked, and the server has none. */
+function loadSession(): Session | null {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "null");
+    return Array.isArray(saved?.messages) ? { messages: saved.messages, focus: saved.focus ?? null } : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(session: Session) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // Without storage, a refresh starts over; the Concierge works the same.
+  }
 }
 
 /**
@@ -65,6 +89,25 @@ function usePageLoads() {
   return loads;
 }
 
+/** Below `lg`, where the site and the Concierge never share the screen (#28). */
+const NARROW = "(width < 64rem)";
+
+/** Whether the viewport is narrow, following it as it changes. */
+function useNarrow() {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const query = matchMedia(NARROW);
+    setNarrow(query.matches);
+    const onChange = () => setNarrow(query.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+  return narrow;
+}
+
+/** How long a finished answer stays on screen before the sheet gives the page back. */
+const COLLAPSE_DELAY = 1200;
+
 /**
  * The Concierge: a panel that answers questions about Jorge's work in one to three
  * sentences, with a chip for every place on the site the answer points at.
@@ -72,17 +115,29 @@ function usePageLoads() {
  */
 export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   const byId = useMemo(() => new Map(targets.map((target) => [target.id, target])), [targets]);
+  const isKnown = (id: string) => byId.has(id);
   const available = useAvailable();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
+  // The conversation saved in this tab, so a refresh picks up where the visitor was.
+  const [saved] = useState(loadSession);
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: CONCIERGE_ENDPOINT }),
+    messages: saved?.messages,
   });
   const busy = status === "submitted" || status === "streaming";
 
   const [focus, setFocus] = useState<FocusState>(null);
   // The latest Focus, updated as each event is sent, so events sent before the next render build on each other.
   const focusRef = useRef<FocusState>(null);
+  // Restored once the page's URL can be read: the saved Focus, or the one a shared link carries.
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    const initial = restoreFocus(saved?.focus ?? null, location.search, (id) => byId.get(id));
+    focusRef.current = initial;
+    setFocus(initial);
+    setRestored(true);
+  }, []);
   /** Sends an event to the Focus, and returns the Focus before and after it. */
   const send = (event: FocusEvent) => {
     const previous = focusRef.current;
@@ -101,9 +156,13 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   // The stops of the latest answer form the Focus, growing as the answer streams in.
   // Keyed on the ids, so the Focus updates when a reference completes, not on every streamed token.
   // The first stop to arrive takes the answer's one automatic move.
-  const references = latestReferences(messages, (id) => byId.has(id));
+  // A restored answer is already in the restored Focus, or deliberately not (cleared, or replaced by a shared link).
+  const references = latestReferences(messages, isKnown);
   const referencesKey = references.join(" ");
+  const answeredKey = useRef(latestReferences(saved?.messages ?? [], isKnown).join(" "));
   useEffect(() => {
+    if (referencesKey === answeredKey.current) return;
+    answeredKey.current = referencesKey;
     const [previous, next] = send({ type: "answered", stops: references.map((id) => byId.get(id)!) });
     if (previous?.move === "pending" && next?.move === "used") goTo(currentStop(next)!);
   }, [referencesKey, byId]);
@@ -117,10 +176,43 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   const pageLoads = usePageLoads();
   useEffect(() => (stop ? spotlight(stop) : undefined), [stop, pageLoads]);
 
+  // On a phone the site and the chat never share the screen: once an answer
+  // has stops, the sheet collapses into the Focus bar, unless the visitor is
+  // already typing a follow-up. They can reopen it from the bar.
+  const narrow = useNarrow();
+  const typing = input.length > 0;
+  /** Whether an answer streamed in and hasn't had its chance to collapse the sheet yet. */
+  const collapsePending = useRef(false);
+  useEffect(() => {
+    if (status === "streaming") collapsePending.current = true;
+    if (status !== "ready" || !collapsePending.current) return;
+    // Closed by the visitor already, or nothing to collapse into: this answer is done with it.
+    if (!open || !narrow || !isActive(focus)) {
+      collapsePending.current = false;
+      return;
+    }
+    if (typing) return;
+    const collapse = setTimeout(() => {
+      collapsePending.current = false;
+      setOpen(false);
+    }, COLLAPSE_DELAY);
+    return () => clearTimeout(collapse);
+  }, [status, focus, narrow, typing, open]);
+
+  // Keep the conversation and Focus for a refresh, and the Focus in the URL for sharing,
+  // on every page. Not before the Focus is restored, so the link being opened isn't overwritten.
+  useEffect(() => {
+    if (restored) saveSession({ messages, focus });
+  }, [restored, messages, focus]);
+  useEffect(() => {
+    if (restored) showInUrl(focus);
+  }, [restored, focus, pageLoads]);
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
+  // Reopening a conversation on a phone is for reading it, so the keyboard stays down.
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    if (open && !(narrow && messages.length)) inputRef.current?.focus();
   }, [open]);
   // Follow the answer as it streams, without moving the page behind the panel.
   useEffect(() => {
@@ -149,7 +241,8 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   const focusBar = isActive(focus) && (
     <FocusBar
       focus={focus}
-      besidePanel={open}
+      panelOpen={open}
+      onReopen={() => setOpen(true)}
       onPrevious={() => move({ type: "previous" })}
       onNext={() => move({ type: "next" })}
       onClear={() => send({ type: "cleared" })}
@@ -159,6 +252,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   if (!available) return null;
 
   if (!open) {
+    // On a phone the Focus bar is also the entry control, so the two are one bar.
     return (
       <>
         {focusBar}
@@ -167,7 +261,8 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
           onClick={() => setOpen(true)}
           aria-expanded="false"
           aria-controls="concierge"
-          className="fixed right-6 bottom-6 z-40 rounded-full border border-rule bg-paper px-5 py-3 text-sm font-medium text-green shadow-[0_12px_32px_-12px_rgb(23_63_53/0.35)] transition-colors hover:bg-paper-deep"
+          data-concierge-bar={focusBar ? undefined : ""}
+          className={`${focusBar ? "hidden lg:block" : ""} fixed inset-x-4 bottom-4 z-40 rounded-full border border-rule bg-paper px-5 py-3 text-left text-sm font-medium text-green shadow-[0_12px_32px_-12px_rgb(23_63_53/0.35)] transition-colors hover:bg-paper-deep lg:inset-x-auto lg:right-6 lg:bottom-6 lg:text-center`}
         >
           Ask about my work…
         </button>
@@ -183,7 +278,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
         aria-label="Concierge"
         data-concierge-open
         onKeyDown={(event) => event.key === "Escape" && setOpen(false)}
-        className="fixed inset-y-0 right-0 z-40 flex w-full flex-col border-l border-rule bg-paper lg:w-(--concierge-width)"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-[68dvh] flex-col rounded-t-2xl border-t border-rule bg-paper shadow-[0_-12px_32px_-12px_rgb(23_63_53/0.35)] lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:h-auto lg:w-(--concierge-width) lg:rounded-none lg:border-t-0 lg:border-l lg:shadow-none"
       >
         <header className="flex items-baseline justify-between gap-4 border-b border-rule px-5 py-4">
           <div>
@@ -229,7 +324,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
                 </li>
               ) : (
                 <li key={message.id} className="leading-relaxed text-charcoal">
-                  {parseAnswer(messageText(message), (id) => byId.has(id)).parts.map((part, i) =>
+                  {parseAnswer(messageText(message), isKnown).parts.map((part, i) =>
                     part.type === "text" ? (
                       <span key={i}>{part.text}</span>
                     ) : (
@@ -239,6 +334,8 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
                         onClick={() => {
                           send({ type: "picked", id: part.id });
                           goTo(byId.get(part.id)!);
+                          // On a phone the sheet would hide the stop, so it gives the page back.
+                          if (narrow) setOpen(false);
                         }}
                         className="mx-0.5 inline-block max-w-56 truncate rounded-full border border-green/30 bg-paper-deep px-2 align-baseline text-sm text-green transition-colors hover:border-green"
                       >
@@ -310,18 +407,25 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
 
 /**
  * The Focus bar: why the page is spotlit, where the visitor is in the tour,
- * and the way out. Shown on every page while a Focus is active.
+ * the way back to the conversation, and the way out. Shown on every page while
+ * a Focus is active. On a phone it's also the entry control, and it gives way
+ * to the open sheet.
  */
 function FocusBar({
   focus,
-  besidePanel,
+  panelOpen,
+  onReopen,
   onPrevious,
   onNext,
   onClear,
 }: {
   focus: Focus;
-  /** The open panel takes the right of the screen on desktop, so the bar centres on the page beside it. */
-  besidePanel: boolean;
+  /**
+   * The open panel takes the right of the screen on desktop, so the bar centres
+   * on the page beside it. On a phone the open sheet replaces the bar.
+   */
+  panelOpen: boolean;
+  onReopen: () => void;
   onPrevious: () => void;
   onNext: () => void;
   onClear: () => void;
@@ -333,15 +437,27 @@ function FocusBar({
 
   return (
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-20 z-30 flex justify-center px-4 lg:bottom-6 ${besidePanel ? "lg:right-(--concierge-width)" : ""}`}
+      className={`pointer-events-none fixed inset-x-0 bottom-4 z-30 justify-center px-4 lg:bottom-6 ${panelOpen ? "hidden lg:right-(--concierge-width) lg:flex" : "flex"}`}
+      data-concierge-bar={panelOpen ? undefined : ""}
     >
       <nav
         aria-label="Focus"
-        className="pointer-events-auto flex max-w-lg min-w-0 items-center gap-1 rounded-full border border-rule bg-paper py-1.5 pr-1.5 pl-5 shadow-[0_12px_32px_-12px_rgb(23_63_53/0.35)]"
+        className="pointer-events-auto flex w-full max-w-lg min-w-0 items-center gap-1 rounded-full border border-rule bg-paper py-1.5 pr-1.5 pl-2 shadow-[0_12px_32px_-12px_rgb(23_63_53/0.35)] lg:w-auto"
       >
-        <p className="min-w-0 flex-1 truncate text-sm text-charcoal" title={label}>
-          {label}
-        </p>
+        <button
+          type="button"
+          onClick={onReopen}
+          aria-expanded={panelOpen}
+          aria-controls="concierge"
+          aria-label={`Reopen the conversation: ${label}`}
+          title={label}
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-full py-1 pr-2 pl-3 text-left text-sm text-charcoal transition-colors hover:bg-paper-deep"
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 shrink-0 fill-none stroke-green stroke-[1.5] lg:hidden">
+            <path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" strokeLinejoin="round" />
+          </svg>
+          <span className="truncate">{label}</span>
+        </button>
         <button
           type="button"
           onClick={onPrevious}
