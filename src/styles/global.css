@@ -66,6 +66,16 @@
     outline-offset: 3px;
   }
 
+  /*
+   * On a phone the Concierge's bar is fixed to the bottom, so the page ends
+   * above it. The padding stays while the sheet is open, so the page doesn't jump.
+   */
+  @media (width < 64rem) {
+    body:has([data-concierge-bar], [data-concierge-open]) {
+      padding-bottom: 5rem;
+    }
+  }
+
   /* On desktop the open Concierge pushes the page aside instead of covering it. */
   @media (width >= 64rem) {
     body {
