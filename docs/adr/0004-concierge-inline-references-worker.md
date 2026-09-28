@@ -20,6 +20,11 @@ The site already navigates with Astro's `ClientRouter`; the Concierge panel is
 persisted across those navigations, so the conversation stays on screen while
 the page changes beside it.
 
+Both ends use the AI SDK: `streamText` in the Worker, routed through AI Gateway
+with Cloudflare's `ai-gateway-provider`, and `useChat` in the panel. The panel is
+therefore a React island, the site's only one. The `[[id]]` protocol is ours;
+the AI SDK only carries the stream.
+
 ## Considered options
 
 - **Tool calls or JSON-schema actions** (`focus`, `navigate`, `clear`, …). These
