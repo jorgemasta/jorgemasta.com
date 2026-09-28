@@ -34,7 +34,18 @@ export type FocusEvent =
    */
   | { type: "picked"; id: string }
   /** The visitor exited the Focus (×), staying where they are. */
-  | { type: "cleared" };
+  | { type: "cleared" }
+  /** The visitor opened a shared-Focus link: its stops, with unknown ids already skipped. */
+  | { type: "shared"; stops: Stop[] };
+
+/**
+ * The label of a Focus opened from a link. Links carry ids only, never text,
+ * so a link can't be crafted to show arbitrary words on the site.
+ */
+const SHARED_LABEL = "Shared focus";
+
+/** The query parameter that carries the Focus: its stop ids, in order, comma-separated. */
+const FOCUS_PARAM = "focus";
 
 /** Long enough to recognise the question, short enough for one line of the bar. */
 const LABEL_LENGTH = 56;
@@ -65,7 +76,43 @@ export function focusReducer(state: FocusState, event: FocusEvent): FocusState {
     }
     case "cleared":
       return null;
+    case "shared":
+      return event.stops.length ? { label: SHARED_LABEL, stops: event.stops, current: null } : null;
   }
+}
+
+/** The stop ids a URL's query carries, in order, without repeats. */
+function sharedIds(search: string) {
+  const ids = new URLSearchParams(search).get(FOCUS_PARAM)?.split(",") ?? [];
+  return [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+}
+
+/** The Focus's stop ids, in order: all a URL carries of it. */
+const focusIds = (focus: FocusState) => (isActive(focus) ? focus.stops.map((stop) => stop.id) : []);
+
+/**
+ * A URL query with the Focus in it, or without it once the Focus is cleared.
+ * Only the ids go in, never the label; the page's other parameters stay.
+ */
+export function focusSearch(search: string, focus: FocusState): string {
+  const params = new URLSearchParams(search);
+  params.delete(FOCUS_PARAM);
+  const ids = focusIds(focus);
+  // Kept readable: ids are slugs, and a Fact's `/` is fine in a query.
+  const carried = ids.length ? `${FOCUS_PARAM}=${ids.map(encodeURIComponent).join(",").replaceAll("%2F", "/")}` : "";
+  const query = [params.toString(), carried].filter(Boolean).join("&");
+  return query && `?${query}`;
+}
+
+/**
+ * The Focus when a page first loads. The one saved in this tab survives a
+ * refresh, which leaves the URL carrying the same stops, or none. A link with
+ * other stops replaces it with a shared Focus, skipping ids that don't exist.
+ */
+export function restoreFocus(saved: FocusState, search: string, stopFor: (id: string) => Stop | undefined): FocusState {
+  const ids = sharedIds(search);
+  if (!ids.length || ids.join() === focusIds(saved).join()) return saved;
+  return focusReducer(saved, { type: "shared", stops: ids.flatMap((id) => stopFor(id) ?? []) });
 }
 
 /** Whether the Focus has anywhere to take the visitor, and so shows its bar. */
