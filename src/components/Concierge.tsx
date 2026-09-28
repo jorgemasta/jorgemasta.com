@@ -124,7 +124,8 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   useEffect(() => {
     if (status === "streaming") collapsePending.current = true;
     if (status !== "ready" || !collapsePending.current) return;
-    if (!narrow || !isActive(focus)) {
+    // Closed by the visitor already, or nothing to collapse into: this answer is done with it.
+    if (!open || !narrow || !isActive(focus)) {
       collapsePending.current = false;
       return;
     }
@@ -134,7 +135,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
       setOpen(false);
     }, COLLAPSE_DELAY);
     return () => clearTimeout(collapse);
-  }, [status, focus, narrow, typing]);
+  }, [status, focus, narrow, typing, open]);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
