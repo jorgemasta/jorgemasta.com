@@ -7,6 +7,7 @@ import {
   type LanguageModel,
   type UIMessage,
 } from "ai";
+import { MAX_QUESTION_LENGTH, MAX_TURNS } from "../lib/consts";
 import { messageText } from "../lib/references";
 import type { Target } from "../lib/registry";
 import { systemPrompt } from "./prompt";
@@ -22,13 +23,26 @@ export type ConciergeDeps = {
   model: LanguageModel;
   /** The target registry: the Concierge's whole corpus. */
   registry: () => Promise<Target[]>;
+  /** The kill switch: every question is refused, and the client hides the entry point. */
+  disabled: boolean;
+  /** Whether this visitor, by IP, is still under the rate limit. */
+  withinRateLimit: (visitor: string) => Promise<boolean>;
   /** Provider-specific settings, such as the reasoning effort. */
   providerOptions?: Parameters<typeof streamText>[0]["providerOptions"];
 };
 
+/**
+ * Answers are one to three sentences, so a longer one in the conversation
+ * wasn't written by the Concierge: it only inflates the prompt.
+ */
+const MAX_ANSWER_LENGTH = 2000;
+
 const failure = (status: number) => Response.json({ error: CONCIERGE_ERROR }, { status });
 
-/** The conversation, if it's one a visitor could have sent: ends with their question. */
+/**
+ * The conversation, if it's one a visitor could have sent: ends with their
+ * question, within the length and turn limits.
+ */
 async function conversation(request: Request): Promise<UIMessage[] | undefined> {
   const body: unknown = await request.json().catch(() => undefined);
   if (typeof body !== "object" || body === null || !("messages" in body)) return;
@@ -41,14 +55,39 @@ async function conversation(request: Request): Promise<UIMessage[] | undefined> 
     (message) => message.role === "user" || message.role === "assistant"
   );
   if (!fromVisitorOrConcierge || last?.role !== "user" || !messageText(last).trim()) return;
+
+  const questions = messages.filter((message) => message.role === "user");
+  if (questions.length > MAX_TURNS) return;
+  const withinLength = messages.every(
+    (message) => messageText(message).length <= (message.role === "user" ? MAX_QUESTION_LENGTH : MAX_ANSWER_LENGTH)
+  );
+  if (!withinLength) return;
   return messages;
 }
 
 /**
- * Answers a visitor's question as a UI message stream of plain text with
- * inline `[[id]]` references (ADR 0004).
+ * Answers a visitor's question (`POST`) as a UI message stream of plain text
+ * with inline `[[id]]` references (ADR 0004). A `GET` only says whether the
+ * Concierge is on, so the client knows whether to show its entry point.
+ *
+ * The kill switch, the rate limit and every validation run before the model
+ * is called, and every failure gets the same generic error.
  */
 export async function handleConcierge(request: Request, deps: ConciergeDeps): Promise<Response> {
+  if (request.method !== "GET" && request.method !== "POST") {
+    return new Response(null, { status: 405, headers: { allow: "GET, POST" } });
+  }
+  if (deps.disabled) return failure(503);
+  if (request.method === "GET") return new Response(null, { status: 204 });
+
+  const visitor = request.headers.get("cf-connecting-ip") ?? "unknown";
+  try {
+    if (!(await deps.withinRateLimit(visitor))) return failure(429);
+  } catch (error) {
+    console.error("Concierge: rate limiter unavailable", error);
+    return failure(503);
+  }
+
   const messages = await conversation(request);
   if (!messages) return failure(400);
 

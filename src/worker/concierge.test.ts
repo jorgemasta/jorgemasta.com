@@ -1,8 +1,9 @@
-import { simulateReadableStream } from "ai";
+import { simulateReadableStream, type LanguageModel } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it } from "vitest";
 import type { Target } from "../lib/registry";
-import { CONCIERGE_ERROR, handleConcierge } from "./concierge";
+import { MAX_QUESTION_LENGTH, MAX_TURNS } from "../lib/consts";
+import { CONCIERGE_ERROR, handleConcierge, type ConciergeDeps } from "./concierge";
 
 const registry: Target[] = [
   {
@@ -28,6 +29,15 @@ const usage = {
   outputTokens: { total: 1, text: 1, reasoning: undefined },
 };
 
+/** What the handler needs: switched on, with the visitor under the rate limit, unless overridden. */
+const deps = (model: LanguageModel, overrides: Partial<ConciergeDeps> = {}): ConciergeDeps => ({
+  model,
+  registry: async () => registry,
+  withinRateLimit: async () => true,
+  disabled: false,
+  ...overrides,
+});
+
 /** A model that streams these text deltas. */
 const streaming = (...deltas: string[]) =>
   new MockLanguageModelV4({
@@ -49,14 +59,22 @@ const message = (role: "user" | "assistant", text: string, id = crypto.randomUUI
   parts: [{ type: "text", text }],
 });
 
-const post = (body: unknown) =>
+/** A conversation of this many questions, each but the last answered. */
+const turns = (count: number) =>
+  Array.from({ length: count }, (_, i) => [
+    message("user", `Question ${i + 1}?`),
+    ...(i < count - 1 ? [message("assistant", "Ok.")] : []),
+  ]).flat();
+
+const post = (body: unknown, headers: Record<string, string> = {}) =>
   new Request("https://jorgemasta.com/concierge/chat", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...headers },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 
-const ask = (question: string) => post({ messages: [message("user", question)] });
+const ask = (question: string, headers?: Record<string, string>) =>
+  post({ messages: [message("user", question)] }, headers);
 
 /** The UI message stream chunks in a response. */
 const chunks = async (response: Response) =>
@@ -75,7 +93,7 @@ describe("handleConcierge", () => {
   it("streams the model's text through intact, references included", async () => {
     const model = streaming("Jorge builds Padelful [[pad", "elful]], with an MCP server [[padelful/mcp]].");
 
-    const response = await handleConcierge(ask("What is he building?"), { model, registry: async () => registry });
+    const response = await handleConcierge(ask("What is he building?"), deps(model));
 
     expect(response.status).toBe(200);
     expect(await streamedText(response)).toBe(
@@ -86,7 +104,7 @@ describe("handleConcierge", () => {
   it("gives the model every registry target's id and text as its corpus", async () => {
     const model = streaming("Ok.");
 
-    await (await handleConcierge(ask("Hi"), { model, registry: async () => registry })).text();
+    await (await handleConcierge(ask("Hi"), deps(model))).text();
 
     const [system] = model.doStreamCalls[0].prompt;
     expect(system.role).toBe("system");
@@ -104,7 +122,7 @@ describe("handleConcierge", () => {
       message("user", "Does it have an API?"),
     ];
 
-    await (await handleConcierge(post({ messages: conversation }), { model, registry: async () => registry })).text();
+    await (await handleConcierge(post({ messages: conversation }), deps(model))).text();
 
     const turns = model.doStreamCalls[0].prompt.slice(1);
     expect(turns.map((turn) => turn.role)).toEqual(["user", "assistant", "user"]);
@@ -121,10 +139,126 @@ describe("handleConcierge", () => {
   ])("rejects %s before calling the model, with the generic error", async (_, body) => {
     const model = streaming("Ok.");
 
-    const response = await handleConcierge(post(body), { model, registry: async () => registry });
+    const response = await handleConcierge(post(body), deps(model));
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: CONCIERGE_ERROR });
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it("rejects a question over the length limit before calling the model", async () => {
+    const model = streaming("Ok.");
+
+    const response = await handleConcierge(ask("a".repeat(MAX_QUESTION_LENGTH + 1)), deps(model));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: CONCIERGE_ERROR });
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it("answers a question right at the length limit", async () => {
+    const model = streaming("Ok.");
+
+    const response = await handleConcierge(ask("a".repeat(MAX_QUESTION_LENGTH)), deps(model));
+
+    expect(await streamedText(response)).toBe("Ok.");
+  });
+
+  it("rejects a conversation with an earlier question over the length limit", async () => {
+    const model = streaming("Ok.");
+    const conversation = [
+      message("user", "a".repeat(MAX_QUESTION_LENGTH + 1)),
+      message("assistant", "Ok."),
+      message("user", "Hi"),
+    ];
+
+    const response = await handleConcierge(post({ messages: conversation }), deps(model));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: CONCIERGE_ERROR });
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it("rejects a conversation with an answer far longer than the Concierge writes", async () => {
+    const model = streaming("Ok.");
+    const conversation = [message("user", "Hi"), message("assistant", "a".repeat(5000)), message("user", "And?")];
+
+    const response = await handleConcierge(post({ messages: conversation }), deps(model));
+
+    expect(response.status).toBe(400);
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it("rejects a question past the turn limit before calling the model", async () => {
+    const model = streaming("Ok.");
+
+    const response = await handleConcierge(post({ messages: turns(MAX_TURNS + 1) }), deps(model));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: CONCIERGE_ERROR });
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it("answers the last question within the turn limit", async () => {
+    const model = streaming("Ok.");
+
+    const response = await handleConcierge(post({ messages: turns(MAX_TURNS) }), deps(model));
+
+    expect(await streamedText(response)).toBe("Ok.");
+  });
+
+  it("rejects a visitor over the rate limit before calling the model", async () => {
+    const model = streaming("Ok.");
+    const visitors: string[] = [];
+    const withinRateLimit = async (visitor: string) => {
+      visitors.push(visitor);
+      return false;
+    };
+
+    const response = await handleConcierge(ask("Hi", { "cf-connecting-ip": "203.0.113.7" }), deps(model, { withinRateLimit }));
+
+    expect(response.status).toBe(429);
+    expect(await response.json()).toEqual({ error: CONCIERGE_ERROR });
+    expect(visitors).toEqual(["203.0.113.7"]);
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it("answers with the generic error when the rate limiter fails", async () => {
+    const model = streaming("Ok.");
+    const withinRateLimit = async (): Promise<boolean> => {
+      throw new Error("Rate limiter unavailable");
+    };
+
+    const response = await handleConcierge(ask("Hi"), deps(model, { withinRateLimit }));
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: CONCIERGE_ERROR });
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it("refuses every question with the generic error when switched off", async () => {
+    const model = streaming("Ok.");
+    let rateLimited = false;
+    const withinRateLimit = async () => (rateLimited = true);
+
+    const response = await handleConcierge(ask("Hi"), deps(model, { disabled: true, withinRateLimit }));
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: CONCIERGE_ERROR });
+    expect(rateLimited).toBe(false);
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+
+  it("tells the client whether it's on, so the entry point only shows when it is", async () => {
+    const model = streaming("Ok.");
+    const check = () => new Request("https://jorgemasta.com/concierge/chat");
+
+    const on = await handleConcierge(check(), deps(model));
+    const off = await handleConcierge(check(), deps(model, { disabled: true }));
+
+    expect(on.status).toBe(204);
+    expect(off.status).toBe(503);
+    expect(await off.json()).toEqual({ error: CONCIERGE_ERROR });
     expect(model.doStreamCalls).toHaveLength(0);
   });
 
@@ -134,7 +268,7 @@ describe("handleConcierge", () => {
       throw new Error("ASSETS fetch failed: 503");
     };
 
-    const response = await handleConcierge(ask("Hi"), { model, registry: registryDown });
+    const response = await handleConcierge(ask("Hi"), deps(model, { registry: registryDown }));
 
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: CONCIERGE_ERROR });
@@ -148,7 +282,7 @@ describe("handleConcierge", () => {
       },
     });
 
-    const response = await handleConcierge(ask("Hi"), { model, registry: async () => registry });
+    const response = await handleConcierge(ask("Hi"), deps(model));
     const body = await chunks(response);
 
     expect(body).toContainEqual({ type: "error", errorText: CONCIERGE_ERROR });

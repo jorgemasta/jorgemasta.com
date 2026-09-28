@@ -2,7 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { navigate } from "astro:transitions/client";
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
-import { CONCIERGE_ENDPOINT, EMAIL } from "../lib/consts";
+import { CONCIERGE_ENDPOINT, EMAIL, MAX_QUESTION_LENGTH } from "../lib/consts";
 import { messageText, parseAnswer } from "../lib/references";
 import type { Target } from "../lib/registry";
 
@@ -20,7 +20,23 @@ const SUGGESTED_PROMPTS = [
   "What has he done with frontend and DX?",
 ];
 
-const samePage = (path: string) => location.pathname.replace(/\/?$/, "/") === path;
+/**
+ * Whether the Worker has the Concierge switched on. Until it says so, and
+ * whenever it can't be reached, there's no entry point: the site is the same
+ * without it. `astro dev` has no Worker, so the panel always shows there.
+ */
+function useAvailable() {
+  const [available, setAvailable] = useState(import.meta.env.DEV);
+  useEffect(() => {
+    if (import.meta.env.DEV) return;
+    fetch(CONCIERGE_ENDPOINT)
+      .then((response) => setAvailable(response.ok))
+      .catch(() => setAvailable(false));
+  }, []);
+  return available;
+}
+
+const samePage =(path: string) => location.pathname.replace(/\/?$/, "/") === path;
 
 /** Scrolls to a target on this page, or navigates to its page, which then scrolls to it. */
 function goTo(target: ChipTarget) {
@@ -39,6 +55,7 @@ function goTo(target: ChipTarget) {
  */
 export default function Concierge({ targets }: { targets: ChipTarget[] }) {
   const byId = useMemo(() => new Map(targets.map((target) => [target.id, target])), [targets]);
+  const available = useAvailable();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const { messages, sendMessage, status } = useChat({
@@ -66,6 +83,8 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
     event.preventDefault();
     ask(input);
   };
+
+  if (!available) return null;
 
   if (!open) {
     return (
@@ -177,11 +196,19 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
             }
           }}
           placeholder="Ask about my work…"
+          maxLength={MAX_QUESTION_LENGTH}
+          aria-describedby="concierge-question-length"
           className="flex-1 resize-none rounded-lg border border-rule bg-paper px-3 py-2 text-sm text-charcoal placeholder:text-muted focus:border-green focus:outline-none"
         />
-        <button type="submit" disabled={busy || !input.trim()} className="button px-4 py-2 text-sm disabled:opacity-50">
-          Ask
-        </button>
+        <div className="flex flex-col items-end gap-1.5">
+          <p id="concierge-question-length" className="text-xs text-muted tabular-nums">
+            <span className="sr-only">Up to {MAX_QUESTION_LENGTH} characters: </span>
+            {input.length}/{MAX_QUESTION_LENGTH}
+          </p>
+          <button type="submit" disabled={busy || !input.trim()} className="button px-4 py-2 text-sm disabled:opacity-50">
+            Ask
+          </button>
+        </div>
       </form>
     </aside>
   );
