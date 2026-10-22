@@ -43,7 +43,7 @@
     "@types/sanitize-html": "^2.16.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.2",
+    "vitest": "^5.0.5",
     "wrangler": "^4.145.0"
   }
 }
