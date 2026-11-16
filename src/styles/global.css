@@ -131,11 +131,6 @@
       0 1.5rem 3rem -1.5rem rgb(23 63 53 / 0.35);
   }
 
-  /* Raised above the veil, a stop in the podcast band keeps the band's colour. */
-  #tokenizados [data-focus-spot] {
-    --focus-ground: var(--color-green);
-  }
-
   /* The Concierge's note beside the current stop: why it answers the question. */
   [data-focus-note] {
     position: absolute;

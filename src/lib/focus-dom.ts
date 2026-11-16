@@ -115,6 +115,18 @@ export function whenVisitorTakesOver(onTakeover: () => void): () => void {
   return stop;
 }
 
+/** Fired on `document` before a stop is measured, with its anchor as `detail`. */
+export const REVEAL_EVENT = "focus:reveal";
+
+/**
+ * A stop's element, after giving the page a chance to show it: a filtered
+ * list may be hiding it, and a hidden element can't be scrolled to.
+ */
+function revealed(anchor: string): HTMLElement | null {
+  document.dispatchEvent(new CustomEvent(REVEAL_EVENT, { detail: anchor }));
+  return document.getElementById(anchor);
+}
+
 /**
  * Takes the visitor to a stop: a scroll on this page, or a navigation that
  * lands on it. Landing on its anchor puts the stop at the top of the screen,
@@ -135,7 +147,7 @@ export function goTo(stop: Stop) {
     navigate(next.url);
     return;
   }
-  const element = document.getElementById(next.anchor);
+  const element = revealed(next.anchor);
   if (element) scrollTo(element, roomAbove(stop, element));
 }
 
@@ -200,7 +212,7 @@ function showNote(text: string, element: HTMLElement): () => void {
  * visitor scrolls away. Returns what undoes it.
  */
 export function spotlight(stop: Stop): () => void {
-  const element = route(stop, location.pathname).type === "scroll" ? document.getElementById(stop.anchor) : null;
+  const element = route(stop, location.pathname).type === "scroll" ? revealed(stop.anchor) : null;
   if (!element) return () => {};
 
   element.setAttribute("data-focus-spot", "");
