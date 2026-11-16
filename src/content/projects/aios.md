@@ -3,6 +3,9 @@ title: "AIOS"
 publishedAt: 2025-01-01
 excerpt: "Helping mostly Spanish SMEs get a competitive edge from AI. We meant to productise it; it became an agency."
 featured: true
+mainImage:
+  src: "/images/projects/aios.webp"
+  alt: "AIOS dashboard: a greeting, company OKRs with progress bars, my tasks and the implementation phases"
 ---
 
 I co-founded AIOS in 2025 and worked on it until August 2026. Our clients were mostly Spanish SMEs that wanted a competitive edge from AI; we worked with more than 10 of them.
