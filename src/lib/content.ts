@@ -1,8 +1,6 @@
 import { getCollection, type CollectionEntry } from "astro:content";
 import { ABOUT } from "../data/about";
 import { ROLES, type Role } from "../data/roles";
-import type { Prose } from "./facts";
-import { buildRegistry, type Target } from "./registry";
 import { getPodcast, type Podcast } from "./tokenizados";
 import { getProjectUrl, isOlderThanOneYear } from "./utils";
 
@@ -44,7 +42,7 @@ export async function getRoles(): Promise<Role[]> {
 }
 
 /** The About paragraphs. */
-export async function getAbout(): Promise<Prose[]> {
+export async function getAbout(): Promise<string[]> {
   return (await devData())?.about ?? ABOUT;
 }
 
@@ -68,10 +66,7 @@ export function getProjectHref(project: CollectionEntry<"projects">): string {
   return project.data.url;
 }
 
-/**
- * The podcast as the homepage shows it. Fetched once per build, so the
- * homepage and the registry always agree on which Episodes are shown.
- */
+/** The podcast as the homepage shows it. Fetched once per build. */
 let podcast: Promise<Podcast> | undefined;
 export async function getShownPodcast(): Promise<Podcast> {
   return (await devData())?.podcast ?? (podcast ??= getPodcast({ limit: 3 }));
@@ -79,22 +74,3 @@ export async function getShownPodcast(): Promise<Podcast> {
 
 /** The complete episodes in the feed; the fallback, when the feed can't be read, is the count on 2026-09-26. */
 export const getEpisodeCount = ({ count }: Podcast) => (count > 0 ? count : 25);
-
-/** Every place on the built site a Focus can point at. */
-export async function getRegistry(): Promise<Target[]> {
-  const [projects, entries, shown, roles, about] = await Promise.all([
-    getProjects(),
-    getPosts(),
-    getShownPodcast(),
-    getRoles(),
-    getAbout(),
-  ]);
-  return buildRegistry({
-    projects: projects.map((project) => ({ id: project.id, body: project.body ?? "", ...project.data })),
-    entries: entries.map((entry) => ({ id: entry.id, body: entry.body ?? "", ...entry.data })),
-    roles,
-    episodes: shown.episodes,
-    episodeCount: getEpisodeCount(shown),
-    about,
-  });
-}

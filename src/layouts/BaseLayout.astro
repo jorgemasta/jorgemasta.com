@@ -1,10 +1,7 @@
 ---
-import { ClientRouter } from "astro:transitions";
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
-import Concierge, { chipTarget } from "../components/Concierge";
-import { getRegistry } from "../lib/content";
 import "../styles/global.css";
 
 interface Props {
@@ -15,8 +12,6 @@ interface Props {
 
 const { title, description, image } = Astro.props;
 
-const targets = (await getRegistry()).map(chipTarget);
-
 // The break-ui data toggle: `astro dev` only, never in a build (see src/dev/data-mode.ts).
 const DataToggle = import.meta.env.DEV ? (await import("../dev/DataToggle.astro")).default : null;
 ---
@@ -25,7 +20,6 @@ const DataToggle = import.meta.env.DEV ? (await import("../dev/DataToggle.astro"
 <html lang="en">
   <head>
     <BaseHead title={title} description={description} image={image} />
-    <ClientRouter />
   </head>
   <body class="min-h-screen">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4">
@@ -37,6 +31,5 @@ const DataToggle = import.meta.env.DEV ? (await import("../dev/DataToggle.astro"
     </main>
     <Footer />
     {DataToggle && <DataToggle />}
-    <Concierge client:load transition:persist targets={targets} />
   </body>
 </html>

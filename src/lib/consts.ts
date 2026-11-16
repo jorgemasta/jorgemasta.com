@@ -18,7 +18,7 @@ export const SOCIAL_LINKS = {
 
 export const TOKENIZADOS = {
   site: "https://tokenizadospodcast.com",
-  /** Shown in the podcast band and given to the Concierge, so both say the same. */
+  /** Shown in the podcast band on the homepage. */
   about: "A weekly podcast in Spanish about AI, recorded in the Canary Islands. I host it with Antonio Sejas.",
   episodesSince: (episodeCount: number) =>
     `${episodeCount.toLocaleString("en-US")} ${episodeCount === 1 ? "episode" : "episodes"} since March 2026, each about 45 to 75 minutes long.`,
@@ -35,15 +35,3 @@ export const TOKENIZADOS = {
     },
   ],
 } as const;
-
-/** The built target registry: read by the Worker and checked after the build. */
-export const REGISTRY_PATH = "/concierge/registry.json";
-
-/** The Concierge's endpoint, served by the Worker; also listed in `wrangler.jsonc`. */
-export const CONCIERGE_ENDPOINT = "/concierge/chat";
-
-/** The longest question the Concierge takes, in characters: shown by the input, enforced by the Worker. */
-export const MAX_QUESTION_LENGTH = 500;
-
-/** The most questions in one Concierge conversation. */
-export const MAX_TURNS = 10;

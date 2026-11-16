@@ -2,20 +2,19 @@ import { createSatteriMarkdownProcessor } from "@astrojs/markdown-satteri";
 import type { CollectionEntry } from "astro:content";
 import type { z } from "astro/zod";
 import { collections } from "../../content.config";
-import { factAnchors } from "../../integrations/fact-anchors";
 import { tableScroll } from "../../integrations/table-scroll";
 
 /**
  * DEV ONLY. Fixture entries shaped exactly like the ones `getCollection`
  * returns: frontmatter parsed by the real collection schema (so defaults,
  * coercion and the building-needs-a-url rule apply), and the body rendered by
- * the same markdown pipeline as `astro.config.mjs` (Fact anchors, table wrappers, Shiki with
+ * the same markdown pipeline as `astro.config.mjs` (table wrappers, Shiki with
  * `wrap`), so `render()` from `astro:content` works on them unchanged.
  */
 
 // Mirrors `markdown` in astro.config.mjs.
 const renderer = createSatteriMarkdownProcessor({
-  hastPlugins: [factAnchors, tableScroll],
+  hastPlugins: [tableScroll],
   shikiConfig: { theme: "one-dark-pro", wrap: true },
 });
 
@@ -31,7 +30,6 @@ async function entry<C extends Collection>(
   const data = schema.parse(frontmatter);
   const filePath = `src/dev/fixtures/${collection}/${id}.md`;
   const { code, metadata } = await (await renderer).render(body, {
-    // fact-anchors takes the owner from the file name, as for a real entry.
     fileURL: new URL(`file:///${filePath}`),
     frontmatter,
   });

@@ -1,6 +1,4 @@
-import type { UIMessage } from "ai";
 import type { Role } from "../../data/roles";
-import type { Prose } from "../../lib/facts";
 import { placeholderImage, post, project } from "./entries";
 import { item, podcastFrom } from "./podcast";
 import type { DevData } from "./types";
@@ -34,7 +32,7 @@ const projects = () =>
           { value: "0", label: "ads" },
         ],
       },
-      `Each day it <span data-fact="sources">reads 26 newsletters, plus 9 outlets directly, and condenses them into a few stories, each with context and an honest opinion</span>.
+      `Each day it reads 26 newsletters, plus 9 outlets directly, and condenses them into a few stories, each with context and an honest opinion.
 
 Subscribe at https://destilados.tokenizadospodcast.com/subscribe?utm_source=jorgemasta.com&utm_medium=homepage&utm_campaign=building-section`
     ),
@@ -55,7 +53,7 @@ Subscribe at https://destilados.tokenizadospodcast.com/subscribe?utm_source=jorg
           { label: "Status", url: "https://status.example.com" },
         ],
       },
-      `It <span data-fact="matcher">matches 1,284,000 policy listings to the right insurer every night</span>.
+      `It matches 1,284,000 policy listings to the right insurer every night.
 
 \`\`\`ts
 const matcher = createMatcher({ stores: ["${LONG_HOST}"], threshold: 0.92 });
@@ -97,7 +95,7 @@ const matcher = createMatcher({ stores: ["${LONG_HOST}"], threshold: 0.92 });
           { value: "2023", label: "live since" },
         ],
       },
-      `Padelful <span data-fact="agent">sends ambiguous listings to an agent that investigates them</span>.`
+      `Padelful sends ambiguous listings to an agent that investigates them.`
     ),
     // One-letter title, dated far in the future, missing image, Vietnamese excerpt with emoji.
     project("x", {
@@ -134,7 +132,7 @@ const matcher = createMatcher({ stores: ["${LONG_HOST}"], threshold: 0.92 });
       },
       `Install with \`npx @northwind-industries-holdings-international/inventory-reconciliation-cli@latest --config=./northwind.config.json\`.
 
-<span data-fact="regions">It reconciled stock for every region, from Thành phố Hồ Chí Minh to Las Palmas de Gran Canaria</span>.
+It reconciled stock for every region, from Thành phố Hồ Chí Minh to Las Palmas de Gran Canaria.
 
 | Región | Tiendas | SKUs | Pedidos/día | Devoluciones | Margen | Moneda | Zona horaria |
 |---|---|---|---|---|---|---|---|
@@ -177,7 +175,7 @@ Bare URL: https://${LONG_HOST}/api/v2/webhooks/stripe/payment_intent.succeeded?m
 
 ## Donaudampfschifffahrtsgesellschaftskapitänsmützenhersteller
 
-<span data-fact="retries">Every webhook was retried 1,284,000+ times over one weekend</span>.
+Every webhook was retried 1,284,000+ times over one weekend.
 
 \`\`\`ts
 export const handler = async (event: StripeWebhookEvent, context: WorkerContext): Promise<Response> => { return new Response(JSON.stringify({ received: true, id: event.id, type: event.type }), { status: 200 }); };
@@ -267,122 +265,46 @@ const podcast = () =>
 const roles: Role[] = [
   // Current (no end), empty impact, long title, long company with a long-hostname url.
   {
-    id: "northwind",
     company: "Northwind Industries Holdings International",
     title: "Senior Staff Software Engineer, Developer Experience & Platform",
     start: "September 2026",
-    impact: [],
+    impact: "",
     url: `https://${LONG_HOST}`,
   },
-  // A German compound Fact, used as a long chip label.
+  // A German compound in running text.
   {
-    id: "aios",
     company: "AIOS",
     title: "Co-founder",
     start: "2025",
     end: "Aug 2026",
-    impact: [
-      "Took on ",
-      { fact: "ownership", text: "Produktentwicklungsverantwortlichkeitenübernahme" },
-      " in AI teams.",
-    ],
+    impact: "Took on Produktentwicklungsverantwortlichkeitenübernahme in AI teams.",
   },
-  // Long company, no url, an unbreakable package name as a Fact.
+  // Long company, no url, an unbreakable package name.
   {
-    id: "sejas-labs",
     company: "Laboratorio de Inteligencia Artificial Aplicada de Canarias",
     title: "Co-founder",
     start: "Mar 2020",
     end: "Mar 2024",
-    impact: [
-      "Shipped ",
-      { fact: "sdk", text: "@northwind/experimental-server-components-runtime-instrumentation" },
-      " used by 1,284,000+ developers.",
-    ],
+    impact: "Shipped @northwind/experimental-server-components-runtime-instrumentation used by 1,284,000+ developers.",
   },
   // One-letter company and title, single-year dates.
-  { id: "q", company: "Q", title: "CTO", start: "2017", end: "2017", impact: "Built it." },
+  { company: "Q", title: "CTO", start: "2017", end: "2017", impact: "Built it." },
   // Very old.
   {
-    id: "secret-source",
     company: "Secret Source",
     title: "Software Developer",
     start: "Jan 1999",
     end: "Oct 2018",
-    impact: ["My first job, where I ", { fact: "react", text: "started with React and React Native" }, "."],
+    impact: "My first job, where I started with React and React Native.",
     url: "https://secretsourcestudio.example.com",
   },
 ];
 
-const about: Prose[] = [
-  [
-    "I'm Jorge, Trần Thị Ngọc Ánh's colleague ",
-    { fact: "place", text: "in Las Palmas de Gran Canaria" },
-    ". I've spent ",
-    { fact: "experience", text: "the last nine years at Rechtsschutzversicherungsgesellschaften and elsewhere" },
-    ". You'll also find me at https://" + LONG_HOST + "/team/jorge-masta.",
-  ],
+const about: string[] = [
+  "I'm Jorge, Trần Thị Ngọc Ánh's colleague in Las Palmas de Gran Canaria. I've spent the last nine years at Rechtsschutzversicherungsgesellschaften and elsewhere. You'll also find me at https://" +
+    LONG_HOST +
+    "/team/jorge-masta.",
   "Hablo español, English, und ein bisschen Deutsch. هذا نص عربي في فقرة إنجليزية. 🚀",
-];
-
-const user = (id: string, text: string): UIMessage => ({ id, role: "user", parts: [{ type: "text", text }] });
-const assistant = (id: string, text: string): UIMessage => ({
-  id,
-  role: "assistant",
-  parts: [{ type: "text", text }],
-});
-
-// Ten questions (the Worker's limit, so the next one fails), ending with a spaceless question
-// whose Focus label cut lands in the middle of an emoji, answered with twelve chips.
-const conversation: UIMessage[] = [
-  user(
-    "u1",
-    `Can you check https://${LONG_HOST}/careers/senior-product-engineer-frontend-ai?utm_source=linkedin and tell me if Jorge fits?\n\nAlso: does he do React Native?`
-  ),
-  assistant(
-    "a1",
-    "Yes: Jorge published his MCP server at https://www.npmjs.com/package/@rechtsschutz/mcp-server [[rechtsschutz|An MCP server agents can call for insurer data]]. He also wrote about retries [[webhook-retries|Webhook retries, the long version]], and his news digest [[destilados/sources|How he condenses dozens of sources]]."
-  ),
-  user("u2", "Hat Jorge Erfahrung als Produktentwicklungsverantwortlicher in KI-Teams? 🤖"),
-  assistant(
-    "a2",
-    "Ja, als Produktentwicklungsverantwortlichkeitenübernahme bei AIOS [[aios|KI-native Organisationen aufgebaut]] [[aios/ownership|Team beim Programmieren mit KI begleitet]]."
-  ),
-  user("u3", "هل عمل خورخي على منتجات الذكاء الاصطناعي؟"),
-  assistant("a3", "نعم، يقدّم خورخي بودكاست Tokenizados [[episode-26|حلقة عن وكلاء الذكاء الاصطناعي]]."),
-  user("u4", "Jorge đã xây dựng những sản phẩm trí tuệ nhân tạo nào trong năm nay?"),
-  // Reasoning only, no text: what a stream cut off mid-thought leaves behind.
-  { id: "a4", role: "assistant", parts: [{ type: "reasoning", text: "…thinking…" }] },
-  user("u5", "Hi"),
-  // Only an id that no longer exists: renders as nothing.
-  assistant("a5", "[[padelful-old-id]]"),
-  user("u6", "?"),
-  assistant("a6", "Jorge is building Padelful [[padelful|What he is building right now]]."),
-  user("u7", "What about Ứng?"),
-  assistant("a7", "Ứng is a Vietnamese learning app [[ung|Ứng]]."),
-  user("u8", "And X?"),
-  assistant("a8", "X is dated 2099 [[x]]."),
-  user("u9", "Anything in Thai?"),
-  assistant("a9", "Yes [[thai|ระบบจองตั๋วคอนเสิร์ตแบบไร้เงินสด]]."),
-  user("u10", "Jorge在人工智能产品方面做过哪些工作？他是否熟悉React和ReactNative开发和MCP服务器构建🤖🤖他用过哪些模型？"),
-  assistant(
-    "a10",
-    [
-      "他做过很多：",
-      "[[destilados/sources|每天阅读几十个来源]]",
-      "[[rechtsschutz/matcher|每晚匹配一百多万条保单]]",
-      "[[padelful/agent|代理调查模糊的商品]]",
-      "[[ung]]",
-      "[[x]]",
-      "[[webhook-retries/retries]]",
-      "[[taint]]",
-      "[[aios/ownership]]",
-      "[[sejas-labs/sdk|发布了一个开发者SDK]]",
-      "[[northwind]]",
-      "[[episode-1]]",
-      "[[about/place]]",
-    ].join(" ")
-  ),
 ];
 
 export default async function worst(): Promise<DevData> {
@@ -392,7 +314,5 @@ export default async function worst(): Promise<DevData> {
     podcast: podcast(),
     roles,
     about,
-    conversation,
-    focusStep: 11,
   };
 }

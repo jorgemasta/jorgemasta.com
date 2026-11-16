@@ -14,6 +14,6 @@ stats:
     label: "sources read every day"
 ---
 
-Each day it <span data-fact="sources">reads 26 newsletters, plus 9 outlets directly, and condenses them into a few stories, each with context and an honest opinion</span>. <span data-fact="jev">Stories are classified with Jev, a new model from TypeSafe.</span>
+Each day it reads 26 newsletters, plus 9 outlets directly, and condenses them into a few stories, each with context and an honest opinion. Stories are classified with Jev, a new model from TypeSafe.
 
-The problem I'm exploring is <span data-fact="judgment">filtering by judgment rather than keywords</span>: out of a whole day of news, which few stories deserve a reader's time. A spin-off is in private testing.
+The problem I'm exploring is filtering by judgment rather than keywords: out of a whole day of news, which few stories deserve a reader's time. A spin-off is in private testing.

@@ -7,7 +7,7 @@ mainImage:
   alt: "Healthy food plate with the food to bento logo"
 ---
 
-<span data-fact="co-founder">I co-founded Food to Bento in 2018.</span> Our mission was to prevent perfectly good food from going to waste. <span data-fact="surplus-food">We offered businesses an app to sell their surplus food.</span>
+I co-founded Food to Bento in 2018. Our mission was to prevent perfectly good food from going to waste. We offered businesses an app to sell their surplus food.
 
 Using Food to Bento:
 
