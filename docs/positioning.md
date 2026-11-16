@@ -197,18 +197,20 @@ Reference structure:
 
 ### Bios
 
-- Short: _Product engineer building digital products at the intersection of
-  frontend, product, and AI._
-- First person: _I'm a product-minded engineer who likes turning messy ideas
-  into simple products. I work mostly across frontend, product, and applied
-  AI, and I write about the decisions, experiments, and mistakes behind the
-  things I build._
-- About draft: _I'm Jorge, a product-minded engineer based in the Canary
-  Islands. I've spent the last several years building web products, mostly
-  around frontend and product engineering. More recently I've been exploring
-  what changes when AI becomes part of the product itself — not just a feature
-  inside it. I like simple interfaces, opinionated products, and turning messy
-  ideas into things people can actually use._
+These match the published wording; change them together with the site.
+
+- Short (site description, meta, llms.txt): _Jorge Masta is a product engineer
+  who likes building and improving digital products. Nine years shipping web
+  and mobile products; now at Nexcess._
+- First person: _I'm a product engineer who likes building and improving
+  digital products. I work mostly across frontend and product, and I write
+  about the decisions, experiments, and mistakes behind the things I build._
+- About (homepage): _I'm Jorge, a product engineer based in the Canary Islands.
+  I like building digital products, and I like improving them even more:
+  finding what gets in people's way and taking it out. I care about simple
+  interfaces, opinionated products, and the unglamorous parts that keep a
+  product working. In 2025 I also taught live courses on programming with AI to
+  engineering teams at Code at Light Speed, working in their own codebases._
 
 ### Calls to action
 

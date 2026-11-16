@@ -1,6 +1,6 @@
 export const SITE_TITLE = "Jorge Masta";
 export const SITE_DESCRIPTION =
-  "Product engineer building digital products at the intersection of frontend, product, and AI.";
+  "Jorge Masta is a product engineer who likes building and improving digital products. Nine years shipping web and mobile products; now at Nexcess.";
 export const SITE_URL = "https://jorgemasta.com";
 export const SITE_AUTHOR = "Jorge Masta";
 export const SITE_SOURCE = "https://github.com/jorgemasta/jorgemasta.com";
