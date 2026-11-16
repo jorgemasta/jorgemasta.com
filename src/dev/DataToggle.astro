@@ -1,0 +1,112 @@
+---
+/**
+ * DEV ONLY. The break-ui data toggle, and the Concierge conversation each
+ * fixture set seeds. Imported by `BaseLayout.astro` behind
+ * `import.meta.env.DEV`, so a build never contains it. Styles and the script
+ * are inline on purpose: a bundled `<style>` or `<script>` would ship.
+ */
+import { getRegistry } from "../lib/content";
+import { focusReducer, type FocusState, type Stop } from "../lib/focus";
+import { messageText, parseAnswer } from "../lib/references";
+import { DATA_PARAM, getDataMode, type DataMode } from "./data-mode";
+import { getDevData } from "./fixtures";
+
+const SEGMENTS: { mode: DataMode; label: string }[] = [
+  { mode: "demo", label: "Demo" },
+  { mode: "worst", label: "Worst case" },
+  { mode: "empty", label: "Empty" },
+  { mode: "one", label: "One" },
+];
+
+const mode = getDataMode();
+const data = await getDevData();
+
+/**
+ * The session the Concierge restores (its `sessionStorage` shape): the
+ * conversation, and the Focus its last answer makes, built by the real
+ * reducer. Null in `demo`, which leaves the visitor's own conversation alone.
+ */
+let session: { messages: unknown[]; focus: FocusState } | null = null;
+if (data) {
+  const { conversation, focusStep = 0 } = data;
+  const stops = new Map<string, Stop>((await getRegistry()).map(({ id, path, anchor }) => [id, { id, path, anchor }]));
+  const question = conversation.findLast((message) => message.role === "user");
+  const answer = conversation.at(-1);
+  let focus: FocusState = null;
+  if (question && answer?.role === "assistant") {
+    const { references, notes } = parseAnswer(messageText(answer), (id) => stops.has(id));
+    focus = focusReducer(null, { type: "asked", question: messageText(question), from: { path: "/", scrollY: 0 } });
+    focus = focusReducer(focus, {
+      type: "answered",
+      stops: references.map((id) => ({ ...stops.get(id)!, note: notes[id] })),
+    });
+    for (let step = 0; step < focusStep; step++) focus = focusReducer(focus, { type: "next" });
+  }
+  session = { messages: conversation, focus };
+}
+---
+
+<script is:inline define:vars={{ mode, session }}>
+  // Runs before the Concierge hydrates (it is the last thing in <body>), once per switch of data set.
+  try {
+    var MARK = "concierge:dev-data";
+    var previous = sessionStorage.getItem(MARK);
+    if (previous !== mode) {
+      if (session && session.messages.length) {
+        sessionStorage.setItem("concierge", JSON.stringify(session));
+      } else if (previous) {
+        sessionStorage.removeItem("concierge");
+      }
+      sessionStorage.setItem(MARK, mode);
+    }
+  } catch (error) {
+    // No storage: the Concierge starts empty.
+  }
+</script>
+
+<nav class="dev-data-toggle" aria-label="Dev data set">
+  {
+    SEGMENTS.map((segment) => (
+      <a
+        href={`?${DATA_PARAM}=${segment.mode}`}
+        aria-current={segment.mode === mode ? "true" : undefined}
+        data-astro-reload
+      >
+        {segment.label}
+      </a>
+    ))
+  }
+</nav>
+
+<style is:inline>
+  .dev-data-toggle {
+    position: fixed;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    /* Under the Concierge (z-30/z-40): it never hides the UI being tested. */
+    z-index: 20;
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: #e5e5e5;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 4px 12px -4px rgb(0 0 0 / 0.2);
+    font: 500 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    white-space: nowrap;
+  }
+  .dev-data-toggle a {
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: #525252;
+    text-decoration: none;
+  }
+  .dev-data-toggle a:hover {
+    color: #171717;
+  }
+  .dev-data-toggle a[aria-current] {
+    background: #fff;
+    color: #171717;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  }
+</style>

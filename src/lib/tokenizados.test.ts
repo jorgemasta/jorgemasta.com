@@ -51,6 +51,29 @@ describe("getPodcast", () => {
     ]);
   });
 
+  it("counts every complete episode in the feed, not just the ones returned", async () => {
+    const { count, episodes } = await getPodcast({ limit: 1, fetch: fakeFetch({ [FEED_URL]: ok(feed) }) });
+
+    expect(episodes).toHaveLength(1);
+    expect(count).toBeGreaterThan(1);
+  });
+
+  it("strips other title prefixes, decodes entities in CDATA and skips items with no title", async () => {
+    const item = (title: string | null, number: number) => `<item>
+      ${title === null ? "" : `<title><![CDATA[${title}]]></title>`}
+      <link>https://tokenizadospodcast.com/podcast/tokenizados-${number}.mp3</link>
+      <pubDate>Sat, 0${number} Nov 2026 10:00:00 GMT</pubDate>
+      <itunes:episode>${number}</itunes:episode>
+    </item>`;
+    const xml = `<?xml version="1.0"?><rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"><channel>
+      ${item("Tokenizados #1 - Especial: Navidad", 1)}${item("Tokenizados #2: OpenAI &amp; Anthropic", 2)}${item(null, 3)}
+    </channel></rss>`;
+    const { episodes, count } = await getPodcast({ fetch: fakeFetch({ [FEED_URL]: ok(xml) }) });
+
+    expect(episodes.map((e) => e.title)).toEqual(["OpenAI & Anthropic", "Especial: Navidad"]);
+    expect(count).toBe(2);
+  });
+
   it("returns the channel cover-art URL", async () => {
     const { coverArt } = await getPodcast({
       fetch: fakeFetch({ [FEED_URL]: ok(feed), [HOMEPAGE_URL]: ok(homepage) }),

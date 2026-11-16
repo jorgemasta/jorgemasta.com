@@ -12,6 +12,8 @@ export type Episode = {
 
 export type Podcast = {
   episodes: Episode[];
+  /** How many complete episodes the feed has, before the limit. */
+  count: number;
   coverArt: string | null;
 };
 
@@ -21,7 +23,7 @@ type Options = {
   fetch?: typeof fetch;
 };
 
-const EMPTY: Podcast = { episodes: [], coverArt: null };
+const EMPTY: Podcast = { episodes: [], count: 0, coverArt: null };
 
 /** Long enough for a slow feed, short enough that a hung one can't stall a deploy. */
 const TIMEOUT_MS = 10_000;
@@ -48,6 +50,7 @@ export async function getPodcast({ limit = 3, fetch = globalThis.fetch }: Option
     const pages = homepage.status === "fulfilled" ? episodePages(homepage.value) : new Map();
     return {
       coverArt: podcast.coverArt,
+      count: podcast.count,
       episodes: podcast.episodes
         .sort((a, b) => b.date.getTime() - a.date.getTime())
         .slice(0, limit)
@@ -71,8 +74,11 @@ function parseFeed(xml: string): Podcast {
 
   const episodes: Episode[] = (channel.item ?? []).map((item: Record<string, any>) => ({
     number: Number(item["itunes:episode"]),
-    // Every title repeats "Tokenizados #NN: "; the number is shown on its own.
-    title: String(item.title).replace(/^Tokenizados #\d+:\s*/, ""),
+    // Every title repeats "Tokenizados #NN: " (or " - "); the number is shown on its own.
+    title:
+      item.title == null
+        ? ""
+        : decodeEntities(String(item.title)).replace(/^Tokenizados\s*#\d+\s*[:\-–—]\s*/, ""),
     date: new Date(item.pubDate),
     link: String(item.link),
   }));
@@ -80,7 +86,18 @@ function parseFeed(xml: string): Podcast {
     (e) => Number.isInteger(e.number) && e.title && !Number.isNaN(e.date.getTime()) && e.link.startsWith("http")
   );
 
-  return { episodes: complete, coverArt: channel["itunes:image"]?.href ?? null };
+  return { episodes: complete, count: complete.length, coverArt: channel["itunes:image"]?.href ?? null };
+}
+
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0" };
+
+/** The parser leaves entities inside CDATA as written, so a title can still carry `&amp;`. */
+function decodeEntities(text: string) {
+  return text.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (whole, name: string) => {
+    if (name[0] !== "#") return ENTITIES[name.toLowerCase()] ?? whole;
+    const code = name[1].toLowerCase() === "x" ? parseInt(name.slice(2), 16) : Number(name.slice(1));
+    return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : whole;
+  });
 }
 
 /**

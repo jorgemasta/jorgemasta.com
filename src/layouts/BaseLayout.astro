@@ -16,6 +16,9 @@ interface Props {
 const { title, description, image } = Astro.props;
 
 const targets = (await getRegistry()).map(chipTarget);
+
+// The break-ui data toggle: `astro dev` only, never in a build (see src/dev/data-mode.ts).
+const DataToggle = import.meta.env.DEV ? (await import("../dev/DataToggle.astro")).default : null;
 ---
 
 <!doctype html>
@@ -33,6 +36,7 @@ const targets = (await getRegistry()).map(chipTarget);
       <slot />
     </main>
     <Footer />
+    {DataToggle && <DataToggle />}
     <Concierge client:load transition:persist targets={targets} />
   </body>
 </html>

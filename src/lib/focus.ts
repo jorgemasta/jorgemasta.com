@@ -4,6 +4,7 @@
  * thin DOM adapter (`focus-dom.ts`) applies it to the page.
  */
 import type { Target } from "./registry";
+import { truncate } from "./utils";
 
 /**
  * A place in the tour: where it lives, the element to spotlight, and the
@@ -75,10 +76,7 @@ const LABEL_LENGTH = 56;
 
 /** The question as a label: trimmed, and cut at a word with an ellipsis if too long. */
 function label(question: string) {
-  const text = question.trim().replace(/\s+/g, " ");
-  if (text.length <= LABEL_LENGTH) return text;
-  const cut = text.slice(0, LABEL_LENGTH);
-  return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s,.;:]+$/, "")}…`;
+  return truncate(question.trim().replace(/\s+/g, " "), LABEL_LENGTH);
 }
 
 export function focusReducer(state: FocusState, event: FocusEvent): FocusState {
