@@ -1,6 +1,6 @@
 # Positioning
 
-> **Today's positioning, as of 2026-09-26. Not set in stone.** This is the
+> **Today's positioning, as of 2026-11-16. Not set in stone.** This is the
 > current bet on how the site presents Jorge, and it is expected to change.
 > Use it to make copy, design, and content decisions; when a decision
 > contradicts it, question the document rather than silently working around it.
@@ -16,21 +16,20 @@ engineering depth + real-world shipping.**
 
 ## Core positioning
 
-> **Product Engineer building AI-native products.**
+> **A product engineer who likes building and improving digital products.**
 
-Jorge sits at the intersection of product engineering, frontend engineering,
-UX and product design, applied AI, AI evals and reliability, developer
-experience, product strategy, and independent product building.
+His work draws on product engineering, frontend engineering, UX and product
+design, applied AI, AI evals and reliability, developer experience, product
+strategy, and independent product building.
 
 AI is a material he works with, not the subject. The subject is **building good
 products**. He is not trying to become "an AI creator".
 
 Fuller statement:
 
-> I build digital products at the intersection of product, frontend
-> engineering, and AI. I'm particularly interested in turning ambiguous ideas
-> into simple products, designing AI-native experiences, and understanding the
-> systems and decisions that make them reliable.
+> I'm a product engineer who likes building and improving digital products.
+> I'm particularly interested in turning ambiguous ideas into simple products
+> and understanding the systems and decisions that make them reliable.
 
 ## Desired perception
 
@@ -175,40 +174,50 @@ portraits, stereotypical programmer photos, RGB lighting, fake laptop scenes.
 
 ## Homepage
 
-Communicate **what Jorge builds, how Jorge thinks, what Jorge is exploring** —
-not a traditional portfolio. No "My skills: React, TypeScript…" section.
+Communicate **what Jorge does, the proof that he does it well, and what he
+builds on his own** — not a traditional portfolio. No "My skills: React,
+TypeScript…" section.
 
-Hierarchy: (1) what he's building, (2) how he thinks, (3) proof of capability,
-(4) professional history. Not job title → skills → technologies → contact form.
+Hierarchy: (1) professional work, (2) what he builds on his own, (3) writing,
+(4) About. Employment comes first; the products he runs on his own follow as
+evidence of end-to-end ownership, not as the main act. Not job title → skills →
+technologies → contact form.
 
-Reference structure:
+Reference structure (the homepage ships no client-side script):
 
-1. **Hero** — "I build thoughtful digital products." / "Product engineer
-   working at the intersection of frontend, product, and AI." CTA: _See what
-   I'm building →_, secondary _Read my writing →_. This leaves room to evolve
-   without being branded an "AI person".
-2. **What I'm building** — real products; each says what it is, why it's
-   interesting, what problem Jorge is exploring. Not just logos.
-3. **Notes from building** — 3–5 strong entries whose titles communicate a
-   decision or discovery.
-4. **Selected work** — professional experience, compact: ownership, product
-   impact, systems, collaboration. Not a CV dump.
-5. **About** — short and human.
+1. **Hero** — one claim: "Hi, I'm Jorge. I build and improve digital
+   products." Then one short paragraph, professional proof first and side
+   projects last: product engineer, nine years shipping web and mobile products
+   for teams like Harvard, Vimeo and BigCommerce, now at Nexcess; on his own he
+   runs Padelful and Destilados. AI is not named in the hero.
+2. **Work** — Roles only, most recent first, each with what Jorge owned and
+   what it amounted to. Not a CV dump.
+3. **Building on my own** — each product he is building in detail: what it is,
+   the problem he is exploring, real numbers, links. Below, compactly, the
+   Earlier work picked for the homepage (AIOS, Kontroloo, Food to Bento),
+   linking to their detail pages.
+4. **Writing & podcast** — the latest Notes, and Tokenizados as one block with
+   platform links and the episode count. No per-episode rows.
+5. **About** — short and human, with the email.
+
+A section with nothing to show is left out rather than rendered empty.
 
 ### Bios
 
-- Short: _Product engineer building digital products at the intersection of
-  frontend, product, and AI._
-- First person: _I'm a product-minded engineer who likes turning messy ideas
-  into simple products. I work mostly across frontend, product, and applied
-  AI, and I write about the decisions, experiments, and mistakes behind the
-  things I build._
-- About draft: _I'm Jorge, a product-minded engineer based in the Canary
-  Islands. I've spent the last several years building web products, mostly
-  around frontend and product engineering. More recently I've been exploring
-  what changes when AI becomes part of the product itself — not just a feature
-  inside it. I like simple interfaces, opinionated products, and turning messy
-  ideas into things people can actually use._
+These match the published wording; change them together with the site.
+
+- Short (site description, meta, llms.txt): _Jorge Masta is a product engineer
+  who likes building and improving digital products. Nine years shipping web
+  and mobile products; now at Nexcess._
+- First person: _I'm a product engineer who likes building and improving
+  digital products. I work mostly across frontend and product, and I write
+  about the decisions, experiments, and mistakes behind the things I build._
+- About (homepage): _I'm Jorge, a product engineer based in the Canary Islands.
+  I like building digital products, and I like improving them even more:
+  finding what gets in people's way and taking it out. I care about simple
+  interfaces, opinionated products, and the unglamorous parts that keep a
+  product working. In 2025 I also taught live courses on programming with AI to
+  engineering teams at Code at Light Speed, working in their own codebases._
 
 ### Calls to action
 
