@@ -32,12 +32,12 @@ const sections = [
                       <img
                         src={project.data.mainImage.src}
                         alt={project.data.mainImage.alt}
-                        class="aspect-[16/10] w-full rounded-md border border-rule object-cover object-top"
+                        class="aspect-[16/10] w-full rounded-md card-img object-cover object-top"
                         loading="lazy"
                       />
                     )}
-                    <h3 class="mt-4 text-2xl group-hover:underline">
-                      {project.data.title}{external && <span aria-hidden="true">&nbsp;↗</span>}
+                    <h3 class="link-quiet mt-4 text-2xl">
+                      {project.data.title}{external && <span class="inline-block" aria-hidden="true">&nbsp;↗</span>}
                     </h3>
                     <p class="mt-1 leading-relaxed text-charcoal wrap-anywhere">{project.data.excerpt}</p>
                   </a>
