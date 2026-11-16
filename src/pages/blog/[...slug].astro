@@ -3,7 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { render } from "astro:content";
 import { getPosts } from "../../lib/content";
 import { anchors } from "../../lib/registry";
-import { getDateSegments, formatDate } from "../../lib/utils";
+import { getDateSegments, formatDate, isOlderThanOneYear } from "../../lib/utils";
 
 export async function getStaticPaths() {
   const posts = await getPosts();
@@ -26,12 +26,14 @@ const { Content } = await render(post);
 
 <BaseLayout title={`${post.data.title} | Jorge Masta`} description={post.data.excerpt}>
   <article id={anchors.entry(post.id)} class="mx-auto max-w-2xl px-4 pt-16 sm:px-6 sm:pt-24">
-    <time
-      class="text-sm text-muted"
-      datetime={post.data.publishedAt.toISOString()}
-    >
-      {formatDate(post.data.publishedAt)}
-    </time>
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+      <time datetime={post.data.publishedAt.toISOString()}>
+        {formatDate(post.data.publishedAt)}
+      </time>
+      {isOlderThanOneYear(post.data.publishedAt) && (
+        <span class="badge-archive shrink-0 whitespace-nowrap">Archive</span>
+      )}
+    </div>
     <h1 class="mt-3 text-4xl leading-tight tracking-tight sm:text-5xl">
       {post.data.title}
     </h1>
@@ -40,12 +42,26 @@ const { Content } = await render(post);
         <img
           src={post.data.mainImage.src}
           alt={post.data.mainImage.alt}
-          class="mt-10 max-h-[400px] w-full rounded-md object-cover"
+          class="mt-10 max-h-[400px] w-full rounded-md object-cover object-top"
         />
       )
     }
     <div class="prose prose-lg mt-10 max-w-none">
       <Content />
     </div>
+    {
+      post.data.episode && (
+        <p class="mt-12 border-t border-rule pt-5 text-sm text-muted">
+          <a
+            href={post.data.episode}
+            class="underline-offset-4 hover:text-green hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            From an episode of Tokenizados&nbsp;<span aria-hidden="true">→</span>
+          </a>
+        </p>
+      )
+    }
   </article>
 </BaseLayout>

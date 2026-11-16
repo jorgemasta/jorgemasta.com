@@ -9,7 +9,7 @@ mainImage:
 
 > **Note:** AppCenter was deprecated by Microsoft in March 2025. This post is preserved as an archive. The CI/CD patterns described here still apply to other platforms.
 
-> **TLDR:** [Add this file to your root folder](https://gist.github.com/jorgemasta/41862f tried4ea0f82b9fb4ff53d5e38d2)
+> **TLDR:** [Add this file to your root folder](https://gist.github.com/jorgemasta/499f5748122b6ee5c4a101aa010ff158)
 
 We are cool people, so we have our continuous deployment system and our bug tracker working but when the bugs come we see that they really suck...
 
@@ -90,4 +90,4 @@ fi
 
 If we put all the above together, we get this file that automates the process of generating and uploading the source maps.
 
-[Link to the gist](https://gist.github.com/jorgemasta/41862f4ea0f82b9fb4ff53d5e38d2)
+[Link to the gist](https://gist.github.com/jorgemasta/499f5748122b6ee5c4a101aa010ff158)

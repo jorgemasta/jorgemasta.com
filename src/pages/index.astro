@@ -3,17 +3,21 @@ import { render } from "astro:content";
 import Prose from "../components/Prose.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import {
+  getAbout,
   getCurrentPosts,
   getEpisodeCount,
   getProjects,
+  getRoles,
   getShownPodcast,
+  hasDetailPage,
   isBuilding,
 } from "../lib/content";
 import { anchors } from "../lib/registry";
-import { ABOUT, ABOUT_ID } from "../data/about";
-import { ROLES } from "../data/roles";
+import { ABOUT_ID } from "../data/about";
+import { proseText } from "../lib/facts";
 import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
 import { formatDate, getBlogUrl, getProjectUrl } from "../lib/utils";
+import { hostname, withTail } from "../lib/hostname";
 
 const building = await Promise.all(
   (await getProjects())
@@ -28,7 +32,32 @@ const episodeCount = getEpisodeCount(podcast);
 // Rendered only when there is recent writing, so the site never looks abandoned.
 const notes = (await getCurrentPosts()).slice(0, 5);
 
-const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
+/** Hero calls to action, best first. Only the first two are shown. */
+const ctas = [
+  building.length > 0 && { href: "#building", label: "See what I'm building", external: false },
+  notes.length > 0 && { href: "/blog/", label: "Read my writing", external: false },
+  { href: TOKENIZADOS.site, label: "Listen to Tokenizados", external: true },
+]
+  .filter((cta) => cta !== false)
+  .slice(0, 2);
+
+const roles = await getRoles();
+const about = await getAbout();
+
+const projects = await getProjects();
+/**
+ * The detail page of a project the Experience section names by hand, or
+ * undefined to show the name as plain text, so a draft, rename or building
+ * project never becomes a 404 link. A build fails on a slug that doesn't
+ * resolve; dev doesn't, since its `?data=` fixtures replace the real projects.
+ */
+const pastProjectUrl = (id: string) => {
+  const project = projects.find((p) => p.id === id);
+  if (!project && !import.meta.env.DEV) throw new Error(`Homepage names project "${id}", which isn't published`);
+  return project && hasDetailPage(project) ? getProjectUrl(project.id) : undefined;
+};
+const kontrolooUrl = pastProjectUrl("kontroloo");
+const foodToBentoUrl = pastProjectUrl("food-to-bento");
 ---
 
 <BaseLayout title={`${SITE_TITLE} · Product engineer`} description={SITE_DESCRIPTION}>
@@ -41,101 +70,117 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
       Product engineer working at the intersection of frontend, product, and AI.
     </p>
     <div class="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4">
-      <a href="#building" class="button">See what I'm building <span aria-hidden="true">→</span></a>
       {
-        notes.length > 0 ? (
-          <a href="/blog/" class="action">
-            Read my writing <span aria-hidden="true">→</span>
-          </a>
-        ) : (
-          <a href={TOKENIZADOS.site} class="action" target="_blank" rel="noopener noreferrer">
-            Listen to Tokenizados <span aria-hidden="true">→</span>
-          </a>
-        )
-      }
-    </div>
-  </section>
-
-  <!-- What I'm building -->
-  <section id="building" class="mx-auto max-w-5xl scroll-mt-8 px-4 sm:px-6">
-    <p class="eyebrow">Now</p>
-    <h2 class="mt-2 text-4xl sm:text-5xl">What I'm building</h2>
-
-    <div class="mt-14 flex flex-col gap-24">
-      {
-        building.map(({ project, Content }, i) => (
-          <article
-            id={anchors.project(project.id)}
-            class="grid items-start gap-8 md:grid-cols-12 md:gap-12"
+        // The first destination that has something behind it gets the button;
+        // the next one gets the link, so the two never point at the same place.
+        ctas.map((cta, i) => (
+          <a
+            href={cta.href}
+            class={i === 0 ? "button" : "action"}
+            {...(cta.external && { target: "_blank", rel: "noopener noreferrer" })}
           >
-            {project.data.mainImage && (
-              <a
-                href={project.data.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                tabindex="-1"
-                aria-hidden="true"
-                class:list={["block md:col-span-7", i % 2 === 1 && "md:order-2"]}
-              >
-                <img
-                  src={project.data.mainImage.src}
-                  alt={project.data.mainImage.alt}
-                  width="1200"
-                  height="750"
-                  loading={i === 0 ? "eager" : "lazy"}
-                  class="w-full rounded-md border border-rule shadow-[0_24px_48px_-24px_rgb(23_63_53/0.35)]"
-                />
-              </a>
-            )}
-            <div class="md:col-span-5">
-              <h3 class="text-3xl sm:text-4xl">{project.data.title}</h3>
-              <p class="mt-3 text-lg leading-relaxed text-charcoal">{project.data.excerpt}</p>
-              <div class="prose mt-4 max-w-none leading-relaxed">
-                <Content />
-              </div>
-              {project.data.stats.length > 0 && (
-                <dl class="mt-6 flex flex-wrap gap-x-8 gap-y-4 border-t border-rule pt-5">
-                  {project.data.stats.map((stat) => (
-                    <div class="flex flex-col-reverse">
-                      <dt class="text-xs text-muted">{stat.label}</dt>
-                      <dd class="font-serif text-3xl text-green">{stat.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-              <div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
-                <a
-                  href={project.data.url}
-                  class="action"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Visit {hostname(project.data.url!)} <span aria-hidden="true">→</span>
-                </a>
-                {project.data.links.map((link) => (
-                  <a
-                    href={link.url}
-                    class="text-sm text-muted hover:text-green"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          </article>
+            {cta.label}&nbsp;<span aria-hidden="true">→</span>
+          </a>
         ))
       }
     </div>
   </section>
 
-  <!-- Tokenizados -->
-  <section id={anchors.tokenizados} class="mt-32 bg-green text-paper">
+  <!-- What I'm building: hidden when nothing is being built, so the heading never sits over nothing. -->
+  {building.length > 0 && (
+    <section id="building" class="mx-auto max-w-5xl scroll-mt-8 px-4 sm:px-6">
+      <p class="eyebrow">Now</p>
+      <h2 class="mt-2 text-4xl sm:text-5xl">What I'm building</h2>
+
+      <!-- Sized by its own width, not the viewport, so the open Concierge can't squeeze it. -->
+      <div class="@container mt-14 flex flex-col gap-24">
+        {
+          building.map(({ project, Content }, i) => (
+            <article
+              id={anchors.project(project.id)}
+              class:list={[
+                "grid grid-cols-1 items-start gap-8 @3xl:gap-12",
+                i % 2 === 1
+                  ? "@3xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+                  : "@3xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]",
+              ]}
+            >
+              {project.data.mainImage && (
+                <a
+                  href={project.data.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  tabindex="-1"
+                  aria-hidden="true"
+                  class:list={["block", i % 2 === 1 && "@3xl:order-2"]}
+                >
+                  <img
+                    src={project.data.mainImage.src}
+                    alt={project.data.mainImage.alt}
+                    width="1200"
+                    height="750"
+                    loading={i === 0 ? "eager" : "lazy"}
+                    class="aspect-[16/10] w-full rounded-md border border-rule object-cover object-top shadow-[0_24px_48px_-24px_rgb(23_63_53/0.35)]"
+                  />
+                </a>
+              )}
+              <div
+                class:list={[
+                  "min-w-0 wrap-anywhere",
+                  !project.data.mainImage && "max-w-2xl @3xl:col-span-full",
+                ]}
+              >
+                <h3 class="text-3xl sm:text-4xl">{project.data.title}</h3>
+                <p class="mt-3 text-lg leading-relaxed text-charcoal">{project.data.excerpt}</p>
+                <div class="prose mt-4 max-w-none leading-relaxed">
+                  <Content />
+                </div>
+                {project.data.stats.length > 0 && (
+                  <dl class="mt-6 flex flex-wrap items-start gap-x-8 gap-y-4 border-t border-rule pt-5">
+                    {project.data.stats.map((stat) => (
+                      <div class="flex flex-col-reverse">
+                        <dt class="text-xs text-muted">{stat.label}</dt>
+                        <dd class="font-serif text-3xl text-green">{stat.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                <div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+                  <a
+                    href={project.data.url}
+                    class="action min-w-0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Visit {withTail(hostname(project.data.url!)).head}<span class="whitespace-nowrap"
+                      >{withTail(hostname(project.data.url!)).tail}&nbsp;<span aria-hidden="true">→</span></span
+                    >
+                  </a>
+                  {project.data.links.map((link) => (
+                    <a
+                      href={link.url}
+                      class="text-sm text-muted hover:text-green"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </section>
+  )}
+
+  <!-- Tokenizados: right under the hero when nothing is being built, where the hero's bottom padding is the gap. -->
+  <section id={anchors.tokenizados} class:list={["@container bg-green text-paper", building.length > 0 && "mt-32"]}>
     <div
-      class="mx-auto grid max-w-5xl gap-10 px-4 py-20 sm:px-6 md:grid-cols-12 md:gap-12 md:py-24"
+      class="mx-auto grid max-w-5xl grid-cols-1 gap-10 px-4 py-20 sm:px-6 md:py-24 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] @3xl:gap-12"
     >
-      <div class="md:col-span-4">
+      <div>
         <img
           src="/images/tokenizados/cover.webp"
           alt="Tokenizados podcast cover art"
@@ -145,7 +190,7 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
           class="w-40 rounded-md sm:w-56"
         />
       </div>
-      <div class="md:col-span-8">
+      <div class="min-w-0">
         <p class="eyebrow text-[#e2a283]">Podcast</p>
         <h2 class="mt-2 text-4xl text-paper sm:text-5xl">Tokenizados</h2>
         <p class="mt-5 max-w-xl text-lg leading-relaxed text-paper/90">{TOKENIZADOS.about}</p>
@@ -171,7 +216,7 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
                           {formatDate(episode.date)}
                         </time>
                       </span>
-                      <span class="font-serif text-lg leading-snug group-hover:underline">
+                      <span class="min-w-0 font-serif text-lg leading-snug wrap-anywhere group-hover:underline">
                         <span class="text-paper/60">#{episode.number}</span> {episode.title}
                       </span>
                     </a>
@@ -213,19 +258,19 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
             <li class="border-b border-rule">
               <a
                 href={getBlogUrl(note.id, note.data.publishedAt)}
-                class="group grid gap-1 py-6 no-underline sm:grid-cols-12 sm:gap-6"
+                class="group grid grid-cols-1 gap-1 py-6 no-underline sm:grid-cols-12 sm:gap-6"
               >
                 <time
                   datetime={note.data.publishedAt.toISOString()}
-                  class="text-sm text-muted tabular-nums sm:col-span-3"
+                  class="min-w-0 text-sm text-muted tabular-nums sm:col-span-3 sm:pt-1.5"
                 >
                   {formatDate(note.data.publishedAt)}
                 </time>
-                <span class="sm:col-span-9">
+                <span class="min-w-0 wrap-anywhere sm:col-span-9">
                   <span class="font-serif text-2xl text-green group-hover:underline">
                     {note.data.title}
                   </span>
-                  <span class="mt-1 block text-charcoal">{note.data.excerpt}</span>
+                  <span class="mt-1 line-clamp-6 sm:line-clamp-3 text-charcoal">{note.data.excerpt}</span>
                 </span>
               </a>
             </li>
@@ -241,15 +286,15 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
     <h2 class="mt-2 text-4xl sm:text-5xl">Experience</h2>
     <ol class="mt-10 border-t border-rule">
       {
-        ROLES.map((role) => (
+        roles.map((role) => (
           <li
             id={anchors.role(role.id)}
-            class="grid gap-1 border-b border-rule py-6 sm:grid-cols-12 sm:gap-6"
+            class="grid grid-cols-1 gap-1 border-b border-rule py-6 sm:grid-cols-12 sm:gap-6"
           >
             <p class="text-sm text-muted tabular-nums sm:col-span-3 sm:pt-1">
-              {role.start} – {role.end ?? "now"}
+              {role.end === role.start ? role.start : `${role.start} – ${role.end ?? "now"}`}
             </p>
-            <div class="sm:col-span-9">
+            <div class="min-w-0 wrap-break-word sm:col-span-9">
               <h3 class="text-2xl">
                 {role.title},{" "}
                 {role.url ? (
@@ -260,40 +305,44 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
                   role.company
                 )}
               </h3>
-              <p class="mt-1 max-w-2xl leading-relaxed">
-                <Prose owner={role.id} prose={role.impact} />
-              </p>
+              {proseText(role.impact).trim() && (
+                <p class="mt-1 max-w-2xl leading-relaxed">
+                  <Prose owner={role.id} prose={role.impact} />
+                </p>
+              )}
             </div>
           </li>
         ))
       }
     </ol>
-    <p class="mt-8 max-w-2xl leading-relaxed text-muted sm:ml-[25%] sm:pl-4">
-      Before that, I co-founded <a href={getProjectUrl("kontroloo")}>Kontroloo</a>, NFC access
-      control and cashless payments for events (2017), and <a href={getProjectUrl("food-to-bento")}
-        >Food to Bento</a
-      >, an app against food waste (2018–2019), both in Las Palmas.
-    </p>
+    <div class="mt-8 sm:grid sm:grid-cols-12 sm:gap-6">
+      <p class="max-w-2xl leading-relaxed text-muted sm:col-span-9 sm:col-start-4">
+        Before that, I co-founded {kontrolooUrl ? <a href={kontrolooUrl}>Kontroloo</a> : "Kontroloo"}, NFC
+        access control and cashless payments for events (2017), and {
+          foodToBentoUrl ? <a href={foodToBentoUrl}>Food to Bento</a> : "Food to Bento"
+        }, an app against food waste (2018–2019), both in Las Palmas.
+      </p>
+    </div>
   </section>
 
   <!-- About -->
-  <section class="mx-auto mt-32 max-w-5xl px-4 sm:px-6">
-    <div class="grid gap-10 md:grid-cols-12 md:gap-12">
-      <div class="md:col-span-4">
+  <section class="@container mx-auto mt-32 max-w-5xl px-4 sm:px-6">
+    <div class="grid grid-cols-1 gap-10 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] @3xl:gap-12">
+      <div>
         <!-- Placeholder until the real portrait lands. -->
         <div
-          class="flex aspect-[4/5] w-40 items-end rounded-md bg-olive p-4 font-serif text-4xl text-paper sm:w-56"
+          class="flex aspect-[4/5] w-40 max-w-full items-end rounded-md bg-olive p-4 font-serif text-4xl text-paper sm:w-56"
           role="img"
           aria-label="Jorge Masta"
         >
           JM
         </div>
       </div>
-      <div class="md:col-span-8">
+      <div class="min-w-0 wrap-break-word">
         <h2 class="text-4xl sm:text-5xl">About</h2>
         <div class="mt-6 max-w-xl space-y-4 text-lg leading-relaxed">
           {
-            ABOUT.map((paragraph) => (
+            about.map((paragraph) => (
               <p>
                 <Prose owner={ABOUT_ID} prose={paragraph} />
               </p>
@@ -301,7 +350,7 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
           }
           <p>
             The best way to reach me is email: <a href={`mailto:${EMAIL}`}
-              class="font-serif text-xl">{EMAIL}</a
+              class="font-serif text-xl wrap-anywhere">{EMAIL}</a
             >
           </p>
         </div>

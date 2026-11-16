@@ -12,12 +12,13 @@ const sections = [
 <BaseLayout title="Projects | Jorge Masta" description="Projects by Jorge Masta">
   <div class="mx-auto max-w-5xl px-4 pt-16 sm:px-6 sm:pt-24">
     <h1 class="text-5xl tracking-tight sm:text-6xl">Projects</h1>
+    {sections.length === 0 && <p class="mt-6 text-muted">No projects to show yet.</p>}
 
     {
       sections.map((section) => (
         <section class="mt-16">
           <h2 class="eyebrow font-sans">{section.heading}</h2>
-          <ul class="mt-6 grid gap-x-10 gap-y-12 sm:grid-cols-2">
+          <ul class="mt-6 grid grid-cols-1 gap-x-10 gap-y-12 sm:grid-cols-2">
             {section.projects.map((project) => {
               const external = isBuilding(project);
               return (
@@ -36,10 +37,9 @@ const sections = [
                       />
                     )}
                     <h3 class="mt-4 text-2xl group-hover:underline">
-                      {project.data.title}
-                      {external && <span aria-hidden="true"> ↗</span>}
+                      {project.data.title}{external && <span aria-hidden="true">&nbsp;↗</span>}
                     </h3>
-                    <p class="mt-1 leading-relaxed text-charcoal">{project.data.excerpt}</p>
+                    <p class="mt-1 leading-relaxed text-charcoal wrap-anywhere">{project.data.excerpt}</p>
                   </a>
                 </li>
               );

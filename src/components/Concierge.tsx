@@ -2,7 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
 import { track } from "../lib/analytics";
-import { CONCIERGE_ENDPOINT, EMAIL, MAX_QUESTION_LENGTH } from "../lib/consts";
+import { CONCIERGE_ENDPOINT, EMAIL, MAX_QUESTION_LENGTH, MAX_TURNS } from "../lib/consts";
 import {
   currentStop,
   focusReducer,
@@ -15,7 +15,7 @@ import {
   type Stop,
 } from "../lib/focus";
 import { goBack, goTo, showInUrl, spotlight, whenVisitorTakesOver } from "../lib/focus-dom";
-import { messageText, parseAnswer } from "../lib/references";
+import { messageText, parseAnswer, type AnswerPart } from "../lib/references";
 import type { Target } from "../lib/registry";
 
 /** What the client needs to show a chip and take the visitor to its target. */
@@ -25,6 +25,29 @@ export type ChipTarget = Pick<Target, "id" | "label" | "path" | "anchor">;
 export const chipTarget = ({ id, label, path, anchor }: Target): ChipTarget => ({ id, label, path, anchor });
 
 /** The same four on every page (#28). */
+/** Punctuation that belongs to the word before it, so it must not start a line. */
+const LEADING_PUNCTUATION = /^[.,;:!?…)\]}»”’。，、；：！？）]+/u;
+
+/**
+ * An answer's parts with the punctuation that follows a chip moved onto the chip,
+ * so a line never breaks between a chip and its full stop or comma.
+ */
+function withGluedPunctuation(parts: AnswerPart[]) {
+  const glued: ({ type: "text"; text: string } | { type: "reference"; id: string; after: string })[] = [];
+  parts.forEach((part, i) => {
+    if (part.type === "reference") {
+      const next = parts[i + 1];
+      const after = next?.type === "text" ? (next.text.match(LEADING_PUNCTUATION)?.[0] ?? "") : "";
+      glued.push({ ...part, after });
+    } else {
+      const previous = glued.at(-1);
+      const text = previous?.type === "reference" ? part.text.slice(previous.after.length) : part.text;
+      if (text) glued.push({ type: "text", text });
+    }
+  });
+  return glued;
+}
+
 const SUGGESTED_PROMPTS = [
   "What is Jorge building right now?",
   "Why would Jorge fit a product team?",
@@ -138,6 +161,19 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
     messages: saved?.messages,
   });
   const busy = status === "submitted" || status === "streaming";
+  const last = messages.at(-1);
+  const lastAnswer = last?.role === "assistant" ? parseAnswer(messageText(last), isKnown).parts : [];
+  // Until the first visible word: a reasoning or start chunk turns the status to streaming with nothing to show.
+  const waiting = busy && lastAnswer.length === 0;
+  // The Worker turns away a question past the limit, so the panel stops taking them and offers a fresh start.
+  const atLimit = messages.filter((message) => message.role === "user").length >= MAX_TURNS;
+  /** An answer as a screen reader hears it: its text, and each chip's label. */
+  const spoken = (parts: AnswerPart[]) =>
+    parts.map((part) => (part.type === "text" ? part.text : ` ${byId.get(part.id)?.label ?? ""} `)).join("").trim();
+  /** A finished answer with no words and no chips to show. The one still streaming isn't finished. */
+  const isEmptyAnswer = (message: UIMessage) =>
+    !((busy || status === "error") && message === last) &&
+    parseAnswer(messageText(message), isKnown).parts.every((part) => part.type === "text" && !part.text.trim());
 
   const [focus, setFocus] = useState<FocusState>(null);
   // The latest Focus, updated as each event is sent, so events sent before the next render build on each other.
@@ -239,12 +275,13 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
     setMessages([]);
     send({ type: "cleared" });
     setInput("");
-    inputRef.current?.focus();
+    // After the render that re-enables the input, if the conversation was at its limit.
+    requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   /** Asks a question, typed or one of the suggested prompts. Analytics get the kind, not the text. */
   const ask = (question: string, suggested = false) => {
-    if (!question.trim() || busy) return;
+    if (!question.trim() || busy || atLimit) return;
     track("concierge_question_asked", {
       suggested,
       turn: messages.filter((message) => message.role === "user").length + 1,
@@ -321,16 +358,17 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
         aria-label="Concierge"
         data-concierge-open
         onKeyDown={(event) => event.key === "Escape" && setOpen(false)}
-        className="fixed inset-x-0 bottom-0 z-40 flex h-[68dvh] flex-col rounded-t-2xl border-t border-rule bg-paper shadow-[0_-12px_32px_-12px_rgb(23_63_53/0.35)] lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:h-auto lg:w-(--concierge-width) lg:rounded-none lg:border-t-0 lg:border-l lg:shadow-none"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-[68dvh] min-h-[min(24rem,100dvh)] flex-col overflow-y-auto rounded-t-2xl border-t border-rule bg-paper shadow-[0_-12px_32px_-12px_rgb(23_63_53/0.35)] lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:h-auto lg:w-(--concierge-width) lg:rounded-none lg:border-t-0 lg:border-l lg:shadow-none"
       >
-        <header className="flex items-start justify-between gap-4 border-b border-rule py-4 pr-3 pl-5">
-          <div className="pt-1">
+        {/* When the title can't sit beside the buttons (large text), it takes its own line below them. Reversed, so `items-end` is the top. */}
+        <header className="flex flex-wrap-reverse items-end justify-between gap-x-4 gap-y-1 border-b border-rule py-4 pr-3 pl-5">
+          <div className="min-w-0 grow basis-40 pt-1">
             <p className="font-serif text-xl text-green">Ask about Jorge's work</p>
             <p className="mt-1 text-xs text-muted">
               An AI that answers from this site. Questions are logged to improve it.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-0.5">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5">
             {messages.length > 0 && (
               <button
                 type="button"
@@ -360,7 +398,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
           </div>
         </header>
 
-        <div ref={conversationRef} className="flex-1 overflow-y-auto px-5 py-5" aria-live="polite">
+        <div ref={conversationRef} className="flex-1 overflow-y-auto px-5 py-5 wrap-break-word">
           {messages.length === 0 && (
             <ul className="flex flex-col items-start gap-2">
               {SUGGESTED_PROMPTS.map((prompt) => (
@@ -368,7 +406,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
                   <button
                     type="button"
                     onClick={() => ask(prompt, true)}
-                    className="rounded-full border border-rule px-3.5 py-1.5 text-left text-sm text-charcoal transition-colors hover:border-green hover:text-green"
+                    className="rounded-2xl border border-rule px-3.5 py-1.5 text-left text-sm text-charcoal transition-colors hover:border-green hover:text-green"
                   >
                     {prompt}
                   </button>
@@ -380,15 +418,25 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
           <ol className="flex flex-col gap-5">
             {messages.map((message) =>
               message.role === "user" ? (
-                <li key={message.id} className="self-end rounded-2xl bg-paper-deep px-4 py-2 text-sm text-chocolate">
+                <li
+                  key={message.id}
+                  dir="auto"
+                  className="max-w-[85%] min-w-0 self-end rounded-2xl bg-paper-deep px-4 py-2 text-sm whitespace-pre-wrap text-chocolate wrap-anywhere"
+                >
                   {messageText(message)}
                 </li>
-              ) : (
+              ) : isEmptyAnswer(message) ? (
+                // Nothing left to show (only unknown references, or cut off before a word): the not-covered reply.
                 <li key={message.id} className="leading-relaxed text-charcoal">
-                  {parseAnswer(messageText(message), isKnown).parts.map((part, i) =>
+                  The site doesn't cover that. You can email Jorge at <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
+                </li>
+              ) : (
+                <li key={message.id} dir="auto" className="leading-relaxed text-charcoal">
+                  {withGluedPunctuation(parseAnswer(messageText(message), isKnown).parts).map((part, i) =>
                     part.type === "text" ? (
                       <span key={i}>{part.text}</span>
                     ) : (
+                      <span key={i} className={part.after ? "whitespace-nowrap" : undefined}>
                       <button
                         key={i}
                         type="button"
@@ -399,6 +447,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
                           // On a phone the sheet would hide the stop, so it gives the page back.
                           if (narrow) setOpen(false);
                         }}
+                        title={byId.get(part.id)!.label}
                         className="group mx-0.5 inline-flex max-w-56 cursor-pointer items-center gap-1 rounded-full border border-green/45 bg-paper-deep py-px pr-1.5 pl-2.5 align-baseline text-sm font-medium text-green transition-colors hover:border-green hover:bg-green hover:text-paper"
                       >
                         <span className="truncate">{byId.get(part.id)!.label}</span>
@@ -410,6 +459,8 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
                           <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </button>
+                      {part.after}
+                      </span>
                     )
                   )}
                 </li>
@@ -417,7 +468,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
             )}
           </ol>
 
-          {status === "submitted" && <p className="mt-5 text-muted">…</p>}
+          {waiting && <p className="mt-5 text-muted">…</p>}
           {back && (
             <button
               type="button"
@@ -433,8 +484,30 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
             </p>
           )}
         </div>
+        {/* Announces the finished answer once, rather than every streamed token. */}
+        <p className="sr-only" aria-live="polite">
+          {busy
+            ? "Answering…"
+            : status === "ready" && last?.role === "assistant"
+              ? isEmptyAnswer(last)
+                ? "The site doesn't cover that."
+                : spoken(lastAnswer)
+              : ""}
+        </p>
 
         <form onSubmit={onSubmit} className="border-t border-rule px-4 py-4">
+          {atLimit && !busy && (
+            <p className="mb-3 text-sm text-charcoal">
+              That's {MAX_TURNS} questions, the most for one conversation.{" "}
+              <button
+                type="button"
+                onClick={startOver}
+                className="font-medium text-green underline underline-offset-4 hover:text-green-soft"
+              >
+                Start over
+              </button>
+            </p>
+          )}
           <div className="rounded-2xl border border-rule bg-paper transition-colors focus-within:border-green/60">
             <label htmlFor="concierge-question" className="sr-only">
               Your question
@@ -443,10 +516,12 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
               id="concierge-question"
               ref={inputRef}
               rows={2}
+              disabled={atLimit}
               value={input}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
+                // Enter that confirms an IME composition (Japanese, Chinese, Vietnamese…) is not a send.
+                if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
                   event.preventDefault();
                   ask(input);
                 }
@@ -454,7 +529,8 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
               placeholder="Ask about my work…"
               maxLength={MAX_QUESTION_LENGTH}
               aria-describedby="concierge-question-length"
-              className="block w-full resize-none bg-transparent px-4 pt-3 text-sm text-charcoal placeholder:text-muted focus:outline-none"
+              dir="auto"
+              className="block w-full resize-none bg-transparent px-4 pt-3 text-base text-charcoal lg:text-sm placeholder:text-muted focus:outline-none"
             />
             <div className="flex items-center justify-between py-2 pr-2 pl-4">
               <p id="concierge-question-length" className="text-xs text-muted/80 tabular-nums">
@@ -463,7 +539,7 @@ export default function Concierge({ targets }: { targets: ChipTarget[] }) {
               </p>
               <button
                 type="submit"
-                disabled={busy || !input.trim()}
+                disabled={busy || atLimit || !input.trim()}
                 aria-label="Ask"
                 title="Ask"
                 className="grid size-8 place-items-center rounded-full bg-green text-paper transition-colors hover:bg-green-soft disabled:bg-rule disabled:text-muted"
@@ -512,12 +588,12 @@ function FocusBar({
 
   return (
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-4 z-30 justify-center px-4 lg:bottom-6 ${panelOpen ? "hidden lg:right-(--concierge-width) lg:flex" : "flex"}`}
+      className={`@container pointer-events-none fixed inset-x-0 bottom-4 z-30 justify-center px-4 lg:bottom-6 ${panelOpen ? "hidden lg:right-(--concierge-width) lg:flex" : "flex"}`}
       data-concierge-bar={panelOpen ? undefined : ""}
     >
       <nav
         aria-label="Focus"
-        className="pointer-events-auto flex w-full max-w-lg min-w-0 items-center gap-1 rounded-full border border-rule bg-paper py-1.5 pr-1.5 pl-2 shadow-[0_12px_32px_-12px_rgb(23_63_53/0.35)] lg:w-auto"
+        className="pointer-events-auto flex w-full max-w-lg min-w-0 flex-wrap items-center gap-1 rounded-3xl border border-rule bg-paper py-1.5 pr-1.5 pl-2 shadow-[0_12px_32px_-12px_rgb(23_63_53/0.35)] lg:w-auto"
       >
         <button
           type="button"
@@ -526,42 +602,46 @@ function FocusBar({
           aria-controls="concierge"
           aria-label={`Reopen the conversation: ${label}`}
           title={label}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-full py-1 pr-2 pl-3 text-left text-sm text-charcoal transition-colors hover:bg-paper-deep"
+          className="flex min-w-0 grow basis-20 items-center gap-2 rounded-full py-1 pr-2 pl-3 text-left text-sm text-charcoal transition-colors hover:bg-paper-deep"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 shrink-0 fill-none stroke-green stroke-[1.5] lg:hidden">
             <path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" strokeLinejoin="round" />
           </svg>
           <span className="truncate">{label}</span>
         </button>
-        <button
-          type="button"
-          onClick={onPrevious}
-          disabled={!current}
-          aria-label="Previous stop"
-          className={`ml-2 ${control}`}
-        >
-          ←
-        </button>
-        <p className="min-w-10 text-center text-sm text-muted tabular-nums" aria-live="polite">
-          {started ? `${current + 1}/${stops.length}` : `${stops.length} ${stops.length === 1 ? "stop" : "stops"}`}
-        </p>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={started && current === stops.length - 1}
-          aria-label={started ? "Next stop" : "First stop"}
-          className={control}
-        >
-          →
-        </button>
-        <button
-          type="button"
-          onClick={onClear}
-          aria-label="Exit focus"
-          className={`ml-1 ${control} text-xl text-muted hover:text-green`}
-        >
-          ×
-        </button>
+        {/* One unit: with large text it wraps below the label rather than off the screen. */}
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={onPrevious}
+            disabled={!current}
+            aria-label="Previous stop"
+            className={`ml-2 ${control}`}
+          >
+            ←
+          </button>
+          {/* Only for screen readers when there's no room for it. */}
+          <p className="min-w-10 text-center text-sm text-muted tabular-nums @max-[17rem]:sr-only" aria-live="polite">
+            {started ? `${current + 1}/${stops.length}` : `${stops.length} ${stops.length === 1 ? "stop" : "stops"}`}
+          </p>
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={started && current === stops.length - 1}
+            aria-label={started ? "Next stop" : "First stop"}
+            className={control}
+          >
+            →
+          </button>
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label="Exit focus"
+            className={`ml-1 ${control} text-xl text-muted hover:text-green`}
+          >
+            ×
+          </button>
+        </div>
       </nav>
     </div>
   );

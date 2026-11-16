@@ -20,11 +20,25 @@ export function getProjectUrl(id: string) {
 }
 
 export function formatDate(date: Date) {
+  // Content dates are UTC midnight, so the shown day must not depend on the build machine's zone.
   return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "UTC",
   });
+}
+
+/**
+ * Text cut to at most `max` characters, at a word when there is one, with an
+ * ellipsis. Counts code points, so an emoji or other astral character is never split.
+ */
+export function truncate(text: string, max: number) {
+  const chars = Array.from(text);
+  if (chars.length <= max) return text;
+  const cut = chars.slice(0, max).join("");
+  const space = cut.lastIndexOf(" ");
+  return `${(space > 0 ? cut.slice(0, space) : cut).replace(/[\s,.;:]+$/, "")}…`;
 }
 
 export function isOlderThanOneYear(date: Date) {

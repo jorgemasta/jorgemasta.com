@@ -5,6 +5,7 @@
  * as it's complete.
  */
 import type { UIMessage } from "ai";
+import { truncate } from "./utils";
 
 /** A chat message's text, with any non-text parts left out. */
 export const messageText = (message: UIMessage) =>
@@ -29,10 +30,7 @@ const NOTE_LENGTH = 140;
 
 /** A note as shown: one line of whitespace, cut at a word with an ellipsis if too long. */
 function note(text: string) {
-  const clean = text.trim().replace(/\s+/g, " ");
-  if (clean.length <= NOTE_LENGTH) return clean;
-  const cut = clean.slice(0, NOTE_LENGTH);
-  return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s,.;:]+$/, "")}…`;
+  return truncate(text.trim().replace(/\s+/g, " "), NOTE_LENGTH);
 }
 
 /** The start of a reference still streaming in: `[`, `[[pad` or `[[padelful]`. */

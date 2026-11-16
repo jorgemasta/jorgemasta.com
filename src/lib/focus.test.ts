@@ -44,6 +44,15 @@ describe("focusReducer", () => {
     expect(after(asked(question))?.label).toBe("Has Jorge ever built developer tooling, SDKs or an MCP…");
   });
 
+  it("cuts a question with no spaces without splitting an emoji", () => {
+    const question = "Jorge在人工智能产品方面做过哪些工作？他是否熟悉React和React Native开发以及MCP服务器的构建🤖🤖";
+    const label = after(asked(question))!.label;
+
+    expect(label.endsWith("…")).toBe(true);
+    expect(label).not.toMatch(/[\uD800-\uDFFF](?![\uDC00-\uDFFF])/u);
+    expect(Array.from(label).length).toBeLessThanOrEqual(57);
+  });
+
   describe("the automatic move", () => {
     it("takes the visitor to the first stop as soon as it streams in", () => {
       const focus = after(asked("Frontend work?"), { type: "answered", stops: [woonivers] });

@@ -9,12 +9,17 @@ const mainImage = z
   })
   .optional();
 
+/** Shown in lists, so it stays a sentence or two, not a paragraph. */
+const excerpt = z
+  .string()
+  .max(200, "Keep the excerpt to 200 characters or fewer; it is shown in lists");
+
 const blog = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/blog" }),
   schema: z.object({
     title: z.string(),
     publishedAt: z.coerce.date(),
-    excerpt: z.string(),
+    excerpt,
     mainImage,
     /**
      * A note is short, first-hand writing about something built, tested or
@@ -33,7 +38,7 @@ const projects = defineCollection({
   schema: z.object({
     title: z.string(),
     publishedAt: z.coerce.date(),
-    excerpt: z.string(),
+    excerpt,
     mainImage,
     featured: z.boolean().default(false),
     /**

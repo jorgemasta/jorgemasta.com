@@ -47,6 +47,8 @@
     color: var(--color-green);
     font-weight: 500;
     text-wrap: balance;
+    /* A long compound word or name wraps instead of running off a phone. */
+    overflow-wrap: break-word;
   }
 
   a {
@@ -201,13 +203,15 @@
     color: var(--color-terracotta);
   }
 
-  /* A link that reads as an action: no underline until hover, arrow nudges. */
+  /*
+   * A link that reads as an action: no underline until hover. Inline, so when a
+   * long label wraps the arrow (joined by a no-break space) follows the last word.
+   */
   .action {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35em;
+    display: inline;
     font-weight: 500;
     text-decoration: none;
+    overflow-wrap: anywhere;
   }
 
   .action:hover {
@@ -224,6 +228,8 @@
     color: var(--color-paper);
     font-weight: 500;
     text-decoration: none;
+    /* At large text sizes a long word breaks rather than pushing the button off a phone. */
+    overflow-wrap: anywhere;
     transition: background-color 0.15s;
   }
 
@@ -271,9 +277,43 @@
     font-weight: 400;
   }
 
-  /* Long bare URLs would otherwise push the page wider than a phone. */
-  .prose :where(a) {
+  /* Long compound words in text wrap instead of pushing the page wider than a phone. */
+  .prose {
+    overflow-wrap: break-word;
+  }
+
+  /* Long bare URLs and identifiers may break anywhere. Code blocks keep their own wrapping. */
+  .prose :where(a, :not(pre) > code) {
     overflow-wrap: anywhere;
+  }
+
+  /*
+   * A wide table scrolls sideways in its wrapper (added by the table-scroll
+   * markdown plugin) instead of breaking numbers mid-digit or pushing the page
+   * wider than a phone. Cells keep whole words and numbers.
+   *
+   * A shadow shows on the edge where columns are hidden. Each paper-coloured
+   * cover scrolls with the table and hides its shadow once that edge is
+   * reached, so a table that fits shows none.
+   */
+  .prose :where(.table-scroll) {
+    max-width: 100%;
+    overflow-x: auto;
+    margin-block: 2em;
+    background:
+      linear-gradient(to right, var(--color-paper) 40%, transparent) left / 2.5rem 100% no-repeat local,
+      linear-gradient(to left, var(--color-paper) 40%, transparent) right / 2.5rem 100% no-repeat local,
+      linear-gradient(to right, color-mix(in srgb, var(--color-chocolate) 16%, transparent), transparent) left / 0.75rem 100% no-repeat scroll,
+      linear-gradient(to left, color-mix(in srgb, var(--color-chocolate) 16%, transparent), transparent) right / 0.75rem 100% no-repeat scroll;
+  }
+
+  .prose :where(.table-scroll > table) {
+    margin-block: 0;
+  }
+
+  .prose :where(td, th) {
+    overflow-wrap: normal;
+    font-variant-numeric: tabular-nums;
   }
 
   .prose :where(pre) {
