@@ -24,18 +24,20 @@ A Tokenizados podcast episode. A Note may link to the one it came from via the
 _Avoid_: show, recording
 
 **Project**:
-A thing Jorge built, shown as proof of work. Either something he is building
-now or Earlier work. Distinct from a blog entry: a Project is the artefact, a
+A thing Jorge built, shown as proof of work, including the companies he
+co-founded. Either something he is building now or Earlier work. Distinct from a blog entry: a Project is the artefact, a
 Note or Article is writing about one.
 _Avoid_: portfolio item, case study, work
 
 **Role**:
-A position Jorge held at a company, as an employee or a co-founder. Distinct
-from a Project: a Role is where he worked, a Project is what he built.
-_Avoid_: job, selected work, position
+A job Jorge held as an employee. Employment only: a company he co-founded is
+a Project, not a Role. Roles form one continuous timeline with no overlaps.
+Distinct from a Project: a Role is where he worked, a Project is what he built.
+_Avoid_: job, selected work, position, co-founded companies
 
 **Earlier work**:
-Projects from 2017–2019, framed as history rather than current focus.
+Projects Jorge is no longer building, framed as history rather than current
+focus (`status: earlier`), whenever they happened.
 _Avoid_: old projects, legacy
 
 **Draft**:

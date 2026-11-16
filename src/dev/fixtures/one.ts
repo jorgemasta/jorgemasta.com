@@ -36,10 +36,10 @@ export default async function one(): Promise<DevData> {
     podcast: podcastFrom(item({ title: "Tokenizados #1: Empezamos", number: 1, pubDate: "Sat, 07 Mar 2026 10:00:00 GMT" })),
     roles: [
       {
-        company: "Nexcess",
+        company: "Nexcess (formerly Liquid Web)",
         title: "Engineer III",
-        start: "Jun 2026",
-        impact: "Moving the customer portal to a modern UI.",
+        start: "Mar 2024",
+        impact: "Second-largest contributor to the customer portal.",
         url: "https://www.nexcess.net",
       },
     ],
