@@ -37,7 +37,7 @@ const { url, stats, links } = project.data;
         {stats.map((stat) => (
           <div class="flex min-w-0 flex-col-reverse">
             <dt class="text-xs text-muted">{stat.label}</dt>
-            <dd class="font-serif text-3xl text-green">{stat.value}</dd>
+            <dd class="font-serif text-3xl text-green lining-nums">{stat.value}</dd>
           </div>
         ))}
       </dl>
@@ -47,14 +47,14 @@ const { url, stats, links } = project.data;
         {url && (
           <a href={url} class="action min-w-0" target="_blank" rel="noopener noreferrer">
             Visit {withTail(hostname(url)).head}<span class="whitespace-nowrap"
-              >{withTail(hostname(url)).tail}&nbsp;<span aria-hidden="true">→</span></span
+              >{withTail(hostname(url)).tail}<span class="arrow" aria-hidden="true">&nbsp;→</span></span
             >
           </a>
         )}
         {links.map((link) => (
           <a
             href={link.url}
-            class="min-w-0 text-sm text-muted hover:text-green"
+            class="link-quiet min-w-0 text-sm text-muted hover:text-green"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -68,7 +68,7 @@ const { url, stats, links } = project.data;
         <img
           src={project.data.mainImage.src}
           alt={project.data.mainImage.alt}
-          class="mt-10 aspect-[16/10] max-h-[400px] w-full rounded-md object-cover object-top"
+          class="card-img mt-10 aspect-[16/10] max-h-[400px] w-full rounded-md object-cover object-top"
         />
       )
     }

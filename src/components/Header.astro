@@ -2,6 +2,8 @@
 import { SITE_AUTHOR, SOCIAL_LINKS } from "../lib/consts";
 
 const path = Astro.url.pathname;
+const current = path.endsWith("/") ? path : `${path}/`;
+const isActive = (href: string) => current.startsWith(href);
 const sections = [
   { label: "Writing", href: "/blog/" },
   { label: "Projects", href: "/projects/" },
@@ -13,19 +15,21 @@ const socials = [
 ];
 ---
 
-<header class="mx-auto max-w-5xl px-4 sm:px-6">
+<header class="site-header mx-auto max-w-5xl px-4 sm:px-6">
   <nav
     class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-rule py-5"
     aria-label="Main"
   >
-    <a href="/" class="font-serif text-xl text-green no-underline">{SITE_AUTHOR}</a>
+    <a href="/" class="link-quiet font-serif text-xl text-green">{SITE_AUTHOR}</a>
     {/*
       Two groups that wrap only as whole groups. Each group sits after a
       gap (pl-6) that the -ml-6 cancels at the start of a line, and the
       clip hides the "|" in that gap, so it shows only between groups on
-      one line. The clip margin leaves room for the focus ring.
+      one line. The clip margin leaves room for the focus ring; py-1/-my-1
+      keeps the active underline inside the clip in browsers without
+      overflow-clip-margin.
     */}
-    <div class="min-w-0 overflow-clip [overflow-clip-margin:6px] text-sm">
+    <div class="-my-1 min-w-0 overflow-clip py-1 [overflow-clip-margin:6px] text-sm">
       <div class="-ml-6 flex flex-wrap items-baseline gap-y-1 sm:-ml-9">
         <ul class="flex flex-wrap items-baseline gap-x-4 pl-6 sm:gap-x-5 sm:pl-9">
           {
@@ -33,11 +37,8 @@ const socials = [
               <li>
                 <a
                   href={href}
-                  class:list={[
-                    "no-underline hover:underline",
-                    path.startsWith(href) ? "text-green" : "text-charcoal",
-                  ]}
-                  aria-current={path.startsWith(href) ? "page" : undefined}
+                  class="nav-link"
+                  aria-current={isActive(href) ? "page" : undefined}
                 >
                   {label}
                 </a>
@@ -54,7 +55,7 @@ const socials = [
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-muted no-underline hover:text-green hover:underline"
+                  class="link-quiet text-muted hover:text-green"
                 >
                   {label}
                 </a>
