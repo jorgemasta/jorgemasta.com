@@ -34,11 +34,11 @@ const year = (date: Date) => date.getUTCFullYear();
 <BaseLayout title={`${SITE_TITLE} · Product engineer`} description={SITE_DESCRIPTION}>
   <!-- Hero: one claim, then professional proof first and side projects last. -->
   <section class="mx-auto max-w-5xl px-4 pt-20 pb-16 sm:px-6 sm:pt-28 sm:pb-24">
-    <p class="font-mono text-xs tracking-[0.08em] text-terracotta uppercase">Product engineer · Canary Islands</p>
-    <h1 class="mt-5 max-w-4xl text-5xl leading-[1.05] tracking-tight sm:text-7xl">
+    <p class="hero-enter font-mono text-xs tracking-[0.08em] text-terracotta uppercase" style="--i:0">Product engineer · Canary Islands</p>
+    <h1 class="hero-enter mt-5 max-w-4xl text-5xl leading-[1.05] tracking-tight sm:text-7xl" style="--i:1">
       Hi, I'm Jorge. I build and improve <em class="text-terracotta">digital products</em>.
     </h1>
-    <p class="mt-7 max-w-2xl text-lg leading-relaxed text-charcoal sm:text-xl wrap-anywhere">
+    <p class="hero-enter mt-7 max-w-2xl text-lg leading-relaxed text-charcoal sm:text-xl wrap-anywhere" style="--i:2">
       I'm a product engineer. For nine years I've shipped web and mobile products for teams like Harvard, Vimeo and
       BigCommerce, and now I work at Nexcess.
       {
@@ -73,7 +73,7 @@ const year = (date: Date) => date.getUTCFullYear();
               <div class="min-w-0 wrap-anywhere">
                 <h3 class="text-2xl leading-snug">
                   {role.url ? (
-                    <a href={role.url} class="no-underline hover:underline" target="_blank" rel="noopener noreferrer">
+                    <a href={role.url} class="link-quiet" target="_blank" rel="noopener noreferrer">
                       {role.company}
                     </a>
                   ) : (
@@ -112,7 +112,7 @@ const year = (date: Date) => date.getUTCFullYear();
                 {project.data.stats.map((stat) => (
                   <div class="flex min-w-0 flex-col-reverse">
                     <dt class="text-xs text-muted">{stat.label}</dt>
-                    <dd class="font-serif text-3xl text-green">{stat.value}</dd>
+                    <dd class="font-serif text-3xl text-green lining-nums">{stat.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -121,11 +121,11 @@ const year = (date: Date) => date.getUTCFullYear();
               <a href={project.data.url} class="action min-w-0" target="_blank" rel="noopener noreferrer">
                 Visit {site.head}
                 <span class="whitespace-nowrap">
-                  {site.tail}&nbsp;<span aria-hidden="true">→</span>
+                  {site.tail}<span class="arrow" aria-hidden="true">&nbsp;→</span>
                 </span>
               </a>
               {project.data.links.map((link) => (
-                <a href={link.url} class="text-muted hover:text-green" target="_blank" rel="noopener noreferrer">
+                <a href={link.url} class="link-quiet text-muted hover:text-green" target="_blank" rel="noopener noreferrer">
                   {link.label}
                 </a>
               ))}
@@ -171,7 +171,7 @@ const year = (date: Date) => date.getUTCFullYear();
                   </time>
                   <a
                     href={getBlogUrl(note.id, note.data.publishedAt)}
-                    class="mt-1 block font-serif text-2xl leading-snug text-green no-underline hover:underline"
+                    class="link-quiet mt-1 block font-serif text-2xl leading-snug text-green"
                   >
                     {note.data.title}
                   </a>
@@ -179,14 +179,14 @@ const year = (date: Date) => date.getUTCFullYear();
                 </li>
               ))}
             </ul>
-            <a href="/blog/" class="action mt-8 inline-block text-sm">Read the latest&nbsp;<span aria-hidden="true">→</span></a>
+            <a href="/blog/" class="action mt-8 inline-block text-sm">Read the <span class="whitespace-nowrap">latest<span class="arrow" aria-hidden="true">&nbsp;→</span></span></a>
           </div>
         )
       }
 
       <div id="tokenizados" class="min-w-0 wrap-anywhere">
         <h3 class="text-3xl">
-          <a href={TOKENIZADOS.site} class="no-underline hover:underline" target="_blank" rel="noopener noreferrer">
+          <a href={TOKENIZADOS.site} class="link-quiet" target="_blank" rel="noopener noreferrer">
             Tokenizados
           </a>
         </h3>
