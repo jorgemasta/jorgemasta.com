@@ -14,10 +14,9 @@ const isVisible = ({ data }: { data: { draft: boolean } }) =>
  */
 const devData = async () => (import.meta.env.DEV ? (await import("../dev/fixtures")).getDevData() : null);
 
-const newestFirst = (
-  a: { data: { publishedAt: Date } },
-  b: { data: { publishedAt: Date } }
-) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime();
+type Dated = { data: { publishedAt: Date } };
+const newestFirst = (a: Dated, b: Dated) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime();
+const oldestFirst = (a: Dated, b: Dated) => newestFirst(b, a);
 
 /** Scheduled entries are visible while developing, and appear in the first build on or after their date. */
 const isPublished = ({ data }: { data: { publishedAt: Date } }) =>
@@ -57,6 +56,19 @@ export const isBuilding = (project: CollectionEntry<"projects">) =>
 
 /** Whether a project gets a page at /projects/[slug]/: everything but building projects. */
 export const hasDetailPage = (project: CollectionEntry<"projects">) => !isBuilding(project);
+
+/**
+ * The Projects the homepage shows: what Jorge is building, oldest first so the
+ * longest-running product leads, then the Earlier work picked for the homepage
+ * (`featured`), newest first. Every Project stays on /projects either way.
+ */
+export async function getHomepageProjects() {
+  const projects = await getProjects();
+  return {
+    building: projects.filter(isBuilding).sort(oldestFirst),
+    earlier: projects.filter((project) => !isBuilding(project) && project.data.featured).sort(newestFirst),
+  };
+}
 
 /** Building projects link out to their live site; earlier ones to their detail page. */
 export function getProjectHref(project: CollectionEntry<"projects">): string {
