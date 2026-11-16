@@ -1,5 +1,5 @@
 // Server-only: node:url is not available in the browser bundle, so this
-// stays out of utils.ts, which stays safe to import from client code.
+// stays out of utils.ts, which keeps it safe to import from a page script.
 import { domainToUnicode } from "node:url";
 
 /** The hostname as people type it: no www, and an IDN in its own script rather than punycode. */
