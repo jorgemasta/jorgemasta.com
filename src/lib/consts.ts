@@ -19,7 +19,8 @@ export const SOCIAL_LINKS = {
 export const TOKENIZADOS = {
   site: "https://tokenizadospodcast.com",
   /** Shown in the podcast band on the homepage. */
-  about: "A weekly podcast in Spanish, recorded in the Canary Islands, that I host with Antonio Sejas.",
+  about:
+    "A weekly podcast in Spanish that I host with Antonio Sejas from the Canary Islands. Each episode is a filter: out of the week's news, the few stories worth discussing, and what we think of them.",
   episodesSince: (episodeCount: number) =>
     `${episodeCount.toLocaleString("en-US")} ${episodeCount === 1 ? "episode" : "episodes"} since March 2026, each about 45 to 75 minutes long.`,
   platforms: [

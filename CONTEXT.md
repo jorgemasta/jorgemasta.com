@@ -30,7 +30,7 @@ Note or Article is writing about one.
 _Avoid_: portfolio item, case study, work
 
 **Role**:
-A job Jorge held as an employee. Employment only: a company he co-founded is
+Where Jorge worked as an employee. Employment only: a company he co-founded is
 a Project, not a Role. Roles form one continuous timeline with no overlaps.
 Distinct from a Project: a Role is where he worked, a Project is what he built.
 _Avoid_: job, selected work, position, co-founded companies

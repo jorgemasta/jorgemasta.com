@@ -11,11 +11,11 @@ stats:
   - value: "36"
     label: "editions since 15 Aug 2026"
   - value: "2"
-    label: "editions: Spanish and English"
+    label: "languages: Spanish and English"
 ---
 
 Destilados is a system that reads dozens of newsletters and outlets every morning and decides which few stories deserve a reader's time. Each one goes out with context and an honest opinion.
 
 The hard part isn't summarising. It's judgement: out of a whole day of news, picking what matters without falling back on keywords or popularity. That's the problem I'm exploring, and the one I keep tuning.
 
-I run it end to end: the pipeline that reads and classifies, the editorial criteria, the site, the subscriptions and keeping it shipping every day. A spin-off is in private testing.
+I built the pipeline that reads and classifies, set the editorial criteria, and keep the site and subscriptions shipping every day. A spin-off is in private testing.

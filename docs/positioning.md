@@ -16,21 +16,20 @@ engineering depth + real-world shipping.**
 
 ## Core positioning
 
-> **Product Engineer building AI-native products.**
+> **A product engineer who likes building and improving digital products.**
 
-Jorge sits at the intersection of product engineering, frontend engineering,
-UX and product design, applied AI, AI evals and reliability, developer
-experience, product strategy, and independent product building.
+His work draws on product engineering, frontend engineering, UX and product
+design, applied AI, AI evals and reliability, developer experience, product
+strategy, and independent product building.
 
 AI is a material he works with, not the subject. The subject is **building good
 products**. He is not trying to become "an AI creator".
 
 Fuller statement:
 
-> I build digital products at the intersection of product, frontend
-> engineering, and AI. I'm particularly interested in turning ambiguous ideas
-> into simple products, designing AI-native experiences, and understanding the
-> systems and decisions that make them reliable.
+> I'm a product engineer who likes building and improving digital products.
+> I'm particularly interested in turning ambiguous ideas into simple products
+> and understanding the systems and decisions that make them reliable.
 
 ## Desired perception
 

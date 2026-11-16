@@ -14,10 +14,9 @@ const isVisible = ({ data }: { data: { draft: boolean } }) =>
  */
 const devData = async () => (import.meta.env.DEV ? (await import("../dev/fixtures")).getDevData() : null);
 
-const newestFirst = (
-  a: { data: { publishedAt: Date } },
-  b: { data: { publishedAt: Date } }
-) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime();
+type Dated = { data: { publishedAt: Date } };
+const newestFirst = (a: Dated, b: Dated) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime();
+const oldestFirst = (a: Dated, b: Dated) => newestFirst(b, a);
 
 /** Scheduled entries are visible while developing, and appear in the first build on or after their date. */
 const isPublished = ({ data }: { data: { publishedAt: Date } }) =>
@@ -66,8 +65,8 @@ export const hasDetailPage = (project: CollectionEntry<"projects">) => !isBuildi
 export async function getHomepageProjects() {
   const projects = await getProjects();
   return {
-    building: projects.filter(isBuilding).reverse(),
-    earlier: projects.filter((project) => !isBuilding(project) && project.data.featured),
+    building: projects.filter(isBuilding).sort(oldestFirst),
+    earlier: projects.filter((project) => !isBuilding(project) && project.data.featured).sort(newestFirst),
   };
 }
 

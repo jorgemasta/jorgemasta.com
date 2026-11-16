@@ -6,16 +6,21 @@ import {
   getCurrentPosts,
   getEpisodeCount,
   getHomepageProjects,
+  getProjectHref,
   getRoles,
   getShownPodcast,
 } from "../lib/content";
 import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
-import { formatDate, getBlogUrl, getProjectUrl } from "../lib/utils";
+import { formatDate, getBlogUrl } from "../lib/utils";
 import { hostname, withTail } from "../lib/hostname";
 
 const { building: buildingProjects, earlier } = await getHomepageProjects();
 const building = await Promise.all(
-  buildingProjects.map(async (project) => ({ project, Content: (await render(project)).Content }))
+  buildingProjects.map(async (project) => ({
+    project,
+    Content: (await render(project)).Content,
+    site: withTail(hostname(project.data.url!)),
+  }))
 );
 
 const roles = await getRoles();
@@ -95,7 +100,7 @@ const year = (date: Date) => date.getUTCFullYear();
           </p>
         )}
 
-        {building.map(({ project, Content }) => (
+        {building.map(({ project, Content, site }) => (
           <article id={`project-${project.id}`} class="mt-8 border-t border-rule pt-8 wrap-anywhere">
             <h3 class="text-3xl sm:text-4xl">{project.data.title}</h3>
             <p class="mt-2 max-w-2xl text-lg leading-relaxed text-charcoal">{project.data.excerpt}</p>
@@ -114,9 +119,9 @@ const year = (date: Date) => date.getUTCFullYear();
             )}
             <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <a href={project.data.url} class="action min-w-0" target="_blank" rel="noopener noreferrer">
-                Visit {withTail(hostname(project.data.url!)).head}
+                Visit {site.head}
                 <span class="whitespace-nowrap">
-                  {withTail(hostname(project.data.url!)).tail}&nbsp;<span aria-hidden="true">→</span>
+                  {site.tail}&nbsp;<span aria-hidden="true">→</span>
                 </span>
               </a>
               {project.data.links.map((link) => (
@@ -139,7 +144,7 @@ const year = (date: Date) => date.getUTCFullYear();
                   </p>
                   <p class="min-w-0 leading-relaxed text-muted wrap-anywhere">
                     <span class="font-medium text-charcoal">
-                      <a href={getProjectUrl(project.id)}>{project.data.title}</a>
+                      <a href={getProjectHref(project)}>{project.data.title}</a>
                     </span>
                     . <span dir="auto">{project.data.excerpt}</span>
                   </p>

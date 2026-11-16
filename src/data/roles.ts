@@ -1,4 +1,4 @@
-/** A Role is a job Jorge held as an employee. Co-founded companies are Projects, not Roles. */
+/** A Role is where Jorge worked as an employee. Co-founded companies are Projects, not Roles. */
 export type Role = {
   company: string;
   title: string;
@@ -17,7 +17,7 @@ export const ROLES: Role[] = [
     title: "Engineer III",
     start: "Mar 2024",
     impact:
-      "Second-largest contributor to the customer portal, in a team of 4–6 engineers where I lead some of the projects. I defined the spec and tooling for moving the portal from MUI to our internal design system, led the move from GitLab to GitHub Actions, and built the React checkout that replaced the old one, which back-office and marketing teams can configure themselves. I also integrated Salesforce into the portal and the checkout, built the back-office support uses to manage customer chat, and helped about 25 engineers adopt AI-assisted development: shared agent context in AGENTS.md, reusable Claude skills, and a spec-driven workflow with OpenSpec.",
+      "Second-largest contributor to the customer portal, in a team of 4–6 where I lead some projects. I defined the spec and tooling for moving it from MUI to our internal design system, led the switch from GitLab to GitHub Actions, and built the React checkout that replaced the old one, which back-office and marketing configure themselves. I integrated Salesforce into both, built support's back-office for customer chat, and helped about 25 engineers adopt AI-assisted development: AGENTS.md, reusable Claude skills and a spec-driven workflow with OpenSpec.",
     url: "https://www.nexcess.net",
   },
   {
