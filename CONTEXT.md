@@ -24,18 +24,21 @@ A Tokenizados podcast episode. A Note may link to the one it came from via the
 _Avoid_: show, recording
 
 **Project**:
-A thing Jorge built, shown as proof of work. Either something he is building
-now or Earlier work. Distinct from a blog entry: a Project is the artefact, a
+A thing Jorge built, shown as proof of work, including the companies he
+co-founded. Either something he is building now or Earlier work. Distinct from a blog entry: a Project is the artefact, a
 Note or Article is writing about one.
 _Avoid_: portfolio item, case study, work
 
 **Role**:
-A position Jorge held at a company, as an employee or a co-founder. Distinct
-from a Project: a Role is where he worked, a Project is what he built.
-_Avoid_: job, selected work, position
+Where Jorge worked as an employee. Employment only: a company he co-founded is
+a Project, not a Role. Roles form one continuous timeline with no overlaps.
+Distinct from a Project: a Role is where he worked, a Project is what he built.
+_Avoid_: job, selected work, position, co-founded companies
 
 **Earlier work**:
-Projects from 2017–2019, framed as history rather than current focus.
+Projects Jorge is no longer building, framed as history rather than current
+focus (`status: earlier`), whenever they happened. All of it is on /projects;
+the homepage shows only the ones marked `featured`.
 _Avoid_: old projects, legacy
 
 **Draft**:
@@ -46,26 +49,3 @@ _Avoid_: unpublished, hidden
 **Archive**:
 A published entry old enough to be marked as no longer current in the UI.
 _Avoid_: stale, outdated
-
-**Fact**:
-A short, verifiable passage Jorge has approved, visible in the body of the
-Project, blog entry, Role or About that backs it (e.g. "Padelful exposes a
-public API and an MCP server"). That body is the Fact's owner, and the Fact's
-id is namespaced by it (`padelful/mcp`). The smallest thing a Focus can point
-at, and the only kind of claim the Concierge may make.
-_Avoid_: claim, proof point, metric (a Project's stats are a different thing)
-
-**Focus**:
-An ordered set of places on the site that answer one visitor's question —
-Projects, Roles, Facts, entries — which the visitor steps through one at a time
-while the rest of the page is blurred slightly. Beside each stop, a short note
-from the Concierge says why it answers the question. Nothing is reordered: a
-Focus points at the canonical site rather than rearranging it. It stays active
-across pages until the visitor clears it; the canonical site has no Focus.
-_Avoid_: filter, mode, view, lens, adapted view
-
-**Concierge**:
-The AI layer that answers a visitor's question by putting the site into a
-Focus, navigating between pages, and replying in a sentence or two. It speaks
-about Jorge in the third person and never as him.
-_Avoid_: chatbot, copilot, assistant, guide, Ask Jorge, AI clone

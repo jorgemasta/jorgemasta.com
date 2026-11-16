@@ -1,0 +1,62 @@
+---
+/**
+ * DEV ONLY. The break-ui data toggle. Imported by `BaseLayout.astro` behind
+ * `import.meta.env.DEV`, so a build never contains it. Styles are inline on
+ * purpose: a bundled `<style>` would ship.
+ */
+import { DATA_PARAM, getDataMode, type DataMode } from "./data-mode";
+
+const SEGMENTS: { mode: DataMode; label: string }[] = [
+  { mode: "demo", label: "Demo" },
+  { mode: "worst", label: "Worst case" },
+  { mode: "empty", label: "Empty" },
+  { mode: "one", label: "One" },
+];
+
+const mode = getDataMode();
+---
+
+<nav class="dev-data-toggle" aria-label="Dev data set">
+  {
+    SEGMENTS.map((segment) => (
+      <a
+        href={`?${DATA_PARAM}=${segment.mode}`}
+        aria-current={segment.mode === mode ? "true" : undefined}
+      >
+        {segment.label}
+      </a>
+    ))
+  }
+</nav>
+
+<style is:inline>
+  .dev-data-toggle {
+    position: fixed;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: #e5e5e5;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 4px 12px -4px rgb(0 0 0 / 0.2);
+    font: 500 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    white-space: nowrap;
+  }
+  .dev-data-toggle a {
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: #525252;
+    text-decoration: none;
+  }
+  .dev-data-toggle a:hover {
+    color: #171717;
+  }
+  .dev-data-toggle a[aria-current] {
+    background: #fff;
+    color: #171717;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  }
+</style>

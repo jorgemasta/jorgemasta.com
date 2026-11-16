@@ -9,15 +9,16 @@ const sections = [
 ].filter((section) => section.projects.length > 0);
 ---
 
-<BaseLayout title="Projects | Jorge Masta" description="Projects by Jorge Masta">
+<BaseLayout title="Projects | Jorge Masta" description="The products Jorge Masta builds on his own, and the ones he no longer builds.">
   <div class="mx-auto max-w-5xl px-4 pt-16 sm:px-6 sm:pt-24">
     <h1 class="text-5xl tracking-tight sm:text-6xl">Projects</h1>
+    {sections.length === 0 && <p class="mt-6 text-muted">No projects to show yet.</p>}
 
     {
       sections.map((section) => (
         <section class="mt-16">
           <h2 class="eyebrow font-sans">{section.heading}</h2>
-          <ul class="mt-6 grid gap-x-10 gap-y-12 sm:grid-cols-2">
+          <ul class="mt-6 grid grid-cols-1 gap-x-10 gap-y-12 sm:grid-cols-2">
             {section.projects.map((project) => {
               const external = isBuilding(project);
               return (
@@ -31,15 +32,14 @@ const sections = [
                       <img
                         src={project.data.mainImage.src}
                         alt={project.data.mainImage.alt}
-                        class="aspect-[16/10] w-full rounded-md border border-rule object-cover object-top"
+                        class="aspect-[16/10] w-full rounded-md card-img object-cover object-top"
                         loading="lazy"
                       />
                     )}
-                    <h3 class="mt-4 text-2xl group-hover:underline">
-                      {project.data.title}
-                      {external && <span aria-hidden="true"> ↗</span>}
+                    <h3 class="link-quiet mt-4 text-2xl">
+                      {project.data.title}{external && <span class="inline-block" aria-hidden="true">&nbsp;↗</span>}
                     </h3>
-                    <p class="mt-1 leading-relaxed text-charcoal">{project.data.excerpt}</p>
+                    <p class="mt-1 leading-relaxed text-charcoal wrap-anywhere">{project.data.excerpt}</p>
                   </a>
                 </li>
               );

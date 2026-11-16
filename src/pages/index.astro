@@ -1,197 +1,202 @@
 ---
 import { render } from "astro:content";
-import Prose from "../components/Prose.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import {
+  getAbout,
   getCurrentPosts,
   getEpisodeCount,
-  getProjects,
+  getHomepageProjects,
+  getProjectHref,
+  getRoles,
   getShownPodcast,
-  isBuilding,
 } from "../lib/content";
-import { anchors } from "../lib/registry";
-import { ABOUT, ABOUT_ID } from "../data/about";
-import { ROLES } from "../data/roles";
 import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
-import { formatDate, getBlogUrl, getProjectUrl } from "../lib/utils";
+import { formatDate, getBlogUrl } from "../lib/utils";
+import { hostname, withTail } from "../lib/hostname";
 
+const { building: buildingProjects, earlier } = await getHomepageProjects();
 const building = await Promise.all(
-  (await getProjects())
-    .filter(isBuilding)
-    .reverse() // Oldest first: the longest-running product leads.
-    .map(async (project) => ({ project, Content: (await render(project)).Content }))
+  buildingProjects.map(async (project) => ({
+    project,
+    Content: (await render(project)).Content,
+    site: withTail(hostname(project.data.url!)),
+  }))
 );
 
-const podcast = await getShownPodcast();
-const episodeCount = getEpisodeCount(podcast);
+const roles = await getRoles();
+const notes = (await getCurrentPosts()).slice(0, 3);
+const episodeCount = getEpisodeCount(await getShownPodcast());
+const about = await getAbout();
 
-// Rendered only when there is recent writing, so the site never looks abandoned.
-const notes = (await getCurrentPosts()).slice(0, 5);
-
-const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
+const year = (date: Date) => date.getUTCFullYear();
 ---
 
 <BaseLayout title={`${SITE_TITLE} · Product engineer`} description={SITE_DESCRIPTION}>
-  <!-- Hero -->
-  <section class="mx-auto max-w-5xl px-4 pt-20 pb-24 sm:px-6 sm:pt-28 sm:pb-32">
-    <h1 class="max-w-3xl text-5xl leading-[1.05] tracking-tight sm:text-7xl">
-      I build thoughtful digital products.
+  <!-- Hero: one claim, then professional proof first and side projects last. -->
+  <section class="mx-auto max-w-5xl px-4 pt-20 pb-16 sm:px-6 sm:pt-28 sm:pb-24">
+    <p class="hero-enter font-mono text-xs tracking-[0.08em] text-terracotta uppercase" style="--i:0">Product engineer · Canary Islands</p>
+    <h1 class="hero-enter mt-5 max-w-4xl text-5xl leading-[1.05] tracking-tight sm:text-7xl" style="--i:1">
+      Hi, I'm Jorge. I build and improve <em class="text-terracotta">digital products</em>.
     </h1>
-    <p class="mt-6 max-w-xl text-lg leading-relaxed sm:text-xl">
-      Product engineer working at the intersection of frontend, product, and AI.
-    </p>
-    <div class="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4">
-      <a href="#building" class="button">See what I'm building <span aria-hidden="true">→</span></a>
+    <p class="hero-enter mt-7 max-w-2xl text-lg leading-relaxed text-charcoal sm:text-xl wrap-anywhere" style="--i:2">
+      I'm a product engineer. For nine years I've shipped web and mobile products for teams like Harvard, Vimeo and
+      BigCommerce, and now I work at Nexcess.
       {
-        notes.length > 0 ? (
-          <a href="/blog/" class="action">
-            Read my writing <span aria-hidden="true">→</span>
-          </a>
-        ) : (
-          <a href={TOKENIZADOS.site} class="action" target="_blank" rel="noopener noreferrer">
-            Listen to Tokenizados <span aria-hidden="true">→</span>
-          </a>
+        building.length > 0 && (
+          <>
+            {" "}
+            On my own, I run{" "}
+            {building.map(({ project }, i) => (
+              <>
+                {i > 0 && (i === building.length - 1 ? " and " : ", ")}
+                <a href={`#project-${project.id}`}>{project.data.title}</a>
+              </>
+            ))}
+            .
+          </>
         )
       }
-    </div>
+    </p>
   </section>
 
-  <!-- What I'm building -->
-  <section id="building" class="mx-auto max-w-5xl scroll-mt-8 px-4 sm:px-6">
-    <p class="eyebrow">Now</p>
-    <h2 class="mt-2 text-4xl sm:text-5xl">What I'm building</h2>
+  {
+    roles.length > 0 && (
+      <section id="work" class="mx-auto max-w-5xl px-4 sm:px-6">
+        <h2 class="section-heading">Work</h2>
+        <ol class="mt-6">
+          {roles.map((role) => (
+            <li class="grid grid-cols-1 gap-x-10 gap-y-1 border-t border-rule py-6 sm:grid-cols-[9rem_minmax(0,1fr)]">
+              <p class="pt-1 font-mono text-xs text-muted">
+                {role.start}
+                {role.end !== role.start && <> – {role.end ?? "now"}</>}
+              </p>
+              <div class="min-w-0 wrap-anywhere">
+                <h3 class="text-2xl leading-snug">
+                  {role.url ? (
+                    <a href={role.url} class="link-quiet" target="_blank" rel="noopener noreferrer">
+                      {role.company}
+                    </a>
+                  ) : (
+                    role.company
+                  )}
+                </h3>
+                <p class="mt-0.5 text-sm text-muted">{role.title}</p>
+                {role.impact.trim() && <p class="mt-3 max-w-2xl leading-relaxed text-charcoal">{role.impact}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )
+  }
 
-    <div class="mt-14 flex flex-col gap-24">
-      {
-        building.map(({ project, Content }, i) => (
-          <article
-            id={anchors.project(project.id)}
-            class="grid items-start gap-8 md:grid-cols-12 md:gap-12"
-          >
-            {project.data.mainImage && (
-              <a
-                href={project.data.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                tabindex="-1"
-                aria-hidden="true"
-                class:list={["block md:col-span-7", i % 2 === 1 && "md:order-2"]}
-              >
-                <img
-                  src={project.data.mainImage.src}
-                  alt={project.data.mainImage.alt}
-                  width="1200"
-                  height="750"
-                  loading={i === 0 ? "eager" : "lazy"}
-                  class="w-full rounded-md border border-rule shadow-[0_24px_48px_-24px_rgb(23_63_53/0.35)]"
-                />
-              </a>
-            )}
-            <div class="md:col-span-5">
-              <h3 class="text-3xl sm:text-4xl">{project.data.title}</h3>
-              <p class="mt-3 text-lg leading-relaxed text-charcoal">{project.data.excerpt}</p>
-              <div class="prose mt-4 max-w-none leading-relaxed">
-                <Content />
-              </div>
-              {project.data.stats.length > 0 && (
-                <dl class="mt-6 flex flex-wrap gap-x-8 gap-y-4 border-t border-rule pt-5">
-                  {project.data.stats.map((stat) => (
-                    <div class="flex flex-col-reverse">
-                      <dt class="text-xs text-muted">{stat.label}</dt>
-                      <dd class="font-serif text-3xl text-green">{stat.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-              <div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
-                <a
-                  href={project.data.url}
-                  class="action"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Visit {hostname(project.data.url!)} <span aria-hidden="true">→</span>
-                </a>
-                {project.data.links.map((link) => (
-                  <a
-                    href={link.url}
-                    class="text-sm text-muted hover:text-green"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {link.label}
-                  </a>
+  {
+    (building.length > 0 || earlier.length > 0) && (
+      <section id="building" class="mx-auto mt-24 max-w-5xl px-4 sm:px-6">
+        <h2 class="section-heading">Building on my own</h2>
+        {building.length > 0 && (
+          <p class="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
+            Products I run end to end, where I own the whole thing: data, SEO, monetisation and reliability.
+          </p>
+        )}
+
+        {building.map(({ project, Content, site }) => (
+          <article id={`project-${project.id}`} class="mt-8 border-t border-rule pt-8 wrap-anywhere">
+            <h3 class="text-3xl sm:text-4xl">{project.data.title}</h3>
+            <p class="mt-2 max-w-2xl text-lg leading-relaxed text-charcoal">{project.data.excerpt}</p>
+            <div class="prose mt-4 max-w-2xl leading-relaxed">
+              <Content />
+            </div>
+            {project.data.stats.length > 0 && (
+              <dl class="mt-6 flex flex-wrap items-start gap-x-10 gap-y-4">
+                {project.data.stats.map((stat) => (
+                  <div class="flex min-w-0 flex-col-reverse">
+                    <dt class="text-xs text-muted">{stat.label}</dt>
+                    <dd class="font-serif text-3xl text-green lining-nums">{stat.value}</dd>
+                  </div>
                 ))}
-              </div>
+              </dl>
+            )}
+            <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <a href={project.data.url} class="action min-w-0" target="_blank" rel="noopener noreferrer">
+                Visit {site.head}
+                <span class="whitespace-nowrap">
+                  {site.tail}<span class="arrow" aria-hidden="true">&nbsp;→</span>
+                </span>
+              </a>
+              {project.data.links.map((link) => (
+                <a href={link.url} class="link-quiet text-muted hover:text-green" target="_blank" rel="noopener noreferrer">
+                  {link.label}
+                </a>
+              ))}
             </div>
           </article>
-        ))
+        ))}
+
+        {earlier.length > 0 && (
+          <div class="mt-16">
+            <h3 class="eyebrow font-sans">Earlier work</h3>
+            <ul class="mt-4">
+              {earlier.map((project) => (
+                <li class="grid grid-cols-1 gap-x-10 gap-y-1 border-t border-rule py-4 sm:grid-cols-[9rem_minmax(0,1fr)]">
+                  <p class="pt-0.5 font-mono text-xs text-muted">
+                    <time datetime={project.data.publishedAt.toISOString()}>{year(project.data.publishedAt)}</time>
+                  </p>
+                  <p class="min-w-0 leading-relaxed text-muted wrap-anywhere">
+                    <span class="font-medium text-charcoal">
+                      <a href={getProjectHref(project)}>{project.data.title}</a>
+                    </span>
+                    . <span dir="auto">{project.data.excerpt}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+    )
+  }
+
+  <section id="writing" class="mx-auto mt-24 max-w-5xl px-4 sm:px-6">
+    <h2 class="section-heading">Writing &amp; podcast</h2>
+    <div class="mt-6 grid grid-cols-1 gap-12 border-t border-rule pt-8 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      {
+        notes.length > 0 && (
+          <div class="min-w-0">
+            <ul class="space-y-8">
+              {notes.map((note) => (
+                <li class="wrap-anywhere">
+                  <time class="font-mono text-xs text-muted" datetime={note.data.publishedAt.toISOString()}>
+                    {formatDate(note.data.publishedAt)}
+                  </time>
+                  <a
+                    href={getBlogUrl(note.id, note.data.publishedAt)}
+                    class="link-quiet mt-1 block font-serif text-2xl leading-snug text-green"
+                  >
+                    {note.data.title}
+                  </a>
+                  <p class="mt-1 line-clamp-3 text-muted" dir="auto">{note.data.excerpt}</p>
+                </li>
+              ))}
+            </ul>
+            <a href="/blog/" class="action mt-8 inline-block text-sm">Read the <span class="whitespace-nowrap">latest<span class="arrow" aria-hidden="true">&nbsp;→</span></span></a>
+          </div>
+        )
       }
-    </div>
-  </section>
 
-  <!-- Tokenizados -->
-  <section id={anchors.tokenizados} class="mt-32 bg-green text-paper">
-    <div
-      class="mx-auto grid max-w-5xl gap-10 px-4 py-20 sm:px-6 md:grid-cols-12 md:gap-12 md:py-24"
-    >
-      <div class="md:col-span-4">
-        <img
-          src="/images/tokenizados/cover.webp"
-          alt="Tokenizados podcast cover art"
-          width="480"
-          height="480"
-          loading="lazy"
-          class="w-40 rounded-md sm:w-56"
-        />
-      </div>
-      <div class="md:col-span-8">
-        <p class="eyebrow text-[#e2a283]">Podcast</p>
-        <h2 class="mt-2 text-4xl text-paper sm:text-5xl">Tokenizados</h2>
-        <p class="mt-5 max-w-xl text-lg leading-relaxed text-paper/90">{TOKENIZADOS.about}</p>
-        <p class="mt-2 text-paper/70">{TOKENIZADOS.episodesSince(episodeCount)}</p>
-
-        {
-          podcast.episodes.length > 0 && (
-            <>
-              <h3 class="mt-10 font-sans text-xs font-semibold tracking-[0.12em] text-paper/60 uppercase">
-                Latest episodes
-              </h3>
-              <ol class="mt-3 border-t border-paper/20">
-                {podcast.episodes.map((episode) => (
-                  <li id={anchors.episode(episode.number)} class="border-b border-paper/20">
-                    <a
-                      href={episode.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="group flex flex-col gap-1 py-4 text-paper no-underline sm:flex-row sm:items-baseline sm:gap-6"
-                    >
-                      <span class="shrink-0 text-sm whitespace-nowrap text-paper/60 tabular-nums sm:w-40">
-                        <time datetime={episode.date.toISOString()}>
-                          {formatDate(episode.date)}
-                        </time>
-                      </span>
-                      <span class="font-serif text-lg leading-snug group-hover:underline">
-                        <span class="text-paper/60">#{episode.number}</span> {episode.title}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </>
-          )
-        }
-
-        <ul class="mt-8 flex flex-wrap gap-2.5" aria-label="Listen on">
+      <div id="tokenizados" class="min-w-0 wrap-anywhere">
+        <h3 class="text-3xl">
+          <a href={TOKENIZADOS.site} class="link-quiet" target="_blank" rel="noopener noreferrer">
+            Tokenizados
+          </a>
+        </h3>
+        <p class="mt-3 leading-relaxed text-charcoal">{TOKENIZADOS.about}</p>
+        <p class="mt-2 leading-relaxed text-muted">{TOKENIZADOS.episodesSince(episodeCount)}</p>
+        <ul class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-label="Listen on">
           {
             TOKENIZADOS.platforms.map((platform) => (
               <li>
-                <a
-                  href={platform.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-block rounded-full border border-paper/30 px-4 py-1.5 text-sm text-paper no-underline transition-colors hover:border-paper hover:bg-paper hover:text-green"
-                >
+                <a href={platform.url} target="_blank" rel="noopener noreferrer">
                   {platform.name}
                 </a>
               </li>
@@ -202,106 +207,26 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
     </div>
   </section>
 
-  <!-- Notes from building -->
-  {
-    notes.length > 0 && (
-      <section class="mx-auto mt-32 max-w-5xl px-4 sm:px-6">
-        <p class="eyebrow">Writing</p>
-        <h2 class="mt-2 text-4xl sm:text-5xl">Notes from building</h2>
-        <ul class="mt-10 border-t border-rule">
-          {notes.map((note) => (
-            <li class="border-b border-rule">
-              <a
-                href={getBlogUrl(note.id, note.data.publishedAt)}
-                class="group grid gap-1 py-6 no-underline sm:grid-cols-12 sm:gap-6"
-              >
-                <time
-                  datetime={note.data.publishedAt.toISOString()}
-                  class="text-sm text-muted tabular-nums sm:col-span-3"
-                >
-                  {formatDate(note.data.publishedAt)}
-                </time>
-                <span class="sm:col-span-9">
-                  <span class="font-serif text-2xl text-green group-hover:underline">
-                    {note.data.title}
-                  </span>
-                  <span class="mt-1 block text-charcoal">{note.data.excerpt}</span>
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
-    )
-  }
-
-  <!-- Experience -->
-  <section class="mx-auto mt-32 max-w-5xl px-4 sm:px-6">
-    <p class="eyebrow">Career</p>
-    <h2 class="mt-2 text-4xl sm:text-5xl">Experience</h2>
-    <ol class="mt-10 border-t border-rule">
-      {
-        ROLES.map((role) => (
-          <li
-            id={anchors.role(role.id)}
-            class="grid gap-1 border-b border-rule py-6 sm:grid-cols-12 sm:gap-6"
-          >
-            <p class="text-sm text-muted tabular-nums sm:col-span-3 sm:pt-1">
-              {role.start} – {role.end ?? "now"}
-            </p>
-            <div class="sm:col-span-9">
-              <h3 class="text-2xl">
-                {role.title},{" "}
-                {role.url ? (
-                  <a href={role.url} target="_blank" rel="noopener noreferrer">
-                    {role.company}
-                  </a>
-                ) : (
-                  role.company
-                )}
-              </h3>
-              <p class="mt-1 max-w-2xl leading-relaxed">
-                <Prose owner={role.id} prose={role.impact} />
-              </p>
-            </div>
-          </li>
-        ))
-      }
-    </ol>
-    <p class="mt-8 max-w-2xl leading-relaxed text-muted sm:ml-[25%] sm:pl-4">
-      Before that, I co-founded <a href={getProjectUrl("kontroloo")}>Kontroloo</a>, NFC access
-      control and cashless payments for events (2017), and <a href={getProjectUrl("food-to-bento")}
-        >Food to Bento</a
-      >, an app against food waste (2018–2019), both in Las Palmas.
-    </p>
-  </section>
-
   <!-- About -->
-  <section class="mx-auto mt-32 max-w-5xl px-4 sm:px-6">
-    <div class="grid gap-10 md:grid-cols-12 md:gap-12">
-      <div class="md:col-span-4">
+  <section id="about" class="@container mx-auto mt-32 max-w-5xl px-4 sm:px-6">
+    <div class="grid grid-cols-1 gap-10 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] @3xl:gap-12">
+      <div>
         <!-- Placeholder until the real portrait lands. -->
         <div
-          class="flex aspect-[4/5] w-40 items-end rounded-md bg-olive p-4 font-serif text-4xl text-paper sm:w-56"
+          class="flex aspect-[4/5] w-40 max-w-full items-end rounded-md bg-olive p-4 font-serif text-4xl text-paper sm:w-56"
           role="img"
           aria-label="Jorge Masta"
         >
           JM
         </div>
       </div>
-      <div class="md:col-span-8">
+      <div class="min-w-0 wrap-break-word">
         <h2 class="text-4xl sm:text-5xl">About</h2>
         <div class="mt-6 max-w-xl space-y-4 text-lg leading-relaxed">
-          {
-            ABOUT.map((paragraph) => (
-              <p>
-                <Prose owner={ABOUT_ID} prose={paragraph} />
-              </p>
-            ))
-          }
+          {about.map((paragraph) => <p>{paragraph}</p>)}
           <p>
-            The best way to reach me is email: <a href={`mailto:${EMAIL}`}
-              class="font-serif text-xl">{EMAIL}</a
+            The best way to reach me is email: <a href={`mailto:${EMAIL}`} class="font-serif text-xl wrap-anywhere"
+              >{EMAIL}</a
             >
           </p>
         </div>
@@ -309,3 +234,17 @@ const hostname = (url: string) => new URL(url).hostname.replace(/^www\./, "");
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .section-heading {
+    font-size: 2.25rem;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  @media (width >= 40rem) {
+    .section-heading {
+      font-size: 3rem;
+    }
+  }
+</style>
