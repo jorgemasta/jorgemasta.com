@@ -1,6 +1,5 @@
 ---
 import { render } from "astro:content";
-import Prose from "../components/Prose.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import {
   getAbout,
@@ -12,9 +11,6 @@ import {
   hasDetailPage,
   isBuilding,
 } from "../lib/content";
-import { anchors } from "../lib/registry";
-import { ABOUT_ID } from "../data/about";
-import { proseText } from "../lib/facts";
 import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
 import { getBlogUrl, getProjectUrl } from "../lib/utils";
 import { hostname, withTail } from "../lib/hostname";
@@ -33,6 +29,10 @@ const notes = (await getCurrentPosts()).slice(0, 5);
 const roles = await getRoles();
 const about = await getAbout();
 const currentRole = roles.find((role) => !role.end);
+
+/** Element ids the hero and the Now column link to. */
+const projectAnchor = (id: string) => `project-${id}`;
+const TOKENIZADOS_ANCHOR = "tokenizados";
 
 /**
  * The detail page of an Earlier work project the log names by hand, or
@@ -160,7 +160,7 @@ const numbers = building.flatMap(({ project }) =>
             {building.map(({ project }, i) => (
               <>
                 {i > 0 && (i === building.length - 1 ? " and " : ", ")}
-                <a href={`#${anchors.project(project.id)}`}>{project.data.title}</a>
+                <a href={`#${projectAnchor(project.id)}`}>{project.data.title}</a>
               </>
             ))}
             .{" "}
@@ -183,7 +183,7 @@ const numbers = building.flatMap(({ project }) =>
                 <dt class="text-muted">Building</dt>
                 <dd class="space-y-1">
                   {building.map(({ project }) => (
-                    <a href={`#${anchors.project(project.id)}`} class="live-dot block wrap-anywhere">
+                    <a href={`#${projectAnchor(project.id)}`} class="live-dot block wrap-anywhere">
                       {project.data.title}
                     </a>
                   ))}
@@ -193,7 +193,7 @@ const numbers = building.flatMap(({ project }) =>
           }
           <div class="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
             <dt class="text-muted">Podcast</dt>
-            <dd><a href={`#${anchors.tokenizados}`}>Tokenizados</a>, weekly</dd>
+            <dd><a href={`#${TOKENIZADOS_ANCHOR}`}>Tokenizados</a>, weekly</dd>
           </div>
           {
             currentRole && (
@@ -256,14 +256,10 @@ const numbers = building.flatMap(({ project }) =>
                 class="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 gap-y-1 border-t border-rule py-5 sm:grid-cols-[5.5rem_4.5rem_minmax(0,1fr)]"
                 id={
                   entry.kind === "building"
-                    ? anchors.project(entry.item.project.id)
-                    : entry.kind === "role"
-                      ? anchors.role(entry.role.id)
-                      : entry.kind === "podcast"
-                        ? anchors.tokenizados
-                        : entry.kind === "episode"
-                          ? anchors.episode(entry.episode.number)
-                          : undefined
+                    ? projectAnchor(entry.item.project.id)
+                    : entry.kind === "podcast"
+                      ? TOKENIZADOS_ANCHOR
+                      : undefined
                 }
               >
                 <time class="pt-0.5 font-mono text-xs text-muted" datetime={entry.date.toISOString()}>
@@ -319,10 +315,8 @@ const numbers = building.flatMap(({ project }) =>
                           {entry.role.end === entry.role.start ? "" : `until ${entry.role.end ?? "now"}`}
                         </span>
                       </h3>
-                      {proseText(entry.role.impact).trim() && (
-                        <p class="mt-1 max-w-2xl leading-relaxed text-muted">
-                          <Prose owner={entry.role.id} prose={entry.role.impact} />
-                        </p>
+                      {entry.role.impact.trim() && (
+                        <p class="mt-1 max-w-2xl leading-relaxed text-muted">{entry.role.impact}</p>
                       )}
                     </>
                   )}
@@ -402,11 +396,7 @@ const numbers = building.flatMap(({ project }) =>
         <h2 class="text-4xl sm:text-5xl">About</h2>
         <div class="mt-6 max-w-xl space-y-4 text-lg leading-relaxed">
           {
-            about.map((paragraph) => (
-              <p>
-                <Prose owner={ABOUT_ID} prose={paragraph} />
-              </p>
-            ))
+            about.map((paragraph) => <p>{paragraph}</p>)
           }
           <p>
             The best way to reach me is email: <a href={`mailto:${EMAIL}`}
@@ -420,8 +410,6 @@ const numbers = building.flatMap(({ project }) =>
 </BaseLayout>
 
 <script>
-  import { REVEAL_EVENT } from "../lib/focus-dom";
-
   /** Shows only the log entries with `tag`, or all of them for "All". */
   function filter(log: Element, tag: string) {
     log.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) =>
@@ -432,19 +420,10 @@ const numbers = building.flatMap(({ project }) =>
     });
   }
 
-  // Delegated on the document, so it survives client-side navigation.
   document.addEventListener("click", (event) => {
     const button = (event.target as Element).closest<HTMLButtonElement>("[data-log] [data-filter]");
     const log = button?.closest("[data-log]");
     if (button && log) filter(log, button.dataset.filter ?? "All");
-  });
-
-  // A Focus stop hidden by a filter would have nowhere to scroll to: show everything again.
-  document.addEventListener(REVEAL_EVENT, (event) => {
-    const anchor = (event as CustomEvent<string>).detail;
-    const target = document.getElementById(anchor);
-    const log = target?.closest("[data-log]");
-    if (log && target?.closest("li[hidden]")) filter(log, "All");
   });
 </script>
 

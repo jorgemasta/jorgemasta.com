@@ -1,4 +1,3 @@
-import type { UIMessage } from "ai";
 import { post, project } from "./entries";
 import { item, podcastFrom } from "./podcast";
 import type { DevData } from "./types";
@@ -8,15 +7,6 @@ import type { DevData } from "./types";
  * building project with no alternating rhythm, one-row lists.
  */
 export default async function one(): Promise<DevData> {
-  const conversation: UIMessage[] = [
-    { id: "u1", role: "user", parts: [{ type: "text", text: "Hi" }] },
-    {
-      id: "a1",
-      role: "assistant",
-      parts: [{ type: "text", text: "Jorge is building Padelful [[padelful|What he is building right now]]." }],
-    },
-  ];
-
   return {
     posts: [await post("retries", { title: "Retries", publishedAt: "2026-10-30", excerpt: "Yes." }, "One line.")],
     projects: await Promise.all([
@@ -46,7 +36,6 @@ export default async function one(): Promise<DevData> {
     podcast: podcastFrom(item({ title: "Tokenizados #1: Empezamos", number: 1, pubDate: "Sat, 07 Mar 2026 10:00:00 GMT" })),
     roles: [
       {
-        id: "nexcess",
         company: "Nexcess",
         title: "Engineer III",
         start: "Jun 2026",
@@ -54,8 +43,6 @@ export default async function one(): Promise<DevData> {
         url: "https://www.nexcess.net",
       },
     ],
-    about: [["I'm Jorge."]],
-    conversation,
-    focusStep: 0,
+    about: ["I'm Jorge."],
   };
 }

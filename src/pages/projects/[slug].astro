@@ -2,7 +2,6 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { render } from "astro:content";
 import { getProjects, hasDetailPage } from "../../lib/content";
-import { anchors } from "../../lib/registry";
 import { formatDate } from "../../lib/utils";
 import { hostname, withTail } from "../../lib/hostname";
 
@@ -20,7 +19,7 @@ const { url, stats, links } = project.data;
 ---
 
 <BaseLayout title={`${project.data.title} | Jorge Masta`} description={project.data.excerpt}>
-  <article id={anchors.project(project.id)} class="mx-auto max-w-2xl px-4 pt-16 sm:px-6 sm:pt-24">
+  <article class="mx-auto max-w-2xl px-4 pt-16 sm:px-6 sm:pt-24">
     <time
       class="text-sm text-muted"
       datetime={project.data.publishedAt.toISOString()}

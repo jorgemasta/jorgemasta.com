@@ -1,15 +1,10 @@
 ---
 /**
- * DEV ONLY. The break-ui data toggle, and the Concierge conversation each
- * fixture set seeds. Imported by `BaseLayout.astro` behind
- * `import.meta.env.DEV`, so a build never contains it. Styles and the script
- * are inline on purpose: a bundled `<style>` or `<script>` would ship.
+ * DEV ONLY. The break-ui data toggle. Imported by `BaseLayout.astro` behind
+ * `import.meta.env.DEV`, so a build never contains it. Styles are inline on
+ * purpose: a bundled `<style>` would ship.
  */
-import { getRegistry } from "../lib/content";
-import { focusReducer, type FocusState, type Stop } from "../lib/focus";
-import { messageText, parseAnswer } from "../lib/references";
 import { DATA_PARAM, getDataMode, type DataMode } from "./data-mode";
-import { getDevData } from "./fixtures";
 
 const SEGMENTS: { mode: DataMode; label: string }[] = [
   { mode: "demo", label: "Demo" },
@@ -19,50 +14,7 @@ const SEGMENTS: { mode: DataMode; label: string }[] = [
 ];
 
 const mode = getDataMode();
-const data = await getDevData();
-
-/**
- * The session the Concierge restores (its `sessionStorage` shape): the
- * conversation, and the Focus its last answer makes, built by the real
- * reducer. Null in `demo`, which leaves the visitor's own conversation alone.
- */
-let session: { messages: unknown[]; focus: FocusState } | null = null;
-if (data) {
-  const { conversation, focusStep = 0 } = data;
-  const stops = new Map<string, Stop>((await getRegistry()).map(({ id, path, anchor }) => [id, { id, path, anchor }]));
-  const question = conversation.findLast((message) => message.role === "user");
-  const answer = conversation.at(-1);
-  let focus: FocusState = null;
-  if (question && answer?.role === "assistant") {
-    const { references, notes } = parseAnswer(messageText(answer), (id) => stops.has(id));
-    focus = focusReducer(null, { type: "asked", question: messageText(question), from: { path: "/", scrollY: 0 } });
-    focus = focusReducer(focus, {
-      type: "answered",
-      stops: references.map((id) => ({ ...stops.get(id)!, note: notes[id] })),
-    });
-    for (let step = 0; step < focusStep; step++) focus = focusReducer(focus, { type: "next" });
-  }
-  session = { messages: conversation, focus };
-}
 ---
-
-<script is:inline define:vars={{ mode, session }}>
-  // Runs before the Concierge hydrates (it is the last thing in <body>), once per switch of data set.
-  try {
-    var MARK = "concierge:dev-data";
-    var previous = sessionStorage.getItem(MARK);
-    if (previous !== mode) {
-      if (session && session.messages.length) {
-        sessionStorage.setItem("concierge", JSON.stringify(session));
-      } else if (previous) {
-        sessionStorage.removeItem("concierge");
-      }
-      sessionStorage.setItem(MARK, mode);
-    }
-  } catch (error) {
-    // No storage: the Concierge starts empty.
-  }
-</script>
 
 <nav class="dev-data-toggle" aria-label="Dev data set">
   {
@@ -70,7 +22,6 @@ if (data) {
       <a
         href={`?${DATA_PARAM}=${segment.mode}`}
         aria-current={segment.mode === mode ? "true" : undefined}
-        data-astro-reload
       >
         {segment.label}
       </a>
@@ -84,7 +35,6 @@ if (data) {
     bottom: 4px;
     left: 50%;
     transform: translateX(-50%);
-    /* Under the Concierge (z-30/z-40): it never hides the UI being tested. */
     z-index: 20;
     display: flex;
     gap: 2px;

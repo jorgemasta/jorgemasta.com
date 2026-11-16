@@ -9,6 +9,5 @@ export default async function empty(): Promise<DevData> {
     podcast: podcastFrom(null),
     roles: [],
     about: [],
-    conversation: [],
   };
 }

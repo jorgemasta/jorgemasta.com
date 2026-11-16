@@ -1,6 +1,9 @@
 ---
-status: proposed
+status: withdrawn
 ---
+
+> **Withdrawn November 2026** because the execution did not reach the level of
+> the rest of the site. The concept is not ruled out.
 
 # The Concierge streams text with inline references, from a Worker behind AI Gateway
 
