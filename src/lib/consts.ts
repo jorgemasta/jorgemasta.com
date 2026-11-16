@@ -19,7 +19,7 @@ export const SOCIAL_LINKS = {
 export const TOKENIZADOS = {
   site: "https://tokenizadospodcast.com",
   /** Shown in the podcast band on the homepage. */
-  about: "A weekly podcast in Spanish about AI, recorded in the Canary Islands. I host it with Antonio Sejas.",
+  about: "A weekly podcast in Spanish, recorded in the Canary Islands, that I host with Antonio Sejas.",
   episodesSince: (episodeCount: number) =>
     `${episodeCount.toLocaleString("en-US")} ${episodeCount === 1 ? "episode" : "episodes"} since March 2026, each about 45 to 75 minutes long.`,
   platforms: [

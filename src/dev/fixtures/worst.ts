@@ -32,7 +32,7 @@ const projects = () =>
           { value: "0", label: "ads" },
         ],
       },
-      `Each day it reads 26 newsletters, plus 9 outlets directly, and condenses them into a few stories, each with context and an honest opinion.
+      `Every morning it reads dozens of newsletters and outlets and keeps the few stories worth a reader's time, each with context and an honest opinion.
 
 Subscribe at https://destilados.tokenizadospodcast.com/subscribe?utm_source=jorgemasta.com&utm_medium=homepage&utm_campaign=building-section`
     ),
@@ -116,6 +116,7 @@ const matcher = createMatcher({ stores: ["${LONG_HOST}"], threshold: 0.92 });
       {
         title: "Donaudampfschifffahrtsgesellschaftskapitänsmütze",
         publishedAt: "1999-12-31",
+        featured: true,
         excerpt: `Inventory sync for ${LONG_HOST} and its 14 regional storefronts`,
         url: `https://${LONG_HOST}/es/tiendas/inventario-en-tiempo-real`,
         stats: [
@@ -151,6 +152,7 @@ const endpoint = "https://${LONG_HOST}/api/v2/inventory/reconcile?since=1999-12-
       {
         title: "AIOS",
         publishedAt: "2025-01-01",
+        featured: true,
         excerpt:
           "Produktentwicklungsverantwortlichkeitenübernahme for mostly Spanish SMEs that wanted an edge from AI. We meant to productise it; it became a conventional agency, which we had not set out to b.",
       },
@@ -160,6 +162,7 @@ const endpoint = "https://${LONG_HOST}/api/v2/inventory/reconcile?since=1999-12-
     project("thai", {
       title: "ระบบจองตั๋วคอนเสิร์ตแบบไร้เงินสด",
       publishedAt: "2016-02-29",
+      featured: true,
       excerpt: "منصة لبيع التذاكر والدفع بدون تلامس في المهرجانات",
     }),
   ]);

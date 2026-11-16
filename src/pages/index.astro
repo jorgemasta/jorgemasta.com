@@ -5,391 +5,205 @@ import {
   getAbout,
   getCurrentPosts,
   getEpisodeCount,
-  getProjects,
+  getHomepageProjects,
   getRoles,
   getShownPodcast,
-  hasDetailPage,
-  isBuilding,
 } from "../lib/content";
 import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
-import { getBlogUrl, getProjectUrl } from "../lib/utils";
+import { formatDate, getBlogUrl, getProjectUrl } from "../lib/utils";
 import { hostname, withTail } from "../lib/hostname";
 
-const projects = await getProjects();
+const { building: buildingProjects, earlier } = await getHomepageProjects();
 const building = await Promise.all(
-  projects
-    .filter(isBuilding)
-    .reverse() // Oldest first: the longest-running product leads.
-    .map(async (project) => ({ project, Content: (await render(project)).Content }))
+  buildingProjects.map(async (project) => ({ project, Content: (await render(project)).Content }))
 );
 
-const podcast = await getShownPodcast();
-const episodeCount = getEpisodeCount(podcast);
-const notes = (await getCurrentPosts()).slice(0, 5);
 const roles = await getRoles();
+const notes = (await getCurrentPosts()).slice(0, 3);
+const episodeCount = getEpisodeCount(await getShownPodcast());
 const about = await getAbout();
-const currentRole = roles.find((role) => !role.end);
 
-/** Element ids the hero and the Now column link to. */
-const projectAnchor = (id: string) => `project-${id}`;
-const TOKENIZADOS_ANCHOR = "tokenizados";
-
-/**
- * The detail page of an Earlier work project the log names by hand, or
- * undefined to show the name as plain text, so a draft, rename or building
- * project never becomes a 404 link. A build fails on a slug that doesn't
- * resolve; dev doesn't, since its `?data=` fixtures replace the real projects.
- */
-const pastProjectUrl = (id: string) => {
-  const project = projects.find((p) => p.id === id);
-  if (!project && !import.meta.env.DEV) throw new Error(`Homepage names project "${id}", which isn't published`);
-  return project && hasDetailPage(project) ? getProjectUrl(project.id) : undefined;
-};
-
-/** When Tokenizados started; matches `TOKENIZADOS.episodesSince`. */
-const TOKENIZADOS_START = new Date(Date.UTC(2026, 2, 1));
-
-/** "Jun 2026" or "2025", as Roles write their dates, to sort them among the rest. */
-const roleDate = (when: string) => {
-  const date = new Date(`${/^\d{4}$/.test(when) ? `1 Jan ${when}` : `1 ${when}`} UTC`);
-  return Number.isNaN(date.getTime()) ? new Date(0) : date;
-};
-
-const monthYear = (date: Date) =>
-  date.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
-
-type Entry = { date: Date; shown: string; tag: string } & (
-  | { kind: "building"; item: (typeof building)[number] }
-  | { kind: "role"; role: (typeof roles)[number] }
-  | { kind: "podcast" }
-  | { kind: "episode"; episode: (typeof podcast.episodes)[number] }
-  | { kind: "note"; note: (typeof notes)[number] }
-  | { kind: "founded"; name: string; url?: string; what: string }
-);
-
-/**
- * Everything the homepage shows, as one log: what's being built first, since
- * it's still going, in its own order, then everything else newest first.
- */
-const log: Entry[] = [
-  ...building.map((item): Entry => ({
-    kind: "building",
-    item,
-    date: item.project.data.publishedAt,
-    shown: `Since ${monthYear(item.project.data.publishedAt)}`,
-    tag: item.project.data.title,
-  })),
-  ...roles.map((role): Entry => ({ kind: "role", role, date: roleDate(role.start), shown: role.start, tag: "Work" })),
-  { kind: "podcast" as const, date: TOKENIZADOS_START, shown: monthYear(TOKENIZADOS_START), tag: "Tokenizados" },
-  ...podcast.episodes.map((episode): Entry => ({
-    kind: "episode",
-    episode,
-    date: episode.date,
-    shown: monthYear(episode.date),
-    tag: "Tokenizados",
-  })),
-  ...notes.map((note): Entry => ({
-    kind: "note",
-    note,
-    date: note.data.publishedAt,
-    shown: monthYear(note.data.publishedAt),
-    tag: "Writing",
-  })),
-  {
-    kind: "founded" as const,
-    name: "AIOS",
-    url: pastProjectUrl("aios"),
-    what: "helped more than 10 companies, mostly Spanish SMEs, get an edge from AI (2025–2026)",
-    date: new Date(Date.UTC(2025, 0, 1)),
-    shown: "2025",
-    tag: "Work",
-  },
-  {
-    kind: "founded" as const,
-    name: "Food to Bento",
-    url: pastProjectUrl("food-to-bento"),
-    what: "an app against food waste, in Las Palmas (2018–2019)",
-    date: new Date(Date.UTC(2018, 0, 1)),
-    shown: "2018",
-    tag: "Work",
-  },
-  {
-    kind: "founded" as const,
-    name: "Kontroloo",
-    url: pastProjectUrl("kontroloo"),
-    what: "NFC access control and cashless payments for events, in Las Palmas",
-    date: new Date(Date.UTC(2017, 0, 1)),
-    shown: "2017",
-    tag: "Work",
-  },
-].sort((a, b) => {
-  const ongoing = Number(b.kind === "building") - Number(a.kind === "building");
-  return ongoing || (a.kind === "building" ? 0 : b.date.getTime() - a.date.getTime());
-});
-
-const kindLabel: Record<Entry["kind"], string> = {
-  building: "Building",
-  role: "Role",
-  podcast: "Launch",
-  episode: "Episode",
-  note: "Note",
-  founded: "Founded",
-};
-
-/** Filters in a fixed order: what's being built first, then the rest. */
-const tags = [
-  ...building.map(({ project }) => project.data.title),
-  "Tokenizados",
-  "Writing",
-  "Work",
-].filter((tag, i, all) => all.indexOf(tag) === i && log.some((entry) => entry.tag === tag));
-
-/** The headline number of each project being built, for the Now column. */
-const numbers = building.flatMap(({ project }) =>
-  project.data.stats.slice(0, 1).map((stat) => ({ ...stat, project: project.data.title }))
-);
+const year = (date: Date) => date.getUTCFullYear();
 ---
 
 <BaseLayout title={`${SITE_TITLE} · Product engineer`} description={SITE_DESCRIPTION}>
-  <!-- Hero -->
-  <section class="mx-auto max-w-5xl px-4 pt-20 pb-16 sm:px-6 sm:pt-28 sm:pb-20">
+  <!-- Hero: one claim, then professional proof first and side projects last. -->
+  <section class="mx-auto max-w-5xl px-4 pt-20 pb-16 sm:px-6 sm:pt-28 sm:pb-24">
     <p class="font-mono text-xs tracking-[0.08em] text-terracotta uppercase">Product engineer · Canary Islands</p>
     <h1 class="mt-5 max-w-4xl text-5xl leading-[1.05] tracking-tight sm:text-7xl">
-      Hi, I'm Jorge. I make <em class="text-terracotta">things on the internet</em>.
+      Hi, I'm Jorge. I build and improve <em class="text-terracotta">digital products</em>.
     </h1>
-    <p class="mt-7 max-w-2xl font-serif text-2xl leading-snug text-charcoal sm:text-[1.75rem]">
-      I build products where AI makes the <em class="text-terracotta">judgement calls</em>, and work out when that
-      judgement can be <em class="text-terracotta">trusted</em>.
-    </p>
-    <p class="mt-5 max-w-xl text-lg leading-relaxed text-muted wrap-anywhere">
+    <p class="mt-7 max-w-2xl text-lg leading-relaxed text-charcoal sm:text-xl wrap-anywhere">
+      I'm a product engineer. For nine years I've shipped web and mobile products for teams like Harvard, Vimeo and
+      BigCommerce, and now I work at Nexcess.
       {
         building.length > 0 && (
           <>
-            Right now I'm building{" "}
+            {" "}
+            On my own, I run{" "}
             {building.map(({ project }, i) => (
               <>
                 {i > 0 && (i === building.length - 1 ? " and " : ", ")}
-                <a href={`#${projectAnchor(project.id)}`}>{project.data.title}</a>
+                <a href={`#project-${project.id}`}>{project.data.title}</a>
               </>
             ))}
-            .{" "}
+            .
           </>
         )
       }
-      Below is the log of what I ship and what I learn.
     </p>
   </section>
 
-  <!-- The log, with what's true now beside it -->
-  <section class="@container mx-auto max-w-5xl px-4 sm:px-6">
-    <div class="grid grid-cols-1 gap-12 border-t border-charcoal pt-8 @3xl:grid-cols-[14rem_minmax(0,1fr)] @3xl:gap-10">
-      <aside class="text-sm @3xl:sticky @3xl:top-6 @3xl:self-start">
-        <h2 class="log-heading">Now</h2>
-        <dl class="mt-3 space-y-2">
-          {
-            building.length > 0 && (
-              <div class="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
-                <dt class="text-muted">Building</dt>
-                <dd class="space-y-1">
-                  {building.map(({ project }) => (
-                    <a href={`#${projectAnchor(project.id)}`} class="live-dot block wrap-anywhere">
-                      {project.data.title}
+  {
+    roles.length > 0 && (
+      <section id="work" class="mx-auto max-w-5xl px-4 sm:px-6">
+        <h2 class="section-heading">Work</h2>
+        <ol class="mt-6">
+          {roles.map((role) => (
+            <li class="grid grid-cols-1 gap-x-10 gap-y-1 border-t border-rule py-6 sm:grid-cols-[9rem_minmax(0,1fr)]">
+              <p class="pt-1 font-mono text-xs text-muted">
+                {role.start}
+                {role.end !== role.start && <> – {role.end ?? "now"}</>}
+              </p>
+              <div class="min-w-0 wrap-anywhere">
+                <h3 class="text-2xl leading-snug">
+                  {role.url ? (
+                    <a href={role.url} class="no-underline hover:underline" target="_blank" rel="noopener noreferrer">
+                      {role.company}
                     </a>
-                  ))}
-                </dd>
+                  ) : (
+                    role.company
+                  )}
+                </h3>
+                <p class="mt-0.5 text-sm text-muted">{role.title}</p>
+                {role.impact.trim() && <p class="mt-3 max-w-2xl leading-relaxed text-charcoal">{role.impact}</p>}
               </div>
-            )
-          }
-          <div class="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
-            <dt class="text-muted">Podcast</dt>
-            <dd><a href={`#${TOKENIZADOS_ANCHOR}`}>Tokenizados</a>, weekly</dd>
-          </div>
-          {
-            currentRole && (
-              <div class="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
-                <dt class="text-muted">Work</dt>
-                <dd class="wrap-anywhere">
-                  {currentRole.title}, {currentRole.company}
-                </dd>
-              </div>
-            )
-          }
-        </dl>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )
+  }
 
-        {
-          numbers.length > 0 && (
-            <>
-              <h2 class="log-heading mt-8">Numbers</h2>
-              <table class="mt-3 w-full border-collapse">
-                <tbody>
-                  {numbers.map((stat) => (
-                    <tr class="border-t border-rule">
-                      <td class="py-1.5 pr-3 align-top font-serif text-xl whitespace-nowrap text-green tabular-nums">
-                        {stat.value}
-                      </td>
-                      <td class="py-2 text-muted wrap-anywhere">
-                        {stat.label} <span class="text-charcoal">· {stat.project}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )
-        }
+  {
+    (building.length > 0 || earlier.length > 0) && (
+      <section id="building" class="mx-auto mt-24 max-w-5xl px-4 sm:px-6">
+        <h2 class="section-heading">Building on my own</h2>
+        {building.length > 0 && (
+          <p class="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
+            Products I run end to end, where I own the whole thing: data, SEO, monetisation and reliability.
+          </p>
+        )}
 
-        <a href={`mailto:${EMAIL}`} class="mt-8 block wrap-anywhere">{EMAIL}</a>
-      </aside>
-
-      <div class="min-w-0" data-log>
-        {
-          tags.length > 1 && (
-            <div class="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filter the log">
-              {["All", ...tags].map((tag, i) => (
-                <button type="button" class="log-filter" data-filter={tag} aria-pressed={i === 0 ? "true" : "false"}>
-                  {tag}{" "}
-                  <span class="font-mono text-xs opacity-60">
-                    {tag === "All" ? log.length : log.filter((entry) => entry.tag === tag).length}
-                  </span>
-                </button>
+        {building.map(({ project, Content }) => (
+          <article id={`project-${project.id}`} class="mt-8 border-t border-rule pt-8 wrap-anywhere">
+            <h3 class="text-3xl sm:text-4xl">{project.data.title}</h3>
+            <p class="mt-2 max-w-2xl text-lg leading-relaxed text-charcoal">{project.data.excerpt}</p>
+            <div class="prose mt-4 max-w-2xl leading-relaxed">
+              <Content />
+            </div>
+            {project.data.stats.length > 0 && (
+              <dl class="mt-6 flex flex-wrap items-start gap-x-10 gap-y-4">
+                {project.data.stats.map((stat) => (
+                  <div class="flex min-w-0 flex-col-reverse">
+                    <dt class="text-xs text-muted">{stat.label}</dt>
+                    <dd class="font-serif text-3xl text-green">{stat.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <a href={project.data.url} class="action min-w-0" target="_blank" rel="noopener noreferrer">
+                Visit {withTail(hostname(project.data.url!)).head}
+                <span class="whitespace-nowrap">
+                  {withTail(hostname(project.data.url!)).tail}&nbsp;<span aria-hidden="true">→</span>
+                </span>
+              </a>
+              {project.data.links.map((link) => (
+                <a href={link.url} class="text-muted hover:text-green" target="_blank" rel="noopener noreferrer">
+                  {link.label}
+                </a>
               ))}
             </div>
-          )
-        }
+          </article>
+        ))}
 
-        <ol>
+        {earlier.length > 0 && (
+          <div class="mt-16">
+            <h3 class="eyebrow font-sans">Earlier work</h3>
+            <ul class="mt-4">
+              {earlier.map((project) => (
+                <li class="grid grid-cols-1 gap-x-10 gap-y-1 border-t border-rule py-4 sm:grid-cols-[9rem_minmax(0,1fr)]">
+                  <p class="pt-0.5 font-mono text-xs text-muted">
+                    <time datetime={project.data.publishedAt.toISOString()}>{year(project.data.publishedAt)}</time>
+                  </p>
+                  <p class="min-w-0 leading-relaxed text-muted wrap-anywhere">
+                    <span class="font-medium text-charcoal">
+                      <a href={getProjectUrl(project.id)}>{project.data.title}</a>
+                    </span>
+                    . <span dir="auto">{project.data.excerpt}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+    )
+  }
+
+  <section id="writing" class="mx-auto mt-24 max-w-5xl px-4 sm:px-6">
+    <h2 class="section-heading">Writing &amp; podcast</h2>
+    <div class="mt-6 grid grid-cols-1 gap-12 border-t border-rule pt-8 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      {
+        notes.length > 0 && (
+          <div class="min-w-0">
+            <ul class="space-y-8">
+              {notes.map((note) => (
+                <li class="wrap-anywhere">
+                  <time class="font-mono text-xs text-muted" datetime={note.data.publishedAt.toISOString()}>
+                    {formatDate(note.data.publishedAt)}
+                  </time>
+                  <a
+                    href={getBlogUrl(note.id, note.data.publishedAt)}
+                    class="mt-1 block font-serif text-2xl leading-snug text-green no-underline hover:underline"
+                  >
+                    {note.data.title}
+                  </a>
+                  <p class="mt-1 line-clamp-3 text-muted" dir="auto">{note.data.excerpt}</p>
+                </li>
+              ))}
+            </ul>
+            <a href="/blog/" class="action mt-8 inline-block text-sm">Read the latest&nbsp;<span aria-hidden="true">→</span></a>
+          </div>
+        )
+      }
+
+      <div id="tokenizados" class="min-w-0 wrap-anywhere">
+        <h3 class="text-3xl">
+          <a href={TOKENIZADOS.site} class="no-underline hover:underline" target="_blank" rel="noopener noreferrer">
+            Tokenizados
+          </a>
+        </h3>
+        <p class="mt-3 leading-relaxed text-charcoal">{TOKENIZADOS.about}</p>
+        <p class="mt-2 leading-relaxed text-muted">{TOKENIZADOS.episodesSince(episodeCount)}</p>
+        <ul class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-label="Listen on">
           {
-            log.map((entry) => (
-              <li
-                data-tag={entry.tag}
-                class="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 gap-y-1 border-t border-rule py-5 sm:grid-cols-[5.5rem_4.5rem_minmax(0,1fr)]"
-                id={
-                  entry.kind === "building"
-                    ? projectAnchor(entry.item.project.id)
-                    : entry.kind === "podcast"
-                      ? TOKENIZADOS_ANCHOR
-                      : undefined
-                }
-              >
-                <time class="pt-0.5 font-mono text-xs text-muted" datetime={entry.date.toISOString()}>
-                  {entry.shown}
-                </time>
-                <span class:list={["log-kind pt-0.5", `log-kind-${entry.kind}`]}>{kindLabel[entry.kind]}</span>
-                <div class="col-span-2 min-w-0 wrap-anywhere sm:col-span-1">
-                  {entry.kind === "building" && (
-                    <>
-                      <h3 class="text-2xl">{entry.item.project.data.title}</h3>
-                      <p class="mt-1 text-charcoal">{entry.item.project.data.excerpt}</p>
-                      <div class="prose mt-3 max-w-none leading-relaxed">
-                        <entry.item.Content />
-                      </div>
-                      {entry.item.project.data.stats.length > 0 && (
-                        <dl class="mt-4 flex flex-wrap items-start gap-x-8 gap-y-3">
-                          {entry.item.project.data.stats.map((stat) => (
-                            <div class="flex flex-col-reverse">
-                              <dt class="text-xs text-muted">{stat.label}</dt>
-                              <dd class="font-serif text-2xl text-green">{stat.value}</dd>
-                            </div>
-                          ))}
-                        </dl>
-                      )}
-                      <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                        <a href={entry.item.project.data.url} class="action min-w-0" target="_blank" rel="noopener noreferrer">
-                          Visit {withTail(hostname(entry.item.project.data.url!)).head}
-                          <span class="whitespace-nowrap">
-                            {withTail(hostname(entry.item.project.data.url!)).tail}&nbsp;<span aria-hidden="true">→</span>
-                          </span>
-                        </a>
-                        {entry.item.project.data.links.map((link) => (
-                          <a href={link.url} class="text-muted hover:text-green" target="_blank" rel="noopener noreferrer">
-                            {link.label}
-                          </a>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {entry.kind === "role" && (
-                    <>
-                      <h3 class="font-sans text-base font-medium text-charcoal">
-                        {entry.role.title},{" "}
-                        {entry.role.url ? (
-                          <a href={entry.role.url} target="_blank" rel="noopener noreferrer">
-                            {entry.role.company}
-                          </a>
-                        ) : (
-                          entry.role.company
-                        )}
-                        <span class="ml-1 font-normal text-muted">
-                          {entry.role.end === entry.role.start ? "" : `until ${entry.role.end ?? "now"}`}
-                        </span>
-                      </h3>
-                      {entry.role.impact.trim() && (
-                        <p class="mt-1 max-w-2xl leading-relaxed text-muted">{entry.role.impact}</p>
-                      )}
-                    </>
-                  )}
-
-                  {entry.kind === "podcast" && (
-                    <>
-                      <h3 class="font-sans text-base font-medium text-charcoal">Started Tokenizados</h3>
-                      <p class="mt-1 max-w-2xl leading-relaxed text-muted">
-                        {TOKENIZADOS.about} {TOKENIZADOS.episodesSince(episodeCount)}
-                      </p>
-                      <ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-label="Listen on">
-                        {TOKENIZADOS.platforms.map((platform) => (
-                          <li>
-                            <a href={platform.url} target="_blank" rel="noopener noreferrer">
-                              {platform.name}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-
-                  {entry.kind === "episode" && (
-                    <a
-                      href={entry.episode.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="font-serif text-lg leading-snug text-charcoal no-underline hover:underline"
-                    >
-                      <span class="text-muted">Tokenizados #{entry.episode.number}</span> {entry.episode.title}
-                    </a>
-                  )}
-
-                  {entry.kind === "note" && (
-                    <>
-                      <a
-                        href={getBlogUrl(entry.note.id, entry.note.data.publishedAt)}
-                        class="font-serif text-xl leading-snug text-green no-underline hover:underline"
-                      >
-                        {entry.note.data.title}
-                      </a>
-                      <p class="mt-1 line-clamp-3 text-muted">{entry.note.data.excerpt}</p>
-                    </>
-                  )}
-
-                  {entry.kind === "founded" && (
-                    <p class="leading-relaxed text-muted">
-                      <span class="font-medium text-charcoal">
-                        Co-founded {entry.url ? <a href={entry.url}>{entry.name}</a> : entry.name}
-                      </span>
-                      , {entry.what}.
-                    </p>
-                  )}
-                </div>
+            TOKENIZADOS.platforms.map((platform) => (
+              <li>
+                <a href={platform.url} target="_blank" rel="noopener noreferrer">
+                  {platform.name}
+                </a>
               </li>
             ))
           }
-        </ol>
+        </ul>
       </div>
     </div>
   </section>
 
   <!-- About -->
-  <section class="@container mx-auto mt-32 max-w-5xl px-4 sm:px-6">
+  <section id="about" class="@container mx-auto mt-32 max-w-5xl px-4 sm:px-6">
     <div class="grid grid-cols-1 gap-10 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] @3xl:gap-12">
       <div>
         <!-- Placeholder until the real portrait lands. -->
@@ -404,12 +218,10 @@ const numbers = building.flatMap(({ project }) =>
       <div class="min-w-0 wrap-break-word">
         <h2 class="text-4xl sm:text-5xl">About</h2>
         <div class="mt-6 max-w-xl space-y-4 text-lg leading-relaxed">
-          {
-            about.map((paragraph) => <p>{paragraph}</p>)
-          }
+          {about.map((paragraph) => <p>{paragraph}</p>)}
           <p>
-            The best way to reach me is email: <a href={`mailto:${EMAIL}`}
-              class="font-serif text-xl wrap-anywhere">{EMAIL}</a
+            The best way to reach me is email: <a href={`mailto:${EMAIL}`} class="font-serif text-xl wrap-anywhere"
+              >{EMAIL}</a
             >
           </p>
         </div>
@@ -418,98 +230,16 @@ const numbers = building.flatMap(({ project }) =>
   </section>
 </BaseLayout>
 
-<script>
-  /** Shows only the log entries with `tag`, or all of them for "All". */
-  function filter(log: Element, tag: string) {
-    log.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) =>
-      button.setAttribute("aria-pressed", String(button.dataset.filter === tag))
-    );
-    log.querySelectorAll<HTMLElement>("li[data-tag]").forEach((entry) => {
-      entry.hidden = tag !== "All" && entry.dataset.tag !== tag;
-    });
-  }
-
-  document.addEventListener("click", (event) => {
-    const button = (event.target as Element).closest<HTMLButtonElement>("[data-log] [data-filter]");
-    const log = button?.closest("[data-log]");
-    if (button && log) filter(log, button.dataset.filter ?? "All");
-  });
-</script>
-
 <style>
-  .log-heading {
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-muted);
+  .section-heading {
+    font-size: 2.25rem;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
   }
 
-  .live-dot::before {
-    content: "";
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    margin-right: 0.5rem;
-    border-radius: 50%;
-    vertical-align: 0.15em;
-    background: #3f9a6b;
-    box-shadow: 0 0 0 3px color-mix(in srgb, #3f9a6b 20%, transparent);
-  }
-
-  .log-filter {
-    cursor: pointer;
-    border: 1px solid var(--color-rule);
-    border-radius: 9999px;
-    padding: 0.3rem 0.75rem;
-    font-size: 0.8125rem;
-    color: var(--color-charcoal);
-    transition:
-      background-color 150ms ease-out,
-      border-color 150ms ease-out;
-  }
-
-  .log-filter:hover {
-    border-color: var(--color-green-soft);
-  }
-
-  .log-filter:active {
-    transform: scale(0.97);
-  }
-
-  .log-filter[aria-pressed="true"] {
-    border-color: var(--color-green);
-    background: var(--color-green);
-    color: var(--color-paper);
-  }
-
-  .log-kind {
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--color-muted);
-  }
-
-  .log-kind-building,
-  .log-kind-podcast {
-    color: var(--color-green);
-  }
-
-  .log-kind-note {
-    color: var(--color-terracotta);
-  }
-
-  .log-kind-founded {
-    color: var(--color-olive);
-  }
-
-  /* On a phone the kind sits beside the date and the body takes the full width below. */
-  @media (width < 40rem) {
-    .log-kind {
-      grid-column: 2;
-      grid-row: 1;
+  @media (width >= 40rem) {
+    .section-heading {
+      font-size: 3rem;
     }
   }
 </style>

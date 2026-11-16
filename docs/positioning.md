@@ -1,6 +1,6 @@
 # Positioning
 
-> **Today's positioning, as of 2026-09-26. Not set in stone.** This is the
+> **Today's positioning, as of 2026-11-16. Not set in stone.** This is the
 > current bet on how the site presents Jorge, and it is expected to change.
 > Use it to make copy, design, and content decisions; when a decision
 > contradicts it, question the document rather than silently working around it.
@@ -175,25 +175,33 @@ portraits, stereotypical programmer photos, RGB lighting, fake laptop scenes.
 
 ## Homepage
 
-Communicate **what Jorge builds, how Jorge thinks, what Jorge is exploring** —
-not a traditional portfolio. No "My skills: React, TypeScript…" section.
+Communicate **what Jorge does, the proof that he does it well, and what he
+builds on his own** — not a traditional portfolio. No "My skills: React,
+TypeScript…" section.
 
-Hierarchy: (1) what he's building, (2) how he thinks, (3) proof of capability,
-(4) professional history. Not job title → skills → technologies → contact form.
+Hierarchy: (1) professional work, (2) what he builds on his own, (3) writing,
+(4) About. Employment comes first; the products he runs on his own follow as
+evidence of end-to-end ownership, not as the main act. Not job title → skills →
+technologies → contact form.
 
-Reference structure:
+Reference structure (the homepage ships no client-side script):
 
-1. **Hero** — "I build thoughtful digital products." / "Product engineer
-   working at the intersection of frontend, product, and AI." CTA: _See what
-   I'm building →_, secondary _Read my writing →_. This leaves room to evolve
-   without being branded an "AI person".
-2. **What I'm building** — real products; each says what it is, why it's
-   interesting, what problem Jorge is exploring. Not just logos.
-3. **Notes from building** — 3–5 strong entries whose titles communicate a
-   decision or discovery.
-4. **Selected work** — professional experience, compact: ownership, product
-   impact, systems, collaboration. Not a CV dump.
-5. **About** — short and human.
+1. **Hero** — one claim: "Hi, I'm Jorge. I build and improve digital
+   products." Then one short paragraph, professional proof first and side
+   projects last: product engineer, nine years shipping web and mobile products
+   for teams like Harvard, Vimeo and BigCommerce, now at Nexcess; on his own he
+   runs Padelful and Destilados. AI is not named in the hero.
+2. **Work** — Roles only, most recent first, each with what Jorge owned and
+   what it amounted to. Not a CV dump.
+3. **Building on my own** — each product he is building in detail: what it is,
+   the problem he is exploring, real numbers, links. Below, compactly, the
+   Earlier work picked for the homepage (AIOS, Kontroloo, Food to Bento),
+   linking to their detail pages.
+4. **Writing & podcast** — the latest Notes, and Tokenizados as one block with
+   platform links and the episode count. No per-episode rows.
+5. **About** — short and human, with the email.
+
+A section with nothing to show is left out rather than rendered empty.
 
 ### Bios
 

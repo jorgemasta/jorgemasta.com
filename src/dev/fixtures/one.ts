@@ -29,7 +29,7 @@ export default async function one(): Promise<DevData> {
       ),
       project(
         "kontroloo",
-        { title: "Kontroloo", publishedAt: "2017-01-15", excerpt: "Access control" },
+        { title: "Kontroloo", publishedAt: "2017-01-15", featured: true, excerpt: "Access control" },
         "One body paragraph."
       ),
     ]),

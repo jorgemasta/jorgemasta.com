@@ -58,6 +58,19 @@ export const isBuilding = (project: CollectionEntry<"projects">) =>
 /** Whether a project gets a page at /projects/[slug]/: everything but building projects. */
 export const hasDetailPage = (project: CollectionEntry<"projects">) => !isBuilding(project);
 
+/**
+ * The Projects the homepage shows: what Jorge is building, oldest first so the
+ * longest-running product leads, then the Earlier work picked for the homepage
+ * (`featured`), newest first. Every Project stays on /projects either way.
+ */
+export async function getHomepageProjects() {
+  const projects = await getProjects();
+  return {
+    building: projects.filter(isBuilding).reverse(),
+    earlier: projects.filter((project) => !isBuilding(project) && project.data.featured),
+  };
+}
+
 /** Building projects link out to their live site; earlier ones to their detail page. */
 export function getProjectHref(project: CollectionEntry<"projects">): string {
   if (hasDetailPage(project)) return getProjectUrl(project.id);

@@ -2,6 +2,7 @@
 title: "Food to Bento"
 publishedAt: 2018-02-11
 excerpt: "An app for businesses to sell their surplus food instead of throwing it away. Co-founded in 2018."
+featured: true
 mainImage:
   src: "/images/projects/food-to-bento.jpg"
   alt: "Healthy food plate with the food to bento logo"

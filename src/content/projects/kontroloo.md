@@ -2,6 +2,7 @@
 title: "Kontroloo"
 publishedAt: 2017-01-15
 excerpt: "NFC access control and cashless payments for festivals and live events. Co-founded in 2017."
+featured: true
 mainImage:
   src: "/images/projects/kontroloo.jpg"
   alt: "music festival with Kontroloo RFID technology"

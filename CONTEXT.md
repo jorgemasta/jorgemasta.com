@@ -37,7 +37,8 @@ _Avoid_: job, selected work, position, co-founded companies
 
 **Earlier work**:
 Projects Jorge is no longer building, framed as history rather than current
-focus (`status: earlier`), whenever they happened.
+focus (`status: earlier`), whenever they happened. All of it is on /projects;
+the homepage shows only the ones marked `featured`.
 _Avoid_: old projects, legacy
 
 **Draft**:
