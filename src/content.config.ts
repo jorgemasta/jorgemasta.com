@@ -40,6 +40,7 @@ const projects = defineCollection({
     publishedAt: z.coerce.date(),
     excerpt,
     mainImage,
+    /** Earlier work shown on the homepage too; the rest appears only on /projects. */
     featured: z.boolean().default(false),
     /**
      * `building` projects are current: they link out to their live site and

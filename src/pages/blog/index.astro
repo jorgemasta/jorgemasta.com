@@ -7,7 +7,7 @@ import { getBlogUrl, formatDate, isOlderThanOneYear } from "../../lib/utils";
 const posts = await getPosts();
 ---
 
-<BaseLayout title="Writing | Jorge Masta" description="Notes and articles by Jorge Masta">
+<BaseLayout title="Writing | Jorge Masta" description="Notes and articles by Jorge Masta on building and improving digital products.">
   <div class="mx-auto max-w-5xl px-4 pt-16 sm:px-6 sm:pt-24">
     <h1 class="text-5xl tracking-tight sm:text-6xl">Writing</h1>
     {posts.length === 0 && (
@@ -33,7 +33,7 @@ const posts = await getPosts();
                 )}
               </span>
               <span class="min-w-0 wrap-anywhere sm:col-span-9">
-                <span class="font-serif text-2xl text-green group-hover:underline">
+                <span class="link-quiet font-serif text-2xl text-green">
                   {post.data.title}
                 </span>
                 <span class="mt-1 line-clamp-6 sm:line-clamp-3 leading-relaxed text-charcoal">{post.data.excerpt}</span>
