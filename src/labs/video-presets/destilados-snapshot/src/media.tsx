@@ -63,13 +63,30 @@ const Placeholder: React.FC<{ src: string | undefined; kind: string; style?: Rea
   );
 };
 
+/**
+ * The visitor's look for the beat being rendered, as a CSS `filter` (empty = as
+ * generated). Report provides it per beat; every image and clip below reads it.
+ */
+export const BeatFilterContext = React.createContext("");
+
+/** Adds the beat's look after the element's own filter (blurred backdrops keep their blur). */
+const useGraded = (style: React.CSSProperties | undefined): React.CSSProperties | undefined => {
+  const look = React.useContext(BeatFilterContext);
+  if (!look) return style;
+  return { ...style, filter: style?.filter ? `${style.filter} ${look}` : look };
+};
+
 type ImgProps = React.ComponentProps<typeof RemotionImg>;
-export const Img: React.FC<ImgProps> = (props) =>
-  isPending(props.src) ? <Placeholder src={props.src} kind="image" style={props.style} /> : <RemotionImg {...props} />;
+export const Img: React.FC<ImgProps> = (props) => {
+  const style = useGraded(props.style);
+  return isPending(props.src) ? <Placeholder src={props.src} kind="image" style={style} /> : <RemotionImg {...props} style={style} />;
+};
 
 type VideoProps = React.ComponentProps<typeof RemotionVideo>;
-export const OffthreadVideo: React.FC<VideoProps> = (props) =>
-  isPending(props.src) ? <Placeholder src={props.src} kind="clip" style={props.style} /> : <RemotionVideo {...props} />;
+export const OffthreadVideo: React.FC<VideoProps> = (props) => {
+  const style = useGraded(props.style);
+  return isPending(props.src) ? <Placeholder src={props.src} kind="clip" style={style} /> : <RemotionVideo {...props} style={style} />;
+};
 
 type AudioProps = React.ComponentProps<typeof RemotionAudio>;
 /** Missing audio is simply left out: the composition plays silently on its timing. */
