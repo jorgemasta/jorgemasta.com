@@ -38,7 +38,9 @@
   padding: 0.25rem;
   margin-inline: -0.25rem;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.25rem;
   scrollbar-width: none;
 }
 
@@ -139,6 +141,12 @@
 
 .lab-looks__reset:active {
   background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+.lab-looks button:focus-visible,
+.lab-looks input:focus-visible {
+  outline: 2px solid var(--color-terracotta);
+  outline-offset: 2px;
 }
 
 @media (hover: hover) and (pointer: fine) {

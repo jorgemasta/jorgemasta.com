@@ -3,6 +3,7 @@
 // Nothing from Remotion is imported at module scope, so the SSR pass stays plain HTML.
 import React, { useEffect, useState } from "react";
 import type { EditorProps } from "./Editor";
+import "./lab-frame.css";
 
 export type VideoPresetsLabProps = { poster?: { src: string; alt: string } };
 
@@ -24,7 +25,7 @@ export default function VideoPresetsLab({ poster }: VideoPresetsLabProps) {
   return (
     <div>
       {poster && (
-        <img src={poster.src} alt={poster.alt} className="card-img aspect-video w-full rounded-md object-cover" />
+        <img src={poster.src} alt={poster.alt} className="lab-frame card-img aspect-video w-full rounded-md object-cover" />
       )}
       {failed && <p className="mt-2 font-sans text-sm text-muted">The editor could not load. Reload the page to try again.</p>}
     </div>

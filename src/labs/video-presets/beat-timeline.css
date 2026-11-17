@@ -107,6 +107,11 @@
   color: var(--color-chocolate, #3a2722);
 }
 
+.lab-tl-beat:active,
+.lab-tl-chapter:active {
+  background: #ebe5d8;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .lab-tl-beat:hover,
   .lab-tl-chapter:hover {

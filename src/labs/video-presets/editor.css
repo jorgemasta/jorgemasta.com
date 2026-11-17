@@ -1,0 +1,64 @@
+/* Editor-wide rules (Editor.tsx). Plain CSS, loaded with the editor chunk only.
+   The page stays a normal scrolling document: no overscroll lock, no full-height shell. */
+
+.lab-editor {
+  /* Inherited: no grey flash on tap anywhere in the editor; every control has its own :active. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* No double-tap-zoom wait on controls. Only the scrubber takes over touch (Remotion sets
+   touch-action: none on it); everything else lets the page scroll. */
+.lab-editor button,
+.lab-editor input,
+.lab-editor select {
+  touch-action: manipulation;
+}
+
+/* Remotion also puts touch-action: none on the mute button's wrapper (inline style, the
+   only inline-flex one); a swipe starting there should still scroll the page. */
+.lab-player [style*="touch-action: none"][style*="inline-flex"] {
+  touch-action: manipulation !important;
+}
+
+/* Long-press on a control selects nothing. */
+.lab-editor button {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* iOS zooms into a select under 16px and doesn't zoom back. */
+@media (pointer: coarse) {
+  .lab-editor select {
+    font-size: 16px;
+  }
+}
+
+/* The player's own controls fade out while playing unless the mouse is over them;
+   keep them visible while one has keyboard focus, so the focus ring can be seen. */
+.lab-player [style*="opacity: 0"]:has(:focus-visible) {
+  opacity: 1 !important;
+}
+
+.lab-player button:focus-visible {
+  outline: 2px solid var(--color-paper);
+  outline-offset: -2px;
+  border-radius: 0.25rem;
+}
+
+/* The controls' fade is the player's only UI motion. */
+@media (prefers-reduced-motion: reduce) {
+  .lab-player [style*="transition: opacity"] {
+    transition: none !important;
+  }
+}
+
+/* Beat timeline, cut markers and the per-beat inspector are tablet-and-up tools.
+   Below that the page keeps the player, the looks (presets, intensity, Reset) and the
+   default transition for story changes. display: none also takes them out of the tab order. */
+@media (max-width: 47.99rem) {
+  .lab-tl,
+  .lab-insp,
+  .lab-tx__hint {
+    display: none;
+  }
+}

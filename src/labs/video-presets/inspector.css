@@ -208,10 +208,4 @@
   }
 }
 
-/* Per-beat tweaking is a tablet-and-up tool. */
-@media (max-width: 47.99rem) {
-  .lab-tl .lab-tl-tweak,
-  .lab-insp {
-    display: none;
-  }
-}
+/* Hidden below tablet width with the timeline: see editor.css. */
