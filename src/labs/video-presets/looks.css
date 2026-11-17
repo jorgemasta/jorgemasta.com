@@ -126,23 +126,6 @@
   text-align: right;
 }
 
-.lab-looks__reset {
-  border: 1px solid var(--color-rule);
-  border-radius: 9999px;
-  padding: 0.4rem 1rem;
-  background: transparent;
-  color: var(--color-green);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.lab-looks__reset:active {
-  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
-}
-
 .lab-looks button:focus-visible,
 .lab-looks input:focus-visible {
   outline: 2px solid var(--color-terracotta);
@@ -153,15 +136,10 @@
   .lab-looks__preset:hover {
     border-color: var(--color-terracotta);
   }
-
-  .lab-looks__reset:hover {
-    border-color: var(--color-green);
-  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .lab-looks__preset,
-  .lab-looks__reset {
+  .lab-looks__preset {
     transition:
       border-color 120ms ease,
       background-color 120ms ease;

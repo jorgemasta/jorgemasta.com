@@ -10,12 +10,13 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "
 import { formatTime } from "./beat-timeline";
 import { effectiveEdition, setCutTransition, setDefaultTransition, type EffectiveTransition, type Edits } from "./edit-model";
 import { useLabPlayer } from "./player-context";
-import type { Cut, EditionTimeline } from "./timeline";
+import type { Cut, CutId, EditionTimeline } from "./timeline";
 import {
   adjustTransition,
   cssEasing,
   DIRECTIONS,
   EASINGS,
+  hasMotion,
   MAX_FRAMES,
   MIN_FRAMES,
   poseAt,
@@ -24,24 +25,26 @@ import {
   transitionPreset,
   TRANSITIONS,
   type Transition,
+  type TransitionDirection,
+  type TransitionEasing,
   type TransitionKind,
 } from "./transitions";
 import type { LabEdits } from "./use-lab-edits";
 import "./transitions.css";
 
 /** What a transition is applied to: every story change, or one cut (by id). */
-export type CutTarget = string | null;
+export type CutTarget = CutId | null;
 
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const EASING_NAMES: Record<string, string> = {
+const EASING_NAMES: Record<TransitionEasing, string> = {
   linear: "Linear",
   "ease-in": "Ease in",
   "ease-out": "Ease out",
   "ease-in-out": "Ease in-out",
   overshoot: "Overshoot",
 };
-const DIRECTION_NAMES: Record<string, string> = {
+const DIRECTION_NAMES: Record<TransitionDirection, string> = {
   left: "From the left",
   right: "From the right",
   up: "From the top",
@@ -52,10 +55,12 @@ const DIRECTION_NAMES: Record<string, string> = {
 
 const seconds = (frames: number, fps: number) => `${(frames / fps).toFixed(2).replace(/0$/, "")} s`;
 
-const describe = (t: Transition, fps: number) =>
-  t.kind === "cut" ? "Cut" : `${transitionPreset(t.kind).name}, ${seconds(t.durationFrames, fps)}`;
+const nameOf = (t: Transition) => transitionPreset(t.kind).name;
 
-const beatNumber = (id: string) => Number(id.slice(1)) + 1;
+const describe = (t: Transition, fps: number) => (hasMotion(t) ? `${nameOf(t)}, ${seconds(t.durationFrames, fps)}` : nameOf(t));
+
+/** "beat N" as the visitor counts, from 1. */
+const beatNumber = (cut: Cut) => cut.toBeatIndex + 1;
 
 /** The edits with `t` applied to `target`. */
 const applyTo = (edits: Edits, target: CutTarget, t: Transition | null): Edits =>
@@ -138,7 +143,7 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   const committed = committedOn(edits, target);
   const overrides = Object.keys(edits.cutTransitions).length;
   const fps = timeline.fps;
-  const cutLabel = cut ? `the cut into beat ${beatNumber(cut.toBeat)} at ${formatTime(cut.at, fps)}` : "";
+  const cutLabel = cut ? `the cut into beat ${beatNumber(cut)} at ${formatTime(cut.at, fps)}` : "";
 
   const status = previewing
     ? `Previewing ${describe(draft, fps)} on ${cut ? cutLabel : `the story change at ${formatTime(previewing.at, fps)}`}. Not applied yet.`
@@ -154,6 +159,7 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
     setDraft(committed?.kind === kind ? committed : draft.kind === kind ? draft : transitionPreset(kind).settings);
 
   const adjust = (change: Partial<Omit<Transition, "kind">>) => setDraft(adjustTransition(draft, change));
+  const still = !hasMotion(draft);
 
   return (
     <section className="lab-tx" aria-labelledby="lab-tx-title">
@@ -172,7 +178,7 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
         </button>
         {cut ? (
           <span className="lab-tx__chip" data-on="">
-            Cut into beat {beatNumber(cut.toBeat)} · {formatTime(cut.at, fps)}
+            Cut into beat {beatNumber(cut)} · {formatTime(cut.at, fps)}
           </span>
         ) : (
           <span className="lab-tx__hint">Pick a cut on the timeline to make an exception.</span>
@@ -212,18 +218,18 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
               min={MIN_FRAMES}
               max={MAX_FRAMES}
               step={1}
-              value={draft.kind === "cut" ? MIN_FRAMES : draft.durationFrames}
-              disabled={draft.kind === "cut"}
+              value={still ? MIN_FRAMES : draft.durationFrames}
+              disabled={still}
               onChange={(e) => adjust({ durationFrames: Number(e.currentTarget.value) })}
             />
-            <output className="lab-tx__value">{draft.kind === "cut" ? "–" : seconds(draft.durationFrames, fps)}</output>
+            <output className="lab-tx__value">{still ? "–" : seconds(draft.durationFrames, fps)}</output>
           </label>
           <label className="lab-tx__field">
             <span>Easing</span>
             <select
               value={draft.easing}
-              disabled={draft.kind === "cut"}
-              onChange={(e) => adjust({ easing: e.currentTarget.value as Transition["easing"] })}
+              disabled={still}
+              onChange={(e) => adjust({ easing: e.currentTarget.value as TransitionEasing })}
             >
               {EASINGS.map((e) => (
                 <option key={e} value={e}>
@@ -235,11 +241,11 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
           <label className="lab-tx__field">
             <span>Direction</span>
             <select
-              value={draft.kind === "cut" ? "" : draft.direction}
-              disabled={draft.kind === "cut"}
-              onChange={(e) => adjust({ direction: e.currentTarget.value as Transition["direction"] })}
+              value={still ? "" : draft.direction}
+              disabled={still}
+              onChange={(e) => adjust({ direction: e.currentTarget.value as TransitionDirection })}
             >
-              {draft.kind === "cut" && <option value="">–</option>}
+              {still && <option value="">–</option>}
               {DIRECTIONS[draft.kind].map((d) => (
                 <option key={d} value={d}>
                   {DIRECTION_NAMES[d]}
@@ -296,7 +302,7 @@ const LibraryCard: React.FC<LibraryCardProps> = ({ kind, name, blurb, settings, 
   // Loop the transition on the demo's incoming frame while the card is pointed at or focused.
   useEffect(() => {
     const el = incoming.current;
-    if (!active || !el || settings.kind === "cut" || reducedMotion() || !el.animate) return;
+    if (!active || !el || !hasMotion(settings) || reducedMotion() || !el.animate) return;
     let timer: number | undefined;
     let anim: Animation | undefined;
     const ms = (settings.durationFrames / 30) * 1000;
@@ -354,14 +360,14 @@ type CutMarkerProps = {
 /** A cut between two beat rows: its effective transition, overrides marked. Selecting it targets it. */
 const CutMarker = memo<CutMarkerProps>(({ cut, fps, transition, selected, onSelect }) => {
   const source = transition?.source ?? "generated";
-  const label = transition ? (transition.kind === "cut" ? "Cut" : transitionPreset(transition.kind).name) : cut.storyChange ? "Story card" : "Cut";
+  const label = transition ? nameOf(transition) : cut.storyChange ? "Story card" : "Cut";
   return (
     <li className="lab-tl-cut" data-source={source} data-story={cut.storyChange || undefined}>
       <button
         type="button"
         className="lab-tl-cut-button"
         aria-pressed={selected}
-        aria-label={`Cut into beat ${beatNumber(cut.toBeat)} at ${formatTime(cut.at, fps)}: ${label}${
+        aria-label={`Cut into beat ${beatNumber(cut)} at ${formatTime(cut.at, fps)}: ${label}${
           source === "override" ? ", overrides the default" : source === "default" ? ", the default" : ""
         }. Select to change it.`}
         onClick={() => onSelect(cut)}

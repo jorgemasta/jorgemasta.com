@@ -53,12 +53,66 @@
 }
 
 /* Beat timeline, cut markers and the per-beat inspector are tablet-and-up tools.
-   Below that the page keeps the player, the looks (presets, intensity, Reset) and the
+   Below that the page keeps the player, Reset, the looks (presets, intensity) and the
    default transition for story changes. display: none also takes them out of the tab order. */
 @media (max-width: 47.99rem) {
   .lab-tl,
   .lab-insp,
   .lab-tx__hint {
     display: none;
+  }
+}
+
+/* Reset: one editor-level control for every edit (looks, tweaks, transitions), under the
+   player. Visible at every width. Only theme variables the site already uses. */
+.lab-editor__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.lab-editor__reset {
+  min-height: 2.75rem; /* a comfortable touch target */
+  border: 1px solid var(--color-rule);
+  border-radius: 9999px;
+  padding: 0.4rem 1rem;
+  background: transparent;
+  color: var(--color-green);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.lab-editor__reset:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+.lab-editor__reset:disabled {
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.lab-editor__reset:focus-visible {
+  outline: 2px solid var(--color-terracotta);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lab-editor__reset:hover:not(:disabled) {
+    border-color: var(--color-green);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lab-editor__reset {
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease;
   }
 }

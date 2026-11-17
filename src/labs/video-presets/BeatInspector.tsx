@@ -10,6 +10,7 @@ import { formatTime } from "./beat-timeline";
 import { useLabPlayer } from "./player-context";
 import { clearTweak, clearTweakParam, setTweak } from "./tweaks";
 import type { LabEdits } from "./use-lab-edits";
+import type { BeatId } from "./timeline";
 import "./inspector.css";
 
 type Param = { key: keyof Look; label: string; min: number; max: number; step: number; format: (v: number) => string };
@@ -25,7 +26,7 @@ const PARAMS: readonly Param[] = [
 export type BeatInspectorProps = {
   lab: LabEdits;
   /** The beat being inspected. */
-  beatId: string;
+  beatId: BeatId;
   onClose: () => void;
 };
 

@@ -100,7 +100,11 @@ describe("buildTimeline on a hand-worked example", () => {
   });
 
   it("lists the cuts between beats and marks story changes", () => {
-    expect(tl.cuts).toEqual([{ id: "b0-b1", at: 150, fromBeat: "b0", toBeat: "b1", storyChange: true }]);
+    expect(tl.cuts).toEqual([{ id: "b0-b1", at: 150, fromBeat: "b0", toBeat: "b1", toBeatIndex: 1, storyChange: true }]);
+  });
+
+  it("gives the renderer the same beat ids as the editor", () => {
+    expect(tl.report.beats.map((b) => b.id)).toEqual(["b0", "b1"]);
   });
 
   it("describes each beat's visual kind", () => {

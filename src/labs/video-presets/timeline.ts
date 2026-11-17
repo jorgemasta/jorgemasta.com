@@ -4,6 +4,7 @@
 // (`timeline.<lang>.json`), which is not in its repository. This is a pure port of
 // that step, so the Lab needs only the vendored script and voice JSON.
 import type { ScriptBeat, Timeline, Visual } from "./destilados-snapshot/src/types";
+import { clamp } from "./math";
 
 export type { ScriptBeat, Timeline, Visual };
 
@@ -51,9 +52,15 @@ export type TimedWord = {
   to: number;
 };
 
+/** A beat's stable id, `b<index>` (beats are never reordered or deleted in the Lab). Minted only here. */
+export type BeatId = `b${number}`;
+/** A cut's id: `<fromBeatId>-<toBeatId>`. */
+export type CutId = `${BeatId}-${BeatId}`;
+
+const beatId = (index: number): BeatId => `b${index}`;
+
 export type LabBeat = {
-  /** Stable id: `b<index>` (beats are never reordered or deleted in the Lab). */
-  id: string;
+  id: BeatId;
   index: number;
   say: string;
   /** Kind of visual (`image`, `gif`, `story`, …); look presets apply to image/clip-like kinds. */
@@ -80,12 +87,13 @@ export type Chapter = {
 
 /** A cut between two consecutive beats (where a transition can sit later). */
 export type Cut = {
-  /** `<fromBeatId>-<toBeatId>`. */
-  id: string;
+  id: CutId;
   /** Frame where the incoming beat starts. */
   at: number;
-  fromBeat: string;
-  toBeat: string;
+  fromBeat: BeatId;
+  toBeat: BeatId;
+  /** Index of the incoming beat in `EditionTimeline.beats` (what "beat N" counts from). */
+  toBeatIndex: number;
   /** True when the incoming beat starts a new story chapter. */
   storyChange: boolean;
 };
@@ -103,7 +111,7 @@ export type EditionTimeline = {
   beats: LabBeat[];
   chapters: Chapter[];
   cuts: Cut[];
-  /** The same timing in the shape the vendored `Report` composition renders. */
+  /** The same timing in the shape the vendored `Report` composition renders; its beats carry the ids above. */
   report: Timeline;
 };
 
@@ -186,15 +194,7 @@ export function buildTimeline(script: Script, voice: VoiceTiming, opts: BuildOpt
   const n = script.beats.length;
   const beatStart: (number | null)[] = aligned.map((ws) => ws.find((w) => w.startSec !== null)?.startSec ?? null);
   beatStart[0] = 0;
-  for (let i = 1; i < n; i++) {
-    if (beatStart[i] !== null) continue;
-    let j = i;
-    while (j < n && beatStart[j] === null) j++;
-    const prev = beatStart[i - 1] as number;
-    const next = j < n ? (beatStart[j] as number) : voiceDuration;
-    for (let k = i; k < j; k++) beatStart[k] = prev + ((next - prev) * (k - i + 1)) / (j - i + 1);
-  }
-  const starts = beatStart as number[];
+  const starts = fillGaps(beatStart, 0, voiceDuration);
 
   // 3. The intro is inserted in the pause between the cold open and the first story.
   const co = Math.min(script.coldOpenBeats, n);
@@ -227,7 +227,7 @@ export function buildTimeline(script: Script, voice: VoiceTiming, opts: BuildOpt
     }
     const words = timedWords(aligned[i], from, to, toVideo);
     return {
-      id: `b${i}`,
+      id: beatId(i),
       index: i,
       say: beat.say,
       visualKind: beat.visual.type,
@@ -249,6 +249,7 @@ export function buildTimeline(script: Script, voice: VoiceTiming, opts: BuildOpt
     at: b.from,
     fromBeat: beats[k].id,
     toBeat: b.id,
+    toBeatIndex: b.index,
     storyChange: b.chapterIndex !== null && b.chapterIndex !== beats[k].chapterIndex,
   }));
 
@@ -264,7 +265,7 @@ export function buildTimeline(script: Script, voice: VoiceTiming, opts: BuildOpt
     voiceSplitSec,
     durationInFrames,
     theme: script.theme,
-    beats: beats.map((b, i) => ({ ...script.beats[i], from: b.from, to: b.to, chapter: b.chapter })),
+    beats: beats.map((b, i) => ({ ...script.beats[i], id: b.id, from: b.from, to: b.to, chapter: b.chapter })),
   };
 
   return {
@@ -283,6 +284,24 @@ export function buildTimeline(script: Script, voice: VoiceTiming, opts: BuildOpt
   };
 }
 
+/**
+ * `values` with every run of nulls spread evenly between its known neighbours.
+ * A run at the start begins at `start` itself; a run at the end shares the gap up to `end`.
+ */
+function fillGaps(values: readonly (number | null)[], start: number, end: number): number[] {
+  const out = [...values];
+  for (let i = 0; i < out.length; i++) {
+    if (out[i] !== null) continue;
+    let j = i;
+    while (j < out.length && out[j] === null) j++;
+    const prev = i > 0 ? (out[i - 1] as number) : start;
+    const next = j < out.length ? (out[j] as number) : end;
+    const offset = i > 0 ? 1 : 0;
+    for (let k = i; k < j; k++) out[k] = prev + ((next - prev) * (k - i + offset)) / (j - i + 1);
+  }
+  return out as number[];
+}
+
 /** Words in video frames, clamped to the beat; unmatched words share the gap between matched neighbours. */
 function timedWords(
   ws: { text: string; start: number; end: number; startSec: number | null; endSec: number | null }[],
@@ -290,20 +309,17 @@ function timedWords(
   beatTo: number,
   toVideo: (s: number) => number,
 ): TimedWord[] {
-  const clamp = (f: number) => Math.min(beatTo, Math.max(beatFrom, f));
-  const froms: (number | null)[] = ws.map((w) => (w.startSec === null ? null : clamp(toVideo(w.startSec))));
-  for (let i = 0; i < ws.length; i++) {
-    if (froms[i] !== null) continue;
-    let j = i;
-    while (j < ws.length && froms[j] === null) j++;
-    const prev = i > 0 ? (froms[i - 1] as number) : beatFrom;
-    const next = j < ws.length ? (froms[j] as number) : beatTo;
-    for (let k = i; k < j; k++) froms[k] = Math.round(prev + ((next - prev) * (k - i + (i > 0 ? 1 : 0))) / (j - i + 1));
-  }
+  const inBeat = (s: number) => clamp(toVideo(s), beatFrom, beatTo);
+  // Matched words are whole frames already, so rounding only moves the interpolated ones.
+  const froms = fillGaps(
+    ws.map((w) => (w.startSec === null ? null : inBeat(w.startSec))),
+    beatFrom,
+    beatTo,
+  ).map(Math.round);
   return ws.map((w, i) => {
-    const from = froms[i] as number;
-    const next = i + 1 < ws.length ? (froms[i + 1] as number) : beatTo;
-    const spokenEnd = w.endSec === null ? next : clamp(toVideo(w.endSec));
+    const from = froms[i];
+    const next = i + 1 < ws.length ? froms[i + 1] : beatTo;
+    const spokenEnd = w.endSec === null ? next : inBeat(w.endSec);
     return { text: w.text, start: w.start, end: w.end, from, to: Math.max(from, Math.min(next, spokenEnd)) };
   });
 }

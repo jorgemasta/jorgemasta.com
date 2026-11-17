@@ -1,11 +1,11 @@
 // The composition the Lab's player renders: the vendored Report, fed with the
-// rebuilt timeline. Later edits (per-beat looks, per-cut transitions) are added
-// as props here and threaded into the snapshot, keyed by beat and cut ids.
+// rebuilt timeline. The visitor's edits (per-beat looks, per-cut transitions) are
+// threaded into the snapshot keyed by the beat ids the timeline puts on its beats.
 import React from "react";
 import { Report } from "./destilados-snapshot/src/Report";
 import { CutEntrance } from "./CutEntrance";
 import { lookToCssFilter, type EffectiveEdition, type EffectiveTransition } from "./edit-model";
-import type { Cut, Timeline } from "./timeline";
+import type { BeatId, Cut, Timeline } from "./timeline";
 
 export type LabCompositionProps = {
   edition: string;
@@ -23,8 +23,8 @@ export const LabComposition: React.FC<LabCompositionProps> = ({ edition, report,
   );
   // Transitions by incoming beat, and the story cards they replace.
   const { into, noBumper } = React.useMemo(() => {
-    const into = new Map<string, EffectiveTransition>();
-    const noBumper: string[] = [];
+    const into = new Map<string, EffectiveTransition>(); // keyed by the beat ids the Report hands back
+    const noBumper: BeatId[] = [];
     for (const cut of cuts ?? []) {
       const t = effective?.transitions[cut.id];
       if (!t) continue;

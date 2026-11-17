@@ -136,6 +136,7 @@ export type Script = {
 
 // timeline.json = script + timing, in video frames (intro already inserted).
 export type TimedBeat = ScriptBeat & {
+  id?: string; // LAB PATCH: the Lab's beat id, keying the visitor's looks and transitions
   from: number;
   to: number;
   chapter?: string;

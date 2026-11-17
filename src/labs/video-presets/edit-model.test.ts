@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyPreset, effectiveEdition, lookToCssFilter, NO_EDITS, reset, setCutTransition, setDefaultTransition, setIntensity } from "./edit-model";
+import { applyPreset, effectiveEdition, hasEdits, lookToCssFilter, NO_EDITS, reset, setCutTransition, setDefaultTransition, setIntensity } from "./edit-model";
 import type { Transition } from "./transitions";
 
 // A small edition: one beat of each relevant kind.
@@ -41,9 +41,9 @@ describe("effectiveEdition", () => {
     expect(effectiveEdition(edition, edits)).toEqual({ looks: {}, transitions: {} });
   });
 
-  it("returns to the generated original on reset", () => {
-    const edited = setIntensity(applyPreset(NO_EDITS, "newsprint"), 0.4);
-    const after = reset(edited);
+  it("returns to the generated original on reset: no look, tweak or transition", () => {
+    const after = reset();
+    expect(after).toEqual({ preset: null, intensity: 1, tweaks: {}, defaultTransition: null, cutTransitions: {} });
     expect(effectiveEdition(edition, after)).toEqual({ looks: {}, transitions: {} });
     // and a preset applied after a reset starts again from full intensity
     expect(effectiveEdition(edition, applyPreset(after, "newsprint")).looks.b0).toMatchObject({ saturation: 0 });
@@ -112,9 +112,21 @@ describe("transitions", () => {
       "b2-b3": { ...long, durationFrames: 10, at: 300, source: "default" },
     });
   });
+});
 
-  it("clears the default and every override on reset, along with the look", () => {
-    const edited = setCutTransition(setDefaultTransition(applyPreset(NO_EDITS, "matte"), slide), "b0-b1", whip);
-    expect(effectiveEdition(edition, reset(edited))).toEqual({ looks: {}, transitions: {} });
+describe("hasEdits: whether there is anything for Reset to undo", () => {
+  const whip: Transition = { kind: "whip", durationFrames: 8, easing: "ease-out", direction: "right" };
+
+  it("is false for the generated original, and after undoing every edit by hand", () => {
+    expect(hasEdits(NO_EDITS)).toBe(false);
+    expect(hasEdits(setCutTransition(setCutTransition(NO_EDITS, "b0-b1", whip), "b0-b1", null))).toBe(false);
+    expect(hasEdits(applyPreset(applyPreset(NO_EDITS, "punch"), null))).toBe(false);
+  });
+
+  it("is true once a look, a tweak or a transition is set", () => {
+    expect(hasEdits(applyPreset(NO_EDITS, "punch"))).toBe(true);
+    expect(hasEdits({ ...NO_EDITS, tweaks: { b0: { hue: 10 } } })).toBe(true);
+    expect(hasEdits(setDefaultTransition(NO_EDITS, whip))).toBe(true);
+    expect(hasEdits(setCutTransition(NO_EDITS, "b2-b3", whip))).toBe(true);
   });
 });

@@ -33,13 +33,17 @@ Every change from the upstream files is marked `LAB PATCH` (or `LAB FILE`):
   `@remotion/google-fonts`, so nothing is fetched from Google at runtime.
 - `src/Report.tsx`: `CalculateMetadataFunction` imported as a type (the site's
   `verbatimModuleSyntax`).
-- `src/media.tsx`, `src/Report.tsx`: an optional `filters` prop (beat id →
-  CSS filter) on `Report`, passed per beat through `BeatFilterContext` and
+- `src/types.ts`, `src/Report.tsx`: an optional `id` on every timed beat, set
+  by the Lab's `../timeline.ts` (`b<index>`, the one place beat ids are made).
+  The props below are keyed by it, and `storyStarts` returns it so a story is
+  matched to its first beat by id, not by frame.
+- `src/media.tsx`, `src/Report.tsx`: an optional `filters` prop (the beat's
+  `id` → CSS filter) on `Report`, passed per beat through `BeatFilterContext` and
   added after the own filter of every `Img` and `OffthreadVideo` (the Lab's
   look presets).
 - `src/Report.tsx`: optional `entrance` (wraps a beat's visual so the
   visitor's transition plays over the beat's first frames, inside its own
-  `<Sequence>`, so no beat moves off the voice) and `noBumper` (first beats of
+  `<Sequence>`, so no beat moves off the voice) and `noBumper` (ids of the first beats of
   stories whose generated story card a visitor transition replaces).
 - `src/custom/index.ts`: hand-written with edition 078's one custom beat
   (upstream it is generated for every edition).

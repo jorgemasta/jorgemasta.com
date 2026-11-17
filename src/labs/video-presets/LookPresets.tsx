@@ -1,11 +1,11 @@
-// Look presets: a strip of named colour treatments, an intensity control and
-// Reset. Pointing at a preset (mouse over it, keyboard focus on it, or a press
+// Look presets: a strip of named colour treatments and an intensity control
+// (Reset, for every edit, is the editor's). Pointing at a preset (mouse over it, keyboard focus on it, or a press
 // and hold on touch) previews it on the player; a click or Enter applies it.
 //
 // Styles live in looks.css (plain CSS, scoped by the `lab-looks` prefix) so the
 // site's Tailwind build, shared by every page, does not change for the Lab.
 import React, { useRef } from "react";
-import { applyPreset, LOOK_PRESETS, lookToCssFilter, reset, setIntensity, type LookPresetId } from "./edit-model";
+import { applyPreset, LOOK_PRESETS, lookToCssFilter, setIntensity, type Edits, type LookPresetId } from "./edit-model";
 import type { LabEdits } from "./use-lab-edits";
 import "./looks.css";
 
@@ -20,7 +20,7 @@ export const LookPresets: React.FC<LookPresetsProps> = ({ lab }) => {
 
   const startPreview = (id: LookPresetId) => setPreview(applyPreset(edits, id));
   const endPreview = () => setPreview(null);
-  const commit = (next: typeof edits) => {
+  const commit = (next: Edits) => {
     setPreview(null);
     setEdits(next);
   };
@@ -107,13 +107,6 @@ export const LookPresets: React.FC<LookPresetsProps> = ({ lab }) => {
           />
           <output className="lab-looks__value">{applied ? `${percent}%` : "–"}</output>
         </label>
-        <button
-          type="button"
-          className="lab-looks__reset"
-          onClick={() => commit(reset(edits))}
-        >
-          Reset
-        </button>
       </div>
     </section>
   );

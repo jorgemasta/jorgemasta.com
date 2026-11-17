@@ -7,6 +7,8 @@
 // it (overlapping beats, as Remotion's TransitionSeries does, would shorten the
 // video and drift the pictures away from the voice).
 
+import { clamp } from "./math";
+
 export type TransitionKind = "cut" | "whip" | "slide" | "zoom";
 export type TransitionEasing = "linear" | "ease-in" | "ease-out" | "ease-in-out" | "overshoot";
 /** Where the incoming beat comes from (whip, slide), or which way it scales (zoom). */
@@ -50,6 +52,9 @@ export const TRANSITIONS = [
 ] as const satisfies readonly TransitionPreset[];
 
 export const transitionPreset = (kind: TransitionKind): TransitionPreset => TRANSITIONS.find((t) => t.id === kind)!;
+
+/** Whether a transition moves at all. A cut doesn't: its duration, easing and direction mean nothing. */
+export const hasMotion = (t: Pick<Transition, "kind">): boolean => t.kind !== "cut";
 
 /** The directions that mean something for each kind. */
 export const DIRECTIONS: Record<TransitionKind, readonly TransitionDirection[]> = {
@@ -95,9 +100,9 @@ export const poseAt = (t: Transition, p: number): Pose => {
       return { ...rest, ...away(100 * left) };
     case "whip":
       // Comes in fast from off-frame, smeared until it lands.
-      return { ...rest, ...away(100 * left), blur: 36 * Math.min(1, Math.max(0, left) * 1.5) };
+      return { ...rest, ...away(100 * left), blur: 36 * clamp(left * 1.5, 0, 1) };
     case "zoom":
-      return { ...rest, scale: 1 + (t.direction === "out" ? -0.45 : 0.6) * left, opacity: Math.min(1, Math.max(0, p * 2.5)) };
+      return { ...rest, scale: 1 + (t.direction === "out" ? -0.45 : 0.6) * left, opacity: clamp(p * 2.5, 0, 1) };
   }
 };
 
@@ -115,8 +120,8 @@ export const MAX_FRAMES = 30;
 /** Adjusts a transition's settings, keeping them valid for its kind. */
 export const adjustTransition = (t: Transition, change: Partial<Omit<Transition, "kind">>): Transition => {
   const next = { ...t, ...change };
-  if (t.kind === "cut") return { ...next, durationFrames: 0 };
-  next.durationFrames = Math.round(Math.min(MAX_FRAMES, Math.max(MIN_FRAMES, next.durationFrames)));
+  if (!hasMotion(t)) return { ...next, durationFrames: 0 };
+  next.durationFrames = Math.round(clamp(next.durationFrames, MIN_FRAMES, MAX_FRAMES));
   if (!DIRECTIONS[t.kind].includes(next.direction)) next.direction = t.direction;
   return next;
 };

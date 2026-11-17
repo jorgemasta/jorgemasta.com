@@ -1,6 +1,7 @@
 // The Lab's edit model: the generated edition plus the visitor's edits in, the
 // effective edit for every beat out. Pure; the player renders what it returns.
-import type { Cut, LabBeat } from "./timeline";
+import { clamp } from "./math";
+import type { BeatId, Cut, CutId, LabBeat } from "./timeline";
 import type { Transition } from "./transitions";
 import { withTweak, type BeatTweak } from "./tweaks";
 
@@ -49,11 +50,11 @@ export type Edits = {
   /** How much of the preset applies: 0 = the original, 1 = the full preset. */
   intensity: number;
   /** Per-beat manual tweaks by beat id (see tweaks.ts for how they meet the preset). */
-  tweaks: Record<string, BeatTweak>;
+  tweaks: Record<BeatId, BeatTweak>;
   /** The transition on every story change, or null for the generated story card. */
   defaultTransition: Transition | null;
   /** Per-cut exceptions, by cut id; they win over the default on that cut only. */
-  cutTransitions: Record<string, Transition>;
+  cutTransitions: Record<CutId, Transition>;
 };
 
 export const NO_EDITS: Edits = { preset: null, intensity: 1, tweaks: {}, defaultTransition: null, cutTransitions: {} };
@@ -61,9 +62,9 @@ export const NO_EDITS: Edits = { preset: null, intensity: 1, tweaks: {}, default
 /** The edition as the player should render it. Only edited beats appear. */
 export type EffectiveEdition = {
   /** Effective look per beat id; a beat with no entry renders as generated. */
-  looks: Record<string, Look>;
+  looks: Record<BeatId, Look>;
   /** Effective transition per cut id; a cut with no entry renders as generated. */
-  transitions: Record<string, EffectiveTransition>;
+  transitions: Record<CutId, EffectiveTransition>;
 };
 
 /**
@@ -88,8 +89,8 @@ export const effectiveEdition = (edition: EditionShape, edits: Edits): Effective
   transitions: effectiveTransitions(edition, edits),
 });
 
-const effectiveLooks = (edition: EditionShape, edits: Edits): Record<string, Look> => {
-  const looks: Record<string, Look> = {};
+const effectiveLooks = (edition: EditionShape, edits: Edits): EffectiveEdition["looks"] => {
+  const looks: EffectiveEdition["looks"] = {};
   const graded = edits.preset !== null && edits.intensity > 0;
   const look = graded ? mix(presetLook(edits.preset!), edits.intensity) : NEUTRAL_LOOK;
   for (const beat of edition.beats) {
@@ -101,15 +102,15 @@ const effectiveLooks = (edition: EditionShape, edits: Edits): Record<string, Loo
   return looks;
 };
 
-const effectiveTransitions = (edition: EditionShape, edits: Edits): Record<string, EffectiveTransition> => {
-  const out: Record<string, EffectiveTransition> = {};
+const effectiveTransitions = (edition: EditionShape, edits: Edits): EffectiveEdition["transitions"] => {
+  const out: EffectiveEdition["transitions"] = {};
   const ends = new Map(edition.beats.map((b) => [b.id, b.to]));
   for (const cut of edition.cuts ?? []) {
     const override = edits.cutTransitions[cut.id];
     const chosen = override ?? (cut.storyChange ? edits.defaultTransition : null);
     if (!chosen) continue;
     const end = ends.get(cut.toBeat);
-    const durationFrames = end === undefined ? chosen.durationFrames : Math.min(chosen.durationFrames, Math.max(0, end - cut.at));
+    const durationFrames = end === undefined ? chosen.durationFrames : clamp(end - cut.at, 0, chosen.durationFrames);
     out[cut.id] = { ...chosen, durationFrames, at: cut.at, source: override ? "override" : "default" };
   }
   return out;
@@ -119,20 +120,27 @@ export const applyPreset = (edits: Edits, preset: LookPresetId | null): Edits =>
 
 export const setIntensity = (edits: Edits, intensity: number): Edits => ({
   ...edits,
-  intensity: Math.min(1, Math.max(0, intensity)),
+  intensity: clamp(intensity, 0, 1),
 });
 
 /** Sets the transition on every story change (null = the generated story card). */
 export const setDefaultTransition = (edits: Edits, transition: Transition | null): Edits => ({ ...edits, defaultTransition: transition });
 
 /** Overrides the transition on one cut (null removes the override: the cut follows the default again). */
-export const setCutTransition = (edits: Edits, cutId: string, transition: Transition | null): Edits => {
+export const setCutTransition = (edits: Edits, cutId: CutId, transition: Transition | null): Edits => {
   const { [cutId]: _removed, ...rest } = edits.cutTransitions;
   return { ...edits, cutTransitions: transition ? { ...rest, [cutId]: transition } : rest };
 };
 
-/** Clears every edit: the generated original. */
-export const reset = (_edits: Edits): Edits => NO_EDITS;
+/** Clears every edit (looks, tweaks, transitions): the generated original. */
+export const reset = (): Edits => NO_EDITS;
+
+/** Whether anything differs from the generated original (what Reset would undo). */
+export const hasEdits = (edits: Edits): boolean =>
+  edits.preset !== null ||
+  Object.keys(edits.tweaks).length > 0 ||
+  edits.defaultTransition !== null ||
+  Object.keys(edits.cutTransitions).length > 0;
 
 /**
  * The CSS `filter` for a look. Saturation goes first so a desaturated preset can

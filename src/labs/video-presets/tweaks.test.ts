@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyPreset, effectiveEdition, NO_EDITS, reset, setIntensity } from "./edit-model";
+import { applyPreset, effectiveEdition, NO_EDITS, setIntensity } from "./edit-model";
 import { clearTweak, clearTweakParam, setTweak, tweakedBeats } from "./tweaks";
 
 const edition = {
@@ -65,11 +65,5 @@ describe("per-beat tweaks", () => {
     const none = clearTweakParam(one, "b0", "brightness");
     expect(effectiveEdition(edition, none).looks.b0).toEqual(punch);
     expect(tweakedBeats(none)).toEqual([]);
-  });
-
-  it("clears every tweak on reset", () => {
-    const edits = reset(setTweak(applyPreset(NO_EDITS, "punch"), "b0", { brightness: 1.2 }));
-    expect(effectiveEdition(edition, edits).looks).toEqual({});
-    expect(tweakedBeats(edits)).toEqual([]);
   });
 });

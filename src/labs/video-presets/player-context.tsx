@@ -42,5 +42,3 @@ export const usePlayerFrame = (): number => {
     () => 0,
   );
 };
-
-export { findAt } from "./beat-timeline";

@@ -21,14 +21,14 @@ import { CustomBeat } from "./custom/CustomBeat";
 import type { Sfx, Timeline, TimedBeat } from "./types";
 import * as V from "./beats/visuals";
 
-// LAB PATCH: `filters` = the visitor's look per beat (`b<index>` → CSS filter), applied to images and clips.
+// LAB PATCH: `filters` = the visitor's look per beat (beat `id` from the timeline → CSS filter), applied to images and clips.
 export type ReportProps = {
   edition: string;
   lang: Lang;
   timeline: Timeline | null;
   filters?: Record<string, string>;
-  // LAB PATCH: the visitor's transitions. `entrance` wraps a beat's visual (beat id → the beat drawn entering over its
-  // own first frames, or as is); `noBumper` = first beats of stories whose story card a transition replaces.
+  // LAB PATCH: the visitor's transitions. `entrance` wraps a beat's visual (beat `id` → the beat drawn entering over its
+  // own first frames, or as is); `noBumper` = ids of first beats of stories whose story card a transition replaces.
   entrance?: (beatId: string, visual: React.ReactNode) => React.ReactNode;
   noBumper?: readonly string[];
 };
@@ -257,11 +257,12 @@ export const CutFlash: React.FC = () => {
 };
 
 // First beat of every story (a beat that starts a new chapter), after the cold open.
+// LAB PATCH: + the beat's `id`, so a story is matched to its first beat without comparing frames.
 export const storyStarts = (tl: Timeline) => {
-  const out: { from: number; chapter: string; sfx?: string }[] = [];
+  const out: { id?: string; from: number; chapter: string; sfx?: string }[] = [];
   let last: string | undefined;
   for (const b of tl.beats) {
-    if (b.chapter && b.chapter !== last && b.from >= tl.introAtFrame) out.push({ from: b.from, chapter: b.chapter, sfx: b.sfx });
+    if (b.chapter && b.chapter !== last && b.from >= tl.introAtFrame) out.push({ id: b.id, from: b.from, chapter: b.chapter, sfx: b.sfx });
     last = b.chapter ?? last;
   }
   return out;
@@ -284,9 +285,9 @@ export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entr
         >
           <AbsoluteFill>
             {/* LAB PATCH: the beat's look reaches every Img/OffthreadVideo through context. */}
-            <BeatFilterContext.Provider value={filters?.[`b${i}`] ?? ""}>
+            <BeatFilterContext.Provider value={(b.id && filters?.[b.id]) || ""}>
               {/* LAB PATCH: the visitor's transition into this beat, if any. */}
-              {entrance ? entrance(`b${i}`, <BeatVisual beat={b} edition={edition} />) : <BeatVisual beat={b} edition={edition} />}
+              {entrance && b.id ? entrance(b.id, <BeatVisual beat={b} edition={edition} />) : <BeatVisual beat={b} edition={edition} />}
             </BeatFilterContext.Provider>
             {/* 4 Nov 2026: dry cuts between beats (Fireship); the old every-3rd-beat white flash is gone. */}
           </AbsoluteFill>
@@ -305,7 +306,7 @@ export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entr
       {/* Story separators: a 0.9 s card over the opening of each story's first beat (audio untouched). */}
       {storyStarts(timeline).map((s, k, all) => (
         // LAB PATCH: a story whose first beat has a visitor transition plays that instead of the card.
-        noBumper?.includes(`b${timeline.beats.findIndex((b) => b.from === s.from)}`) ? null : (
+        s.id && noBumper?.includes(s.id) ? null : (
         <Sequence key={`bumper-${k}`} from={s.from} durationInFrames={BUMPER_FRAMES} layout="none">
           <StoryBumper n={k + 1} total={all.length} title={s.chapter} kicker={STRINGS[timeline.lang].story} transition={theme.transition} accent2={theme.accent2} />
           {theme.transition === "glitch" && <Glitch />}

@@ -2,13 +2,12 @@
 // scrolls into view, `client:visible`) it loads the editor and React/Remotion.
 // Nothing from Remotion is imported at module scope, so the SSR pass stays plain HTML.
 import React, { useEffect, useState } from "react";
-import type { EditorProps } from "./Editor";
 import "./lab-frame.css";
 
 export type VideoPresetsLabProps = { poster?: { src: string; alt: string } };
 
 export default function VideoPresetsLab({ poster }: VideoPresetsLabProps) {
-  const [Editor, setEditor] = useState<React.ComponentType<EditorProps> | null>(null);
+  const [Editor, setEditor] = useState<React.ComponentType | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {

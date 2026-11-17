@@ -8,21 +8,21 @@ import React, { memo, useEffect, useMemo, useRef } from "react";
 import { findAt, formatTime, outline, splitAtWord } from "./beat-timeline";
 import { isGraded } from "./edit-model";
 import { useLabPlayer, usePlayerFrame } from "./player-context";
-import type { Cut, LabBeat, TimedWord } from "./timeline";
+import type { BeatId, Cut, LabBeat, TimedWord } from "./timeline";
 import "./beat-timeline.css";
 
 export type BeatTimelineProps = {
   /** Beats carrying a manual look tweak (marked on their row). */
-  tweaked?: ReadonlySet<string>;
+  tweaked?: ReadonlySet<BeatId>;
   /** The beat open in the inspector, if any. */
-  inspecting?: string | null;
+  inspecting?: BeatId | null;
   /** Opens the inspector on a beat; without it, rows have no tweak button. */
-  onInspect?: (beatId: string) => void;
+  onInspect?: (beatId: BeatId) => void;
   /** Draws the cut into a beat, between its row and the previous one (transitions, #85). */
   renderCut?: (cut: Cut) => React.ReactNode;
 };
 
-const NONE: ReadonlySet<string> = new Set();
+const NONE: ReadonlySet<BeatId> = new Set();
 
 export const BeatTimeline: React.FC<BeatTimelineProps> = ({ tweaked = NONE, inspecting = null, onInspect, renderCut }) => {
   const { playerRef, timeline } = useLabPlayer();
@@ -99,7 +99,7 @@ type BeatRowProps = {
   onSeek: (frame: number) => void;
   tweaked: boolean;
   inspecting: boolean;
-  onInspect?: (beatId: string) => void;
+  onInspect?: (beatId: BeatId) => void;
 };
 
 // Memoised: on each frame only the current row (whose word changes) re-renders.
