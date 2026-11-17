@@ -2,10 +2,13 @@
 import React, { createContext, useCallback, useContext, useSyncExternalStore } from "react";
 import type { PlayerRef } from "@remotion/player";
 import type { EditionTimeline } from "./timeline";
+import type { LoopControls } from "./use-transition-loop";
 
 type LabPlayer = {
   playerRef: React.RefObject<PlayerRef | null>;
   timeline: EditionTimeline;
+  /** Replays a transition around its cut (picking one, "Try it"). */
+  loop: LoopControls;
 };
 
 const LabPlayerContext = createContext<LabPlayer | null>(null);

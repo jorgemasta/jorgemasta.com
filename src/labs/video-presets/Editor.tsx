@@ -15,6 +15,7 @@ import type { BeatId } from "./timeline";
 import { tweakedBeats } from "./tweaks";
 import { useLabEdits, type LabEdits } from "./use-lab-edits";
 import { seekForKey } from "./seek-keys";
+import { useTransitionLoop, type LoopControls, type LoopStatus } from "./use-transition-loop";
 import "./editor.css";
 
 export const Editor: React.FC = () => {
@@ -25,6 +26,7 @@ export const Editor: React.FC = () => {
   }, []);
   const timeline = edition78;
   const lab = useLabEdits(timeline);
+  const loop = useTransitionLoop(playerRef);
   const inputProps: LabCompositionProps = useMemo(
     () => ({ edition: EDITION, report: timeline.report, cuts: timeline.cuts, effective: lab.effective }),
     [timeline, lab.effective],
@@ -72,7 +74,7 @@ export const Editor: React.FC = () => {
     [timeline],
   );
   return (
-    <LabPlayerProvider playerRef={playerRef} timeline={timeline}>
+    <LabPlayerProvider playerRef={playerRef} timeline={timeline} loop={loop.controls}>
       <div className="lab-editor">
         <div
           className="lab-frame lab-player card-img rounded-md"
@@ -94,8 +96,9 @@ export const Editor: React.FC = () => {
             acknowledgeRemotionLicense
             style={{ width: "100%", aspectRatio: `${timeline.width} / ${timeline.height}` }}
           />
+          <LoopBadge status={loop.status} onStop={loop.controls.stop} />
         </div>
-        <ResetBar lab={lab} />
+        <ResetBar lab={lab} loop={loop.controls} />
         <LookPresets lab={lab} />
         <NowTweak tweaked={tweaked} moved={moved} open={inspecting?.from === "now"} onOpen={openFromNow}>
           {inspector("now")}
@@ -112,7 +115,7 @@ export const Editor: React.FC = () => {
 };
 
 // One Reset for every edit: looks, per-beat tweaks, theme, motions, story cards and transitions go back to the generated original.
-const ResetBar: React.FC<{ lab: LabEdits }> = ({ lab }) => {
+const ResetBar: React.FC<{ lab: LabEdits; loop: LoopControls }> = ({ lab, loop }) => {
   const { edits, setEdits, setPreview } = lab;
   const edited = hasEdits(edits);
   return (
@@ -124,6 +127,7 @@ const ResetBar: React.FC<{ lab: LabEdits }> = ({ lab }) => {
         aria-describedby="lab-reset-hint"
         disabled={!edited}
         onClick={() => {
+          loop.stop();
           setPreview(null);
           setEdits(reset());
         }}
@@ -133,6 +137,23 @@ const ResetBar: React.FC<{ lab: LabEdits }> = ({ lab }) => {
     </div>
   );
 };
+
+// Over the video's top corner (sticky with it on phones) while a pick replays: "Replaying 2/3", and a way to stop it.
+const LoopBadge: React.FC<{ status: LoopStatus; onStop: () => void }> = ({ status, onStop }) => (
+  <p className="lab-loop" role="status">
+    {status && status.repeats > 1 && (
+      <>
+        <span className="lab-loop__text">
+          Replaying {status.run}/{status.repeats}
+          <span className="lab-loop__muted">, muted</span>
+        </span>
+        <button type="button" className="lab-loop__stop" onClick={onStop} aria-label="Stop replaying">
+          Stop
+        </button>
+      </>
+    )}
+  </p>
+);
 
 /** The beat's line without the voice's stage tags (`[curious]`). */
 const spoken = (say: string) => say.replace(/\[[^\]]*\]\s*/g, "").trim();

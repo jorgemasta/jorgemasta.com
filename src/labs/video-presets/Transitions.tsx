@@ -5,13 +5,15 @@
 // Transitions: a small library (cut, whip, slide, zoom), each a named set of
 // settings the visitor can open and adjust. A transition is applied either as
 // the default for every story change or to one cut picked on the timeline,
-// where overrides show. "Try it" plays the draft on the video around the cut
-// without committing it; with reduced motion it holds a still mid-transition.
+// where overrides show. Picking or adjusting one, or picking a story card,
+// replays it on the video around the cut three times (muted); "Try it" plays it
+// once. A draft plays without being committed. With reduced motion it holds a
+// still mid-transition instead.
 //
 // Styles live in transitions.css (plain CSS, `lab-tx` prefix), not Tailwind,
 // so the stylesheet every page shares does not change for the Lab.
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatTime, storyChangeToTry } from "./beat-timeline";
+import { formatTime } from "./beat-timeline";
 import {
   effectiveEdition,
   setCutTransition,
@@ -23,6 +25,9 @@ import {
 } from "./edit-model";
 import { useLabPlayer } from "./player-context";
 import { PRESETS as THEME_PRESETS } from "./destilados-snapshot/src/themes";
+import { BUMPER_FRAMES } from "./destilados-snapshot/src/StoryBumper";
+import { planLoop } from "./transition-loop";
+import type { LoopEnd } from "./use-transition-loop";
 import type { Cut, CutId } from "./timeline";
 import {
   adjustTransition,
@@ -88,8 +93,11 @@ const committedOn = (edits: Edits, target: CutTarget): Transition | null =>
 
 export type TransitionsProps = { lab: LabEdits; target: CutTarget; onTarget: (target: CutTarget) => void };
 
+/** How many times a pick replays on the video. */
+const REPLAYS = 3;
+
 export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget }) => {
-  const { playerRef, timeline } = useLabPlayer();
+  const { playerRef, timeline, loop } = useLabPlayer();
   const { edits, setEdits, setPreview, effective } = lab;
   const cut = target ? timeline.cuts.find((c) => c.id === target) : undefined;
   const committed = committedOn(edits, target);
@@ -97,8 +105,10 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   const [draft, setDraft] = useState<Transition | null>(null);
   const [open, setOpen] = useState(false);
   /** The cut a preview is playing on, if one is. */
-  const [previewing, setPreviewing] = useState<Cut | null>(null);
+  const [previewing, setPreviewing] = useState<{ cut: Cut; what: string; draft: boolean } | null>(null);
   const previewingRef = useRef(false);
+  /** Drops a preview held after it played (see `hold`). */
+  const release = useRef<(() => void) | null>(null);
 
   // Picking another target shows what it carries; a draft carries over to a target with nothing on it.
   useEffect(() => {
@@ -112,51 +122,85 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   const stopPreview = useCallback(() => {
     if (!previewingRef.current) return; // never drop a preview another control (the looks) owns
     previewingRef.current = false;
+    release.current?.();
+    release.current = null;
+    loop.stop();
     setPreviewing(null);
     setPreview(null);
-  }, [setPreview]);
+  }, [setPreview, loop]);
 
-  // A preview never outlives a change of draft or target.
-  useEffect(() => stopPreview, [draft, target, stopPreview]);
+  // A preview never outlives a change of target. (A new draft starts its own.)
+  useEffect(() => stopPreview, [target, stopPreview]);
 
-  const tryIt = () => {
+  /**
+   * Keeps the preview on the paused frame it ended on (so a draft "Cut" doesn't
+   * turn back into the story card there) until the visitor plays or seeks.
+   */
+  const hold = useCallback(() => {
     const player = playerRef.current;
     if (!player) return;
-    // The picked cut, else the next story change from the playhead (on phones, the sticky player).
-    const at = cut ? { cut, from: Math.max(0, cut.at - timeline.fps) } : storyChangeToTry(timeline, player.getCurrentFrame());
-    if (!at) return;
-    setPreview(applyTo(edits, target, shown));
-    previewingRef.current = true;
-    setPreviewing(at.cut);
-    if (reducedMotion()) {
-      // A still halfway through the transition instead of motion.
-      player.pause();
-      player.seekTo(at.cut.at + Math.floor((shown?.durationFrames ?? 0) / 2));
-      return;
-    }
-    player.seekTo(at.from);
-    player.play();
+    const drop = () => stopPreview();
+    player.addEventListener("play", drop);
+    player.addEventListener("seeked", drop);
+    release.current = () => {
+      player.removeEventListener("play", drop);
+      player.removeEventListener("seeked", drop);
+    };
+  }, [playerRef, stopPreview]);
+
+  type Play = {
+    /** The edits to preview. */
+    edited: Edits;
+    /** How long what plays at the cut lasts. */
+    durationFrames: number;
+    /** What plays, for the status line, and whether it is a draft. */
+    what: string;
+    draft: boolean;
+    repeats: number;
+    /** The cut to play on; else the next story change from the playhead. */
+    on?: Cut;
   };
 
-  // While a motion preview plays, stop it a moment after the transition ends, or when the visitor pauses.
-  const shownFrames = shown?.durationFrames ?? 0;
-  useEffect(() => {
+  /**
+   * Shows edits on the video: replays them `repeats` times around the cut, or
+   * with reduced motion shows a still halfway through what plays there.
+   */
+  const play = ({ edited, durationFrames, what, draft: isDraft, repeats, on }: Play) => {
     const player = playerRef.current;
-    if (!previewing || !player || reducedMotion()) return;
-    const end = previewing.at + shownFrames + Math.round(timeline.fps * 0.6);
-    const onFrame = (e: { detail: { frame: number } }) => {
-      if (e.detail.frame < end) return;
+    if (!player) return;
+    const plan = planLoop(timeline, player.getCurrentFrame(), { durationFrames, cut: on, repeats });
+    if (!plan) return;
+    // Hand over from a preview already showing without stopping it: a loop playing is
+    // replaced inside `loop.start`, so the sound the visitor had before it comes back once.
+    release.current?.();
+    release.current = null;
+    previewingRef.current = false; // the replaced loop's end must not drop the new preview
+    const still = reducedMotion();
+    if (still) {
+      loop.stop();
       player.pause();
-      stopPreview();
-    };
-    const onPause = () => stopPreview();
-    player.addEventListener("frameupdate", onFrame);
-    player.addEventListener("pause", onPause);
-    return () => {
-      player.removeEventListener("frameupdate", onFrame);
-      player.removeEventListener("pause", onPause);
-    };
-  }, [previewing, shownFrames, timeline.fps, playerRef, stopPreview]);
+      player.seekTo(plan.still);
+    } else {
+      loop.start(plan, (how: LoopEnd) => (how === "done" ? hold() : stopPreview()));
+    }
+    setPreview(edited);
+    previewingRef.current = true;
+    setPreviewing({ cut: plan.cut, what, draft: isDraft });
+    if (still) hold();
+  };
+
+  /** Plays transition `t` on the target (null: as without one). */
+  const playTransition = (t: Transition | null, repeats: number) =>
+    play({
+      edited: applyTo(edits, target, t),
+      durationFrames: t?.durationFrames ?? 0,
+      what: t ? describe(t, timeline.fps) : asIs,
+      draft: !(t === committed || sameTransition(t, committed)),
+      repeats,
+      on: cut,
+    });
+
+  const tryIt = () => playTransition(shown, 1);
 
   const commit = (t: Transition | null) => {
     stopPreview();
@@ -170,8 +214,8 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   const asIs = cut ? "the default" : "the story card";
 
   const status = previewing
-    ? `Trying ${shown ? describe(shown, fps) : asIs} on ${cut ? cutLabel : `the story change at ${formatTime(previewing.at, fps)}`}.${
-        draft ? " Not applied yet." : ""
+    ? `Showing ${previewing.what} on ${cut ? cutLabel : `the story change at ${formatTime(previewing.cut.at, fps)}`}.${
+        previewing.draft ? " Not applied yet." : ""
       }`
     : draft
       ? `Draft: ${describe(draft, fps)}, not applied yet.`
@@ -183,15 +227,19 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
             overrides ? ` · ${overrides} cut${overrides > 1 ? "s" : ""} overridden` : ""
           }.`;
 
+  /** Makes `next` the draft (null when it is what is applied) and replays it on the video. */
+  const show = (next: Transition) => {
+    setDraft(sameTransition(next, committed) ? null : next);
+    playTransition(next, REPLAYS);
+  };
+
   const pick = (kind: TransitionKind) => {
-    if (committed?.kind === kind) setDraft(null); // back to what is applied
-    else if (draft?.kind !== kind) setDraft(transitionPreset(kind).settings);
+    // Picking the card already shown replays it as it is; another starts from its preset.
+    show(shown?.kind === kind ? shown : committed?.kind === kind ? committed : transitionPreset(kind).settings);
   };
 
   const adjust = (change: Partial<Omit<Transition, "kind">>) => {
-    if (!shown) return;
-    const next = adjustTransition(shown, change);
-    setDraft(sameTransition(next, committed) ? null : next);
+    if (shown) show(adjustTransition(shown, change));
   };
   const still = !shown || !hasMotion(shown);
 
@@ -209,8 +257,17 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
         replacedBy={edits.defaultTransition}
         fps={fps}
         onChange={(style) => {
-          stopPreview();
-          setEdits(setStoryCard(edits, style));
+          const next = setStoryCard(edits, style);
+          setEdits(next);
+          // Replay the card on a story change: the picked cut if it is one, else the next.
+          play({
+            edited: next,
+            durationFrames: BUMPER_FRAMES,
+            what: `the ${CARD_NAMES[effectiveEdition(timeline, next).storyCard.style]} story card`,
+            draft: false,
+            repeats: REPLAYS,
+            on: cut?.storyChange ? cut : undefined,
+          });
         }}
       />
 
@@ -317,7 +374,14 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
             <button type="button" className="lab-tx__button lab-tx__button--primary" onClick={() => commit(draft)}>
               {cut ? "Apply to this cut" : "Apply to all story changes"}
             </button>
-            <button type="button" className="lab-tx__button" onClick={() => setDraft(null)}>
+            <button
+              type="button"
+              className="lab-tx__button"
+              onClick={() => {
+                stopPreview();
+                setDraft(null);
+              }}
+            >
               Discard draft
             </button>
           </>

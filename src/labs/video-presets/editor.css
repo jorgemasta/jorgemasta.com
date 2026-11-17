@@ -52,6 +52,63 @@
   }
 }
 
+/* The player is the containing block for the replay badge (phones make it sticky instead). */
+.lab-player {
+  position: relative;
+}
+
+/* "Replaying 2/3 · Stop" over the video's top-left corner while a pick replays: small, out of
+   the way of the controls at the bottom, and inside the player so it sticks with it on phones. */
+.lab-loop {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.25rem 0.25rem 0.25rem 0.625rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.62);
+  color: #fff;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.lab-loop:empty {
+  display: none;
+}
+
+.lab-loop__muted {
+  opacity: 0.75;
+}
+
+.lab-loop__stop {
+  pointer-events: auto;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lab-loop__stop:hover {
+  background: rgb(255 255 255 / 0.3);
+}
+
+.lab-player .lab-loop__stop:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
 /* The beat timeline and its cut markers are tablet-and-up tools, and so is the inspector
    they open. Phones get "Tweak this beat" for the beat on screen instead (.lab-now), which
    opens the same inspector under it. display: none also takes them out of the tab order. */
