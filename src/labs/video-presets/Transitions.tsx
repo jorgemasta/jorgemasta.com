@@ -1,16 +1,16 @@
 // Transitions: a small library (cut, whip, slide, zoom), each a named set of
 // settings the visitor can open and adjust. A transition is applied either as
 // the default for every story change or to one cut picked on the timeline,
-// where overrides show. "Preview" plays the draft on the video around the cut
+// where overrides show. "Try it" plays the draft on the video around the cut
 // without committing it; with reduced motion it holds a still mid-transition.
 //
 // Styles live in transitions.css (plain CSS, `lab-tx` prefix), not Tailwind,
 // so the stylesheet every page shares does not change for the Lab.
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatTime } from "./beat-timeline";
+import { formatTime, storyChangeToTry } from "./beat-timeline";
 import { effectiveEdition, setCutTransition, setDefaultTransition, type EffectiveTransition, type Edits } from "./edit-model";
 import { useLabPlayer } from "./player-context";
-import type { Cut, CutId, EditionTimeline } from "./timeline";
+import type { Cut, CutId } from "./timeline";
 import {
   adjustTransition,
   cssEasing,
@@ -76,18 +76,22 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   const { playerRef, timeline } = useLabPlayer();
   const { edits, setEdits, setPreview } = lab;
   const cut = target ? timeline.cuts.find((c) => c.id === target) : undefined;
-  const [draft, setDraft] = useState<Transition>(() => committedOn(edits, target) ?? transitionPreset("whip").settings);
+  const committed = committedOn(edits, target);
+  /** A transition picked or adjusted but not applied yet (null = nothing pending). */
+  const [draft, setDraft] = useState<Transition | null>(null);
   const [open, setOpen] = useState(false);
   /** The cut a preview is playing on, if one is. */
   const [previewing, setPreviewing] = useState<Cut | null>(null);
   const previewingRef = useRef(false);
 
-  // Picking another target loads what it carries (or keeps the draft to try on it).
+  // Picking another target shows what it carries; a draft carries over to a target with nothing on it.
   useEffect(() => {
-    const on = committedOn(edits, target);
-    if (on) setDraft(on);
+    if (committedOn(edits, target)) setDraft(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the target changes
   }, [target]);
+
+  /** What the cards, settings and Try it act on: the draft, else what is applied. */
+  const shown = draft ?? committed;
 
   const stopPreview = useCallback(() => {
     if (!previewingRef.current) return; // never drop a preview another control (the looks) owns
@@ -99,28 +103,31 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   // A preview never outlives a change of draft or target.
   useEffect(() => stopPreview, [draft, target, stopPreview]);
 
-  const startPreview = () => {
+  const tryIt = () => {
     const player = playerRef.current;
-    const previewCut = cut ?? nextStoryChange(timeline, player?.getCurrentFrame() ?? 0);
-    if (!player || !previewCut) return;
-    setPreview(applyTo(edits, target, draft));
+    if (!player) return;
+    // The picked cut, else the next story change from the playhead (on phones, the sticky player).
+    const at = cut ? { cut, from: Math.max(0, cut.at - timeline.fps) } : storyChangeToTry(timeline, player.getCurrentFrame());
+    if (!at) return;
+    setPreview(applyTo(edits, target, shown));
     previewingRef.current = true;
-    setPreviewing(previewCut);
+    setPreviewing(at.cut);
     if (reducedMotion()) {
       // A still halfway through the transition instead of motion.
       player.pause();
-      player.seekTo(previewCut.at + Math.floor(draft.durationFrames / 2));
+      player.seekTo(at.cut.at + Math.floor((shown?.durationFrames ?? 0) / 2));
       return;
     }
-    player.seekTo(Math.max(0, previewCut.at - timeline.fps));
+    player.seekTo(at.from);
     player.play();
   };
 
   // While a motion preview plays, stop it a moment after the transition ends, or when the visitor pauses.
+  const shownFrames = shown?.durationFrames ?? 0;
   useEffect(() => {
     const player = playerRef.current;
     if (!previewing || !player || reducedMotion()) return;
-    const end = previewing.at + draft.durationFrames + Math.round(timeline.fps * 0.6);
+    const end = previewing.at + shownFrames + Math.round(timeline.fps * 0.6);
     const onFrame = (e: { detail: { frame: number } }) => {
       if (e.detail.frame < end) return;
       player.pause();
@@ -133,33 +140,44 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
       player.removeEventListener("frameupdate", onFrame);
       player.removeEventListener("pause", onPause);
     };
-  }, [previewing, draft, timeline.fps, playerRef, stopPreview]);
+  }, [previewing, shownFrames, timeline.fps, playerRef, stopPreview]);
 
   const commit = (t: Transition | null) => {
     stopPreview();
+    setDraft(null);
     setEdits(applyTo(edits, target, t));
   };
 
-  const committed = committedOn(edits, target);
   const overrides = Object.keys(edits.cutTransitions).length;
   const fps = timeline.fps;
   const cutLabel = cut ? `the cut into beat ${beatNumber(cut)} at ${formatTime(cut.at, fps)}` : "";
+  const asIs = cut ? "the default" : "the story card";
 
   const status = previewing
-    ? `Previewing ${describe(draft, fps)} on ${cut ? cutLabel : `the story change at ${formatTime(previewing.at, fps)}`}. Not applied yet.`
-    : cut
-      ? committed
-        ? `${describe(committed, fps)} on ${cutLabel} (overrides the default).`
-        : `${cutLabel[0].toUpperCase()}${cutLabel.slice(1)} follows the default.`
-      : `Story changes: ${edits.defaultTransition ? describe(edits.defaultTransition, fps) : "the generated story card"}${
-          overrides ? ` · ${overrides} cut${overrides > 1 ? "s" : ""} overridden` : ""
-        }.`;
+    ? `Trying ${shown ? describe(shown, fps) : asIs} on ${cut ? cutLabel : `the story change at ${formatTime(previewing.at, fps)}`}.${
+        draft ? " Not applied yet." : ""
+      }`
+    : draft
+      ? `Draft: ${describe(draft, fps)}, not applied yet.`
+      : cut
+        ? committed
+          ? `${describe(committed, fps)} on ${cutLabel} (overrides the default).`
+          : `${cutLabel[0].toUpperCase()}${cutLabel.slice(1)} follows the default.`
+        : `Story changes: ${edits.defaultTransition ? describe(edits.defaultTransition, fps) : "the generated story card"}${
+            overrides ? ` · ${overrides} cut${overrides > 1 ? "s" : ""} overridden` : ""
+          }.`;
 
-  const pick = (kind: TransitionKind) =>
-    setDraft(committed?.kind === kind ? committed : draft.kind === kind ? draft : transitionPreset(kind).settings);
+  const pick = (kind: TransitionKind) => {
+    if (committed?.kind === kind) setDraft(null); // back to what is applied
+    else if (draft?.kind !== kind) setDraft(transitionPreset(kind).settings);
+  };
 
-  const adjust = (change: Partial<Omit<Transition, "kind">>) => setDraft(adjustTransition(draft, change));
-  const still = !hasMotion(draft);
+  const adjust = (change: Partial<Omit<Transition, "kind">>) => {
+    if (!shown) return;
+    const next = adjustTransition(shown, change);
+    setDraft(sameTransition(next, committed) ? null : next);
+  };
+  const still = !shown || !hasMotion(shown);
 
   return (
     <section className="lab-tx" aria-labelledby="lab-tx-title">
@@ -172,44 +190,50 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
         </p>
       </div>
 
-      <div className="lab-tx__target" role="group" aria-label="Apply to">
-        <button type="button" className="lab-tx__chip" aria-pressed={target === null} onClick={() => onTarget(null)}>
-          All story changes
-        </button>
-        {cut ? (
+      {/* A choice of target only exists once a cut is picked on the timeline (tablet and up). */}
+      {cut ? (
+        <div className="lab-tx__target" role="group" aria-label="Apply to">
+          <button type="button" className="lab-tx__chip" aria-pressed={false} onClick={() => onTarget(null)}>
+            All story changes
+          </button>
           <span className="lab-tx__chip" data-on="">
             Cut into beat {beatNumber(cut)} · {formatTime(cut.at, fps)}
           </span>
-        ) : (
-          <span className="lab-tx__hint">Pick a cut on the timeline to make an exception.</span>
-        )}
-      </div>
+        </div>
+      ) : (
+        <p className="lab-tx__hint">Pick a cut on the timeline to make an exception.</p>
+      )}
 
       <div className="lab-tx__library" role="group" aria-label="Transition">
-        {TRANSITIONS.map((t) => (
-          <LibraryCard
-            key={t.id}
-            kind={t.id}
-            name={t.name}
-            blurb={t.blurb}
-            settings={draft.kind === t.id ? draft : t.settings}
-            selected={draft.kind === t.id}
-            applied={committed?.kind === t.id}
-            onPick={pick}
-          />
-        ))}
+        {TRANSITIONS.map((t) => {
+          const isDraft = draft?.kind === t.id;
+          const isApplied = committed?.kind === t.id;
+          return (
+            <LibraryCard
+              key={t.id}
+              kind={t.id}
+              name={t.name}
+              blurb={t.blurb}
+              settings={isDraft ? draft : isApplied ? committed : t.settings}
+              state={isDraft ? "draft" : isApplied ? "applied" : null}
+              onPick={pick}
+            />
+          );
+        })}
       </div>
 
-      <button
-        type="button"
-        className="lab-tx__disclosure"
-        aria-expanded={open}
-        aria-controls="lab-tx-settings"
-        onClick={() => setOpen((o) => !o)}
-      >
-        {open ? "Hide settings" : "Adjust settings"} <span aria-hidden="true">{open ? "▴" : "▾"}</span>
-      </button>
-      {open && (
+      {shown && (
+        <button
+          type="button"
+          className="lab-tx__disclosure"
+          aria-expanded={open}
+          aria-controls="lab-tx-settings"
+          onClick={() => setOpen((o) => !o)}
+        >
+          {open ? "Hide settings" : "Adjust settings"} <span aria-hidden="true">{open ? "▴" : "▾"}</span>
+        </button>
+      )}
+      {shown && open && (
         <div id="lab-tx-settings" className="lab-tx__settings">
           <label className="lab-tx__field">
             <span>Duration</span>
@@ -218,16 +242,16 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
               min={MIN_FRAMES}
               max={MAX_FRAMES}
               step={1}
-              value={still ? MIN_FRAMES : draft.durationFrames}
+              value={still ? MIN_FRAMES : shown.durationFrames}
               disabled={still}
               onChange={(e) => adjust({ durationFrames: Number(e.currentTarget.value) })}
             />
-            <output className="lab-tx__value">{still ? "–" : seconds(draft.durationFrames, fps)}</output>
+            <output className="lab-tx__value">{still ? "–" : seconds(shown.durationFrames, fps)}</output>
           </label>
           <label className="lab-tx__field">
             <span>Easing</span>
             <select
-              value={draft.easing}
+              value={shown.easing}
               disabled={still}
               onChange={(e) => adjust({ easing: e.currentTarget.value as TransitionEasing })}
             >
@@ -241,12 +265,12 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
           <label className="lab-tx__field">
             <span>Direction</span>
             <select
-              value={still ? "" : draft.direction}
+              value={still ? "" : shown.direction}
               disabled={still}
               onChange={(e) => adjust({ direction: e.currentTarget.value as TransitionDirection })}
             >
               {still && <option value="">–</option>}
-              {DIRECTIONS[draft.kind].map((d) => (
+              {DIRECTIONS[shown.kind].map((d) => (
                 <option key={d} value={d}>
                   {DIRECTION_NAMES[d]}
                 </option>
@@ -257,31 +281,28 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
       )}
 
       <div className="lab-tx__actions">
-        <button type="button" className="lab-tx__button" onClick={previewing ? stopPreview : startPreview}>
-          {previewing ? "Stop preview" : "Preview"}
+        <button type="button" className="lab-tx__button" onClick={previewing ? stopPreview : tryIt}>
+          {previewing ? "Stop" : "Try it"}
         </button>
-        <button
-          type="button"
-          className="lab-tx__button lab-tx__button--primary"
-          disabled={sameTransition(draft, committed)}
-          onClick={() => commit(draft)}
-        >
-          {cut ? "Apply to this cut" : "Apply to all story changes"}
-        </button>
-        {committed && (
-          <button type="button" className="lab-tx__button" onClick={() => commit(null)}>
-            {cut ? "Remove override" : "Back to the story card"}
-          </button>
+        {draft ? (
+          <>
+            <button type="button" className="lab-tx__button lab-tx__button--primary" onClick={() => commit(draft)}>
+              {cut ? "Apply to this cut" : "Apply to all story changes"}
+            </button>
+            <button type="button" className="lab-tx__button" onClick={() => setDraft(null)}>
+              Discard draft
+            </button>
+          </>
+        ) : (
+          committed && (
+            <button type="button" className="lab-tx__button" onClick={() => commit(null)}>
+              {cut ? "Remove override" : "Back to the story card"}
+            </button>
+          )
         )}
       </div>
     </section>
   );
-};
-
-/** The first story change from `frame` on (or the first one, past the last). */
-const nextStoryChange = (timeline: EditionTimeline, frame: number): Cut | undefined => {
-  const stories = timeline.cuts.filter((c) => c.storyChange);
-  return stories.find((c) => c.at >= frame) ?? stories[0];
 };
 
 type LibraryCardProps = {
@@ -289,13 +310,13 @@ type LibraryCardProps = {
   name: string;
   blurb: string;
   settings: Transition;
-  selected: boolean;
-  applied: boolean;
+  /** "applied": on the video now. "draft": picked or adjusted, not applied yet. */
+  state: "applied" | "draft" | null;
   onPick: (kind: TransitionKind) => void;
 };
 
 /** One transition: a tiny two-frame demo (it plays while pointed at or focused), its name and a line. */
-const LibraryCard: React.FC<LibraryCardProps> = ({ kind, name, blurb, settings, selected, applied, onPick }) => {
+const LibraryCard: React.FC<LibraryCardProps> = ({ kind, name, blurb, settings, state, onPick }) => {
   const incoming = useRef<HTMLSpanElement>(null);
   const [active, setActive] = useState(false);
 
@@ -325,8 +346,7 @@ const LibraryCard: React.FC<LibraryCardProps> = ({ kind, name, blurb, settings, 
     <button
       type="button"
       className="lab-tx__card"
-      aria-pressed={selected}
-      data-applied={applied || undefined}
+      data-state={state ?? undefined}
       onPointerEnter={(e) => e.pointerType === "mouse" && setActive(true)}
       onPointerLeave={() => setActive(false)}
       onFocus={() => setActive(true)}
@@ -340,7 +360,7 @@ const LibraryCard: React.FC<LibraryCardProps> = ({ kind, name, blurb, settings, 
       </span>
       <span className="lab-tx__name">
         {name}
-        {applied && <span className="lab-tx__badge">applied</span>}
+        {state && <span className="lab-tx__badge">{state === "draft" ? "draft" : "applied"}</span>}
       </span>
       <span className="lab-tx__blurb">{blurb}</span>
     </button>

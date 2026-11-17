@@ -63,7 +63,7 @@ export const BeatInspector: React.FC<BeatInspectorProps> = ({ lab, beatId, onClo
     >
       <div className="lab-insp__head">
         <h3 id="lab-insp-title" className="lab-insp__title" tabIndex={-1} ref={heading}>
-          Beat look <span className="lab-insp__time">{formatTime(beat.from, timeline.fps)}</span>
+          Beat {beat.index + 1} look <span className="lab-insp__time">{formatTime(beat.from, timeline.fps)}</span>
         </h3>
         <button type="button" className="lab-insp__close" onClick={onClose}>
           Close

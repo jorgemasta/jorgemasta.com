@@ -1,22 +1,32 @@
 // Look presets: a strip of named colour treatments and an intensity control
-// (Reset, for every edit, is the editor's). Pointing at a preset (mouse over it, keyboard focus on it, or a press
-// and hold on touch) previews it on the player; a click or Enter applies it.
+// (Reset, for every edit, is the editor's). Each preset shows the photo on screen
+// (or the last one shown) with its filter, so the strip reads at a glance. A tap,
+// click or Enter applies it, and selecting the applied one again removes it. With
+// a mouse, pointing at a preset previews it on the player; so does keyboard focus.
 //
 // Styles live in looks.css (plain CSS, scoped by the `lab-looks` prefix) so the
 // site's Tailwind build, shared by every page, does not change for the Lab.
-import React, { useRef } from "react";
+import React, { useCallback } from "react";
+import { imageAt } from "./beat-timeline";
 import { applyPreset, LOOK_PRESETS, lookToCssFilter, setIntensity, type Edits, type LookPresetId } from "./edit-model";
+import { EDITION } from "./edition";
+import { imageSrc } from "./destilados-snapshot/src/beats/visuals";
+import { isPending } from "./destilados-snapshot/src/media";
+import { useLabPlayer, usePlayerValue } from "./player-context";
 import type { LabEdits } from "./use-lab-edits";
 import "./looks.css";
-
-const HOLD_MS = 250;
 
 export type LookPresetsProps = { lab: LabEdits };
 
 export const LookPresets: React.FC<LookPresetsProps> = ({ lab }) => {
   const { edits, setEdits, preview, setPreview } = lab;
-  const holdTimer = useRef<number | undefined>(undefined);
-  const held = useRef(false);
+  const { timeline } = useLabPlayer();
+  const image = usePlayerValue(
+    useCallback((frame: number) => imageAt(timeline, frame), [timeline]),
+    imageAt(timeline, 0),
+  );
+  const src = image ? imageSrc(image, EDITION) : undefined;
+  const thumb = src && !isPending(src) ? src : undefined;
 
   const startPreview = (id: LookPresetId) => setPreview(applyPreset(edits, id));
   const endPreview = () => setPreview(null);
@@ -29,7 +39,7 @@ export const LookPresets: React.FC<LookPresetsProps> = ({ lab }) => {
   const previewing = preview && preview.preset !== edits.preset ? LOOK_PRESETS.find((p) => p.id === preview.preset) : undefined;
   const percent = Math.round(edits.intensity * 100);
   const status = previewing
-    ? `Previewing ${previewing.name}. Click or press Enter to apply.`
+    ? `Previewing ${previewing.name}. Select it to apply.`
     : applied
       ? `${applied.name} applied at ${percent}%.`
       : "The generated original.";
@@ -53,61 +63,42 @@ export const LookPresets: React.FC<LookPresetsProps> = ({ lab }) => {
             className="lab-looks__preset"
             aria-pressed={edits.preset === p.id}
             data-previewing={previewing?.id === p.id || undefined}
+            // Touch has no hover: a tap applies straight away, with no hidden press-and-hold preview.
             onPointerEnter={(e) => e.pointerType === "mouse" && startPreview(p.id)}
-            onPointerLeave={(e) => {
-              window.clearTimeout(holdTimer.current);
-              if (e.pointerType === "mouse" || held.current) endPreview();
-            }}
-            onPointerDown={(e) => {
-              if (e.pointerType === "mouse") return;
-              held.current = false;
-              holdTimer.current = window.setTimeout(() => {
-                held.current = true;
-                startPreview(p.id);
-              }, HOLD_MS);
-            }}
-            onPointerUp={() => {
-              window.clearTimeout(holdTimer.current);
-              if (held.current) endPreview();
-            }}
-            onPointerCancel={() => {
-              window.clearTimeout(holdTimer.current);
-              held.current = false;
-              endPreview();
-            }}
-            onContextMenu={(e) => e.preventDefault()}
-            onFocus={() => startPreview(p.id)}
+            onPointerLeave={(e) => e.pointerType === "mouse" && endPreview()}
+            onFocus={(e) => e.currentTarget.matches(":focus-visible") && startPreview(p.id)}
             onBlur={endPreview}
-            onClick={() => {
-              // A press and hold only previews; letting go doesn't apply it.
-              if (held.current) {
-                held.current = false;
-                return;
-              }
-              commit(applyPreset(edits, p.id));
-            }}
+            onClick={() => commit(applyPreset(edits, edits.preset === p.id ? null : p.id))}
           >
-            <span className="lab-looks__swatch" style={{ filter: lookToCssFilter(p.look) }} aria-hidden="true" />
+            <span className="lab-looks__thumb" aria-hidden="true">
+              {thumb ? (
+                <img src={thumb} alt="" draggable={false} style={{ filter: lookToCssFilter(p.look) }} />
+              ) : (
+                <span className="lab-looks__swatch" style={{ filter: lookToCssFilter(p.look) }} />
+              )}
+            </span>
             <span className="lab-looks__name">{p.name}</span>
           </button>
         ))}
       </div>
 
-      <div className="lab-looks__controls">
-        <label className="lab-looks__intensity">
-          <span>Intensity</span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={5}
-            value={percent}
-            disabled={!applied}
-            onChange={(e) => commit(setIntensity(edits, Number(e.currentTarget.value) / 100))}
-          />
-          <output className="lab-looks__value">{applied ? `${percent}%` : "–"}</output>
-        </label>
-      </div>
+      {applied && (
+        <div className="lab-looks__controls">
+          <label className="lab-looks__intensity">
+            <span>Intensity</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={percent}
+              aria-valuetext={`${percent}%`}
+              onChange={(e) => commit(setIntensity(edits, Number(e.currentTarget.value) / 100))}
+            />
+            <output className="lab-looks__value">{percent}%</output>
+          </label>
+        </div>
+      )}
     </section>
   );
 };

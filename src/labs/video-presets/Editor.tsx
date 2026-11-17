@@ -4,10 +4,11 @@ import { Player, type PlayerRef } from "@remotion/player";
 import { LabComposition, type LabCompositionProps } from "./composition";
 import { EDITION, edition78 } from "./edition";
 import { BeatTimeline, type BeatTimelineProps } from "./BeatTimeline";
-import { LabPlayerProvider } from "./player-context";
+import { LabPlayerProvider, useLabPlayer, usePlayerValue } from "./player-context";
 import { LookPresets } from "./LookPresets";
 import { Transitions, useCutMarkers, type CutTarget } from "./Transitions";
 import { BeatInspector } from "./BeatInspector";
+import { findAt, formatTime, tweakableBeatAt } from "./beat-timeline";
 import { hasEdits, reset } from "./edit-model";
 import type { BeatId } from "./timeline";
 import { tweakedBeats } from "./tweaks";
@@ -27,23 +28,33 @@ export const Editor: React.FC = () => {
     () => ({ edition: EDITION, report: timeline.report, cuts: timeline.cuts, effective: lab.effective }),
     [timeline, lab.effective],
   );
-  // The beat open in the per-beat inspector (#84). Opening it also seeks there.
-  const [inspecting, setInspecting] = useState<BeatId | null>(null);
+  // The beat open in the per-beat inspector (#84), and what opened it: a timeline row's
+  // Tweak (tablet and up; also seeks there) or, on phones, "Tweak this beat" for the
+  // beat on screen (pauses there, so the beat stays put while it is tweaked).
+  const [inspecting, setInspecting] = useState<{ id: BeatId; from: "timeline" | "now" } | null>(null);
   const tweaked = useMemo(() => new Set(tweakedBeats(lab.edits)), [lab.edits]);
-  const openInspector = useCallback(
+  const openFromTimeline = useCallback(
     (id: BeatId) => {
-      setInspecting(id);
+      setInspecting({ id, from: "timeline" });
       const beat = timeline.beats.find((b) => b.id === id);
       if (beat) playerRef.current?.seekTo(beat.from);
     },
     [timeline],
   );
+  const openFromNow = useCallback((id: BeatId) => {
+    playerRef.current?.pause();
+    setInspecting({ id, from: "now" });
+  }, []);
   const closeInspector = useCallback(() => {
-    const id = inspecting;
+    const was = inspecting;
     setInspecting(null);
-    // Hand focus back to the row's Tweak button.
-    if (id) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-beat-id="${id}"] .lab-timeline-tweak`)?.focus());
+    // Hand focus back to the button that opened it.
+    if (!was) return;
+    const opener = was.from === "now" ? ".lab-now__tweak" : `[data-beat-id="${was.id}"] .lab-tl-tweak`;
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(opener)?.focus());
   }, [inspecting]);
+  const inspector = (from: "timeline" | "now") =>
+    inspecting?.from === from && <BeatInspector lab={lab} beatId={inspecting.id} onClose={closeInspector} />;
   // Remotion's scrubber takes no focus: keys pressed on the player's controls seek instead.
   const onPlayerKey = useCallback(
     (e: React.KeyboardEvent) => {
@@ -83,8 +94,14 @@ export const Editor: React.FC = () => {
         </div>
         <ResetBar lab={lab} />
         <LookPresets lab={lab} />
-        <EditorTransitions lab={lab} timeline={{ tweaked, inspecting, onInspect: openInspector }} />
-        {inspecting && <BeatInspector lab={lab} beatId={inspecting} onClose={closeInspector} />}
+        <NowTweak tweaked={tweaked} open={inspecting?.from === "now"} onOpen={openFromNow}>
+          {inspector("now")}
+        </NowTweak>
+        <EditorTransitions
+          lab={lab}
+          timeline={{ tweaked, inspecting: inspecting?.from === "timeline" ? inspecting.id : null, onInspect: openFromTimeline }}
+        />
+        <div className="lab-editor__timeline-insp">{inspector("timeline")}</div>
       </div>
     </LabPlayerProvider>
   );
@@ -110,6 +127,56 @@ const ResetBar: React.FC<{ lab: LabEdits }> = ({ lab }) => {
         Reset all edits
       </button>
     </div>
+  );
+};
+
+/** The beat's line without the voice's stage tags (`[curious]`). */
+const spoken = (say: string) => say.replace(/\[[^\]]*\]\s*/g, "").trim();
+
+// Phones only (the timeline is hidden there): tweak the beat on screen. The button names the beat
+// and says "Tweaked" when it carries a tweak; the inspector opens right under it.
+const NowTweak: React.FC<{
+  tweaked: ReadonlySet<string>;
+  open: boolean;
+  onOpen: (id: BeatId) => void;
+  children: React.ReactNode;
+}> = ({ tweaked, open, onOpen, children }) => {
+  const { timeline } = useLabPlayer();
+  const beat = usePlayerValue(
+    useCallback((frame: number) => findAt(timeline, frame).beat, [timeline]),
+    timeline.beats[0] ?? null,
+  );
+  const tweakable = beat !== null && tweakableBeatAt(timeline, beat.from) === beat;
+  const isTweaked = beat !== null && tweaked.has(beat.id);
+  return (
+    <section className="lab-now" aria-label="This beat">
+      <div className="lab-now__row">
+        <p className="lab-now__beat" id="lab-now-beat">
+          {beat ? (
+            <>
+              <span className="lab-now__num">
+                Beat {beat.index + 1} · {formatTime(beat.from, timeline.fps)}
+              </span>{" "}
+              {tweakable ? spoken(beat.say) : "Nothing to tweak: no photo on this beat."}
+            </>
+          ) : (
+            "The intro: nothing to tweak."
+          )}
+        </p>
+        <button
+          type="button"
+          className="lab-now__tweak"
+          aria-describedby="lab-now-beat"
+          aria-expanded={open}
+          data-tweaked={isTweaked || undefined}
+          disabled={!tweakable}
+          onClick={() => beat && onOpen(beat.id)}
+        >
+          {isTweaked ? "Tweaked" : "Tweak this beat"}
+        </button>
+      </div>
+      {children}
+    </section>
   );
 };
 

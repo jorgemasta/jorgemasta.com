@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { edition78 } from "./edition";
-import { findAt, formatTime, outline, splitAtWord } from "./beat-timeline";
+import { findAt, formatTime, imageAt, nextStoryChange, outline, splitAtWord, storyChangeToTry, tweakableBeatAt } from "./beat-timeline";
 
 // Frame ranges of edition 78 (see timeline.test.ts): cold open b0–b4 (0–754),
 // intro 754–859, b5 "Muse Spaces" 859–1050 with the voice resuming at 873, …,
@@ -80,5 +80,70 @@ describe("formatTime: a frame as the m:ss the player shows", () => {
     expect(formatTime(0, 30)).toBe("0:00");
     expect(formatTime(859, 30)).toBe("0:28");
     expect(formatTime(5121, 30)).toBe("2:50");
+  });
+});
+
+// Story changes in edition 78: into b5 at 859 (after the intro), b12 at 2081, b19 at 3047, b23 at 3769, b27 at 4449.
+describe("nextStoryChange: the story change \"Try it\" plays from the playhead", () => {
+  it("is the first story change from the start", () => {
+    expect(nextStoryChange(edition78, 0)?.at).toBe(859);
+  });
+
+  it("is the one still ahead of the playhead", () => {
+    expect(nextStoryChange(edition78, 860)?.at).toBe(2081);
+    expect(nextStoryChange(edition78, 3000)?.at).toBe(3047);
+  });
+
+  it("includes a story change exactly on the playhead", () => {
+    expect(nextStoryChange(edition78, 2081)?.at).toBe(2081);
+  });
+
+  it("wraps around to the first one past the last", () => {
+    expect(nextStoryChange(edition78, 4500)?.at).toBe(859);
+  });
+});
+
+describe("tweakableBeatAt: the beat the phone's Tweak button opens", () => {
+  it("is the beat on screen when its visual is a photo", () => {
+    expect(tweakableBeatAt(edition78, 0)?.id).toBe("b0"); // image
+    expect(tweakableBeatAt(edition78, 1500)?.id).toBe("b8"); // sequence of photos
+  });
+
+  it("is nothing on a beat no look grades", () => {
+    expect(tweakableBeatAt(edition78, 200)).toBeNull(); // b1, a title card
+    expect(tweakableBeatAt(edition78, 4400)).toBeNull(); // b26, a logo
+  });
+
+  it("is nothing during the intro sting", () => {
+    expect(tweakableBeatAt(edition78, 800)).toBeNull();
+  });
+});
+
+describe("imageAt: the photo the look thumbnails show", () => {
+  it("is the photo of the beat on screen", () => {
+    expect(imageAt(edition78, 0)).toBe("real:muse-spaces-og.png"); // b0
+    expect(imageAt(edition78, 500)).toBe("real:muse-voice-og.jpg"); // b3
+    expect(imageAt(edition78, 2100)).toBe("real:cultfit-og.png"); // b12, a story card
+  });
+
+  it("is the first photo of a sequence", () => {
+    expect(imageAt(edition78, 3300)).toBe("real:biobasics-story.png"); // b20
+  });
+
+  it("is the last photo shown before a beat with none", () => {
+    expect(imageAt(edition78, 200)).toBe("real:muse-spaces-og.png"); // b1, a title card
+    expect(imageAt(edition78, 800)).toBe("real:muse-voice-og.jpg"); // the intro, after b3
+    expect(imageAt(edition78, 4900)).toBe("real:perplexity-teammate.png"); // b30, versus
+  });
+});
+
+describe("storyChangeToTry: where \"Try it\" seeks and which story change it plays", () => {
+  it("plays the next story change from a second before it", () => {
+    expect(storyChangeToTry(edition78, 1500)).toEqual({ cut: expect.objectContaining({ at: 2081 }), from: 2051 });
+  });
+
+  it("replays a story change that played in the last two seconds, so trying it again repeats it", () => {
+    expect(storyChangeToTry(edition78, 2081 + 45)?.cut.at).toBe(2081);
+    expect(storyChangeToTry(edition78, 2081 + 61)?.cut.at).toBe(3047);
   });
 });

@@ -74,6 +74,7 @@
 }
 
 .lab-tx__hint {
+  margin: 0.25rem 0 0;
   font-size: 0.8125rem;
   color: var(--color-muted);
 }
@@ -111,9 +112,15 @@
   user-select: none;
 }
 
-.lab-tx__card[aria-pressed="true"] {
-  border-color: var(--color-terracotta);
-  box-shadow: inset 0 0 0 1px var(--color-terracotta);
+/* Selected looks only for what is on the video; a draft is dashed until it is applied. */
+.lab-tx__card[data-state="applied"] {
+  border-color: var(--color-green);
+  box-shadow: inset 0 0 0 1px var(--color-green);
+}
+
+.lab-tx__card[data-state="draft"] {
+  border: 1px dashed var(--color-terracotta);
+  box-shadow: none;
 }
 
 .lab-tx__card:active,
@@ -163,6 +170,10 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-green);
+}
+
+.lab-tx__card[data-state="draft"] .lab-tx__badge {
+  color: var(--color-terracotta);
 }
 
 .lab-tx__blurb {

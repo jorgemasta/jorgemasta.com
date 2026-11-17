@@ -20,8 +20,11 @@ export const useLabPlayer = (): LabPlayer => {
   return ctx;
 };
 
-/** The player's current frame; re-renders on every frame update and seek. */
-export const usePlayerFrame = (): number => {
+/**
+ * A value derived from the player's current frame. Re-renders only when it
+ * changes, so `select` must return a primitive or a stable object (a beat).
+ */
+export const usePlayerValue = <T,>(select: (frame: number) => T, serverValue: T): T => {
   const { playerRef } = useLabPlayer();
   const subscribe = useCallback(
     (onChange: () => void) => {
@@ -38,7 +41,12 @@ export const usePlayerFrame = (): number => {
   );
   return useSyncExternalStore(
     subscribe,
-    () => playerRef.current?.getCurrentFrame() ?? 0,
-    () => 0,
+    () => select(playerRef.current?.getCurrentFrame() ?? 0),
+    () => serverValue,
   );
 };
+
+const identity = (frame: number) => frame;
+
+/** The player's current frame; re-renders on every frame update and seek. */
+export const usePlayerFrame = (): number => usePlayerValue(identity, 0);

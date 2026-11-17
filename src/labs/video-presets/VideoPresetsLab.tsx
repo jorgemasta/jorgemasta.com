@@ -20,13 +20,20 @@ export default function VideoPresetsLab({ poster }: VideoPresetsLabProps) {
     };
   }, []);
 
-  if (Editor) return <Editor />;
   return (
     <div>
-      {poster && (
-        <img src={poster.src} alt={poster.alt} className="lab-frame card-img aspect-video w-full rounded-md object-cover" />
+      {/* Server-rendered with the poster, so it is there before the editor loads and nothing shifts. */}
+      <p className="lab-intro">Pick a look, set its intensity, then tweak a single beat by hand.</p>
+      {Editor ? (
+        <Editor />
+      ) : (
+        <>
+          {poster && (
+            <img src={poster.src} alt={poster.alt} className="lab-frame card-img aspect-video w-full rounded-md object-cover" />
+          )}
+          {failed && <p className="mt-2 font-sans text-sm text-muted">The editor could not load. Reload the page to try again.</p>}
+        </>
       )}
-      {failed && <p className="mt-2 font-sans text-sm text-muted">The editor could not load. Reload the page to try again.</p>}
     </div>
   );
 }

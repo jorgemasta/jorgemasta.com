@@ -9,3 +9,11 @@
     border-radius: 0;
   }
 }
+
+/* The one line of instructions above the editor. */
+.lab-intro {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--color-charcoal);
+}

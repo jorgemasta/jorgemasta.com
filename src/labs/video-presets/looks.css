@@ -75,6 +75,10 @@
   color: var(--color-green);
 }
 
+.lab-looks__preset[aria-pressed="true"] .lab-looks__name::after {
+  content: " ✓" / "";
+}
+
 .lab-looks__preset[data-previewing] {
   border-color: var(--color-terracotta);
 }
@@ -83,11 +87,29 @@
   background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
 }
 
-/* A fixed colour chart with the preset's filter on it: the look at a glance. */
+/* The photo on screen (or the last one shown) with the preset's filter on it. */
+.lab-looks__thumb {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--color-chocolate) 10%, var(--color-paper));
+}
+
+.lab-looks__thumb img,
 .lab-looks__swatch {
   display: block;
-  height: 2.25rem;
-  border-radius: 0.3rem;
+  width: 100%;
+  height: 100%;
+}
+
+.lab-looks__thumb img {
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Fallback before any photo is known: a fixed colour chart with the filter on it. */
+.lab-looks__swatch {
   background:
     linear-gradient(to bottom, transparent 55%, rgb(0 0 0 / 0.35)),
     linear-gradient(90deg, #c8453a, #e39b48, #e7c7a6, #6f9a52, #3f74b1, #7d5aa8);
@@ -113,10 +135,6 @@
   flex: 1;
   min-width: 0;
   accent-color: var(--color-green);
-}
-
-.lab-looks__intensity input:disabled {
-  opacity: 0.45;
 }
 
 .lab-looks__value {

@@ -52,14 +52,131 @@
   }
 }
 
-/* Beat timeline, cut markers and the per-beat inspector are tablet-and-up tools.
-   Below that the page keeps the player, Reset, the looks (presets, intensity) and the
-   default transition for story changes. display: none also takes them out of the tab order. */
+/* The beat timeline and its cut markers are tablet-and-up tools, and so is the inspector
+   they open. Phones get "Tweak this beat" for the beat on screen instead (.lab-now), which
+   opens the same inspector under it. display: none also takes them out of the tab order. */
 @media (max-width: 47.99rem) {
   .lab-tl,
-  .lab-insp,
+  .lab-editor__timeline-insp,
   .lab-tx__hint {
     display: none;
+  }
+}
+
+@media (min-width: 48rem) {
+  .lab-now {
+    display: none;
+  }
+}
+
+/* Phones in portrait: the player sticks to the top while the controls scroll under it, so
+   every change shows as it happens. It is sticky inside .lab-editor, so it lets go at the end
+   of the editor and the write-up below reads as a normal page. Landscape (or any wide-ish
+   window) keeps it in the flow: there it would fill the screen. */
+@media (max-width: 47.99rem) and (max-aspect-ratio: 4 / 5) {
+  .lab-player {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 2;
+    box-shadow: 0 10px 14px -12px rgb(0 0 0 / 0.45);
+  }
+
+  /* Focus moved by keyboard (or "Tweak this beat") lands below the player, not under it.
+     The player is at most the viewport's width at 16:9. */
+  .lab-editor :is(button, input, select, h2, h3) {
+    scroll-margin-top: calc(56.25vw + 1rem);
+  }
+}
+
+/* "This beat" (phones): which beat is on screen and a button to tweak it. */
+.lab-now {
+  margin-top: 1rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.lab-now__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lab-now__beat {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: var(--color-muted);
+}
+
+/* While the inspector is open under it, the whole line shows (the inspector leaves it out). */
+.lab-now__row:has([aria-expanded="true"]) .lab-now__beat {
+  display: block;
+}
+
+.lab-now__num {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-charcoal);
+}
+
+.lab-now__tweak {
+  flex: none;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 9999px;
+  padding: 0.4rem 1rem;
+  background: transparent;
+  color: var(--color-green);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.lab-now__tweak[data-tweaked] {
+  border-color: var(--color-green);
+  background: var(--color-green);
+  color: var(--color-paper);
+}
+
+.lab-now__tweak[data-tweaked]::before {
+  content: "✓ " / "";
+}
+
+.lab-now__tweak[aria-expanded="true"]:not([data-tweaked]) {
+  border-color: var(--color-green);
+  box-shadow: inset 0 0 0 1px var(--color-green);
+}
+
+.lab-now__tweak:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+.lab-now__tweak[data-tweaked]:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-chocolate) 25%, var(--color-green));
+}
+
+.lab-now__tweak:disabled {
+  color: var(--color-muted);
+  opacity: 0.6;
+  cursor: default;
+}
+
+.lab-now__tweak:focus-visible {
+  outline: 2px solid var(--color-terracotta);
+  outline-offset: 2px;
+}
+
+/* Range inputs carry no text, but iOS still zooms into anything under 16px. */
+@media (pointer: coarse) {
+  .lab-editor input {
+    font-size: 16px;
   }
 }
 
@@ -104,13 +221,15 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .lab-editor__reset:hover:not(:disabled) {
+  .lab-editor__reset:hover:not(:disabled),
+  .lab-now__tweak:hover:not(:disabled) {
     border-color: var(--color-green);
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .lab-editor__reset {
+  .lab-editor__reset,
+  .lab-now__tweak {
     transition:
       border-color 120ms ease,
       background-color 120ms ease;
