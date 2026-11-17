@@ -1,0 +1,161 @@
+/* The Lab's look presets (LookPresets.tsx). Plain CSS, loaded with the editor only.
+   Only theme variables the site already uses: a new one would land in every page's CSS. */
+.lab-looks {
+  margin-top: 1.25rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  color: var(--color-charcoal);
+}
+
+.lab-looks__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.lab-looks__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-terracotta);
+}
+
+.lab-looks__status {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+/* A strip that snaps on phones and wraps into a row of four from tablet width. */
+.lab-looks__strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(7.5rem, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+  padding: 0.25rem;
+  margin-inline: -0.25rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.lab-looks__strip::-webkit-scrollbar {
+  display: none;
+}
+
+.lab-looks__preset {
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.4rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 0.5rem;
+  background: var(--color-paper);
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.lab-looks__preset[aria-pressed="true"] {
+  border-color: var(--color-green);
+  box-shadow: inset 0 0 0 1px var(--color-green);
+  color: var(--color-green);
+}
+
+.lab-looks__preset[data-previewing] {
+  border-color: var(--color-terracotta);
+}
+
+.lab-looks__preset:active {
+  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+/* A fixed colour chart with the preset's filter on it: the look at a glance. */
+.lab-looks__swatch {
+  display: block;
+  height: 2.25rem;
+  border-radius: 0.3rem;
+  background:
+    linear-gradient(to bottom, transparent 55%, rgb(0 0 0 / 0.35)),
+    linear-gradient(90deg, #c8453a, #e39b48, #e7c7a6, #6f9a52, #3f74b1, #7d5aa8);
+}
+
+.lab-looks__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.lab-looks__intensity {
+  display: flex;
+  flex: 1 1 14rem;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.lab-looks__intensity input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-green);
+}
+
+.lab-looks__intensity input:disabled {
+  opacity: 0.45;
+}
+
+.lab-looks__value {
+  min-width: 3ch;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+  text-align: right;
+}
+
+.lab-looks__reset {
+  border: 1px solid var(--color-rule);
+  border-radius: 9999px;
+  padding: 0.4rem 1rem;
+  background: transparent;
+  color: var(--color-green);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lab-looks__reset:active {
+  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lab-looks__preset:hover {
+    border-color: var(--color-terracotta);
+  }
+
+  .lab-looks__reset:hover {
+    border-color: var(--color-green);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lab-looks__preset,
+  .lab-looks__reset {
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+}

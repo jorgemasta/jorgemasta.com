@@ -9,7 +9,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 // LAB PATCH: media goes through the Lab's manifest (silent when a file is missing).
-import { Audio, staticFile } from "./media";
+import { Audio, BeatFilterContext, staticFile } from "./media"; // LAB PATCH: + BeatFilterContext
 import { Intro } from "./Intro";
 import { CHROME_H, CHROME_TOP, INTRO_FRAMES, color, display, mono } from "./theme";
 import { LocaleContext, STRINGS, type Lang } from "./i18n";
@@ -21,7 +21,8 @@ import { CustomBeat } from "./custom/CustomBeat";
 import type { Sfx, Timeline, TimedBeat } from "./types";
 import * as V from "./beats/visuals";
 
-export type ReportProps = { edition: string; lang: Lang; timeline: Timeline | null };
+// LAB PATCH: `filters` = the visitor's look per beat (`b<index>` → CSS filter), applied to images and clips.
+export type ReportProps = { edition: string; lang: Lang; timeline: Timeline | null; filters?: Record<string, string> };
 
 export const calculateReportMetadata: CalculateMetadataFunction<
   ReportProps
@@ -257,7 +258,7 @@ export const storyStarts = (tl: Timeline) => {
   return out;
 };
 
-export const Report: React.FC<ReportProps> = ({ edition, timeline }) => {
+export const Report: React.FC<ReportProps> = ({ edition, timeline, filters }) => {
   if (!timeline) return <AbsoluteFill style={{ backgroundColor: color.bg }} />;
   const splitFrame = Math.round(timeline.voiceSplitSec * 30);
   const audio = staticFile(timeline.audio);
@@ -273,7 +274,10 @@ export const Report: React.FC<ReportProps> = ({ edition, timeline }) => {
           layout="none"
         >
           <AbsoluteFill>
-            <BeatVisual beat={b} edition={edition} />
+            {/* LAB PATCH: the beat's look reaches every Img/OffthreadVideo through context. */}
+            <BeatFilterContext.Provider value={filters?.[`b${i}`] ?? ""}>
+              <BeatVisual beat={b} edition={edition} />
+            </BeatFilterContext.Provider>
             {/* 4 Nov 2026: dry cuts between beats (Fireship); the old every-3rd-beat white flash is gone. */}
           </AbsoluteFill>
           {b.sfx && (

@@ -33,6 +33,10 @@ Every change from the upstream files is marked `LAB PATCH` (or `LAB FILE`):
   `@remotion/google-fonts`, so nothing is fetched from Google at runtime.
 - `src/Report.tsx`: `CalculateMetadataFunction` imported as a type (the site's
   `verbatimModuleSyntax`).
+- `src/media.tsx`, `src/Report.tsx`: an optional `filters` prop (beat id →
+  CSS filter) on `Report`, passed per beat through `BeatFilterContext` and
+  added after the own filter of every `Img` and `OffthreadVideo` (the Lab's
+  look presets).
 - `src/custom/index.ts`: hand-written with edition 078's one custom beat
   (upstream it is generated for every edition).
 
