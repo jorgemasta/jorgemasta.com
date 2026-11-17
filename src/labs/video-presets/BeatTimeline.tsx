@@ -6,11 +6,23 @@
 // Tailwind utilities, so the site-wide stylesheet other pages share is untouched.
 import React, { memo, useEffect, useMemo, useRef } from "react";
 import { findAt, formatTime, outline, splitAtWord } from "./beat-timeline";
+import { isGraded } from "./edit-model";
 import { useLabPlayer, usePlayerFrame } from "./player-context";
 import type { LabBeat, TimedWord } from "./timeline";
 import "./beat-timeline.css";
 
-export const BeatTimeline: React.FC = () => {
+export type BeatTimelineProps = {
+  /** Beats carrying a manual look tweak (marked on their row). */
+  tweaked?: ReadonlySet<string>;
+  /** The beat open in the inspector, if any. */
+  inspecting?: string | null;
+  /** Opens the inspector on a beat; without it, rows have no tweak button. */
+  onInspect?: (beatId: string) => void;
+};
+
+const NONE: ReadonlySet<string> = new Set();
+
+export const BeatTimeline: React.FC<BeatTimelineProps> = ({ tweaked = NONE, inspecting = null, onInspect }) => {
   const { playerRef, timeline } = useLabPlayer();
   const frame = usePlayerFrame();
   const { beat: current, word } = findAt(timeline, frame);
@@ -57,6 +69,9 @@ export const BeatTimeline: React.FC = () => {
                     current={beat.id === currentId}
                     word={beat.id === currentId ? word : null}
                     onSeek={seek}
+                    tweaked={tweaked.has(beat.id)}
+                    inspecting={beat.id === inspecting}
+                    onInspect={onInspect && isGraded(beat.visualKind) ? onInspect : undefined}
                   />
                 ))}
               </ol>
@@ -74,14 +89,17 @@ type BeatRowProps = {
   current: boolean;
   word: TimedWord | null;
   onSeek: (frame: number) => void;
+  tweaked: boolean;
+  inspecting: boolean;
+  onInspect?: (beatId: string) => void;
 };
 
 // Memoised: on each frame only the current row (whose word changes) re-renders.
 const BeatRow = memo<BeatRowProps>(
-  ({ beat, fps, current, word, onSeek }) => {
+  ({ beat, fps, current, word, onSeek, tweaked, inspecting, onInspect }) => {
     const text = splitAtWord(beat, word);
     return (
-      <li data-beat-id={beat.id} className="lab-tl-beat-row">
+      <li data-beat-id={beat.id} className="lab-tl-beat-row" data-tweaked={tweaked || undefined}>
         <button
           type="button"
           className="lab-tl-beat"
@@ -91,6 +109,7 @@ const BeatRow = memo<BeatRowProps>(
           <span className="lab-tl-meta">
             <span className="lab-tl-time">{formatTime(beat.from, fps)}</span>
             <span className="lab-tl-kind">{beat.visualKind}</span>
+            {tweaked && <span className="lab-tl-tweaked">Tweaked</span>}
           </span>
           <span className="lab-tl-say">
             {text.before}
@@ -98,9 +117,28 @@ const BeatRow = memo<BeatRowProps>(
             {text.after}
           </span>
         </button>
+        {onInspect && (
+          <button
+            type="button"
+            className="lab-tl-tweak"
+            aria-expanded={inspecting}
+            aria-label={`Tweak the look of the beat at ${formatTime(beat.from, fps)}`}
+            onClick={() => onInspect(beat.id)}
+          >
+            Tweak
+          </button>
+        )}
       </li>
     );
   },
-  // onSeek is a fresh closure each render but always seeks the same player.
-  (a, b) => a.beat === b.beat && a.fps === b.fps && a.current === b.current && a.word === b.word,
+  // onSeek is a fresh closure each render but always seeks the same player;
+  // onInspect is stable (a state setter wrapper memoised by the editor).
+  (a, b) =>
+    a.beat === b.beat &&
+    a.fps === b.fps &&
+    a.current === b.current &&
+    a.word === b.word &&
+    a.tweaked === b.tweaked &&
+    a.inspecting === b.inspecting &&
+    a.onInspect === b.onInspect,
 );
