@@ -4,6 +4,10 @@
 @plugin "@tailwindcss/typography";
 /* Tests never render, so their strings must not generate classes. */
 @source not "../**/*.test.ts";
+/* The vendored renderer styles itself inline; its words must not generate classes either. */
+@source not "../labs/video-presets/destilados-snapshot";
+/* Lab logic modules hold no markup. */
+@source not "../labs/**/*.ts";
 
 /* Light only. The palette and type follow docs/positioning.md. */
 @theme {

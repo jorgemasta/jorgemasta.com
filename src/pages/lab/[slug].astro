@@ -3,6 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { render } from "astro:content";
 import { getLabs } from "../../lib/content";
 import { formatDate } from "../../lib/utils";
+import VideoPresetsLab from "../../labs/video-presets/VideoPresetsLab";
 
 export async function getStaticPaths() {
   return (await getLabs()).map((lab) => ({
@@ -26,17 +27,23 @@ const { Content } = await render(lab);
     <p dir="auto" class="mt-4 font-serif text-2xl leading-snug text-green wrap-anywhere">{lab.data.question}</p>
 
     <!--
-      Interactive island slot. The slug picks the Lab's component (e.g. `video-presets`),
-      hydrated with client:visible so the write-up reads without waiting for script.
-      The poster stays as the static fallback before it loads.
+      Interactive island. The slug picks the Lab's component; it hydrates with
+      client:visible so the write-up reads without waiting for script, and its
+      server-rendered HTML is the poster.
     -->
     {
-      lab.data.mainImage && (
-        <img
-          src={lab.data.mainImage.src}
-          alt={lab.data.mainImage.alt}
-          class="card-img mt-10 aspect-video w-full rounded-md object-cover"
-        />
+      lab.id === "video-presets" ? (
+        <div class="mt-10">
+          <VideoPresetsLab client:visible={{ rootMargin: "200px" }} poster={lab.data.mainImage} />
+        </div>
+      ) : (
+        lab.data.mainImage && (
+          <img
+            src={lab.data.mainImage.src}
+            alt={lab.data.mainImage.alt}
+            class="card-img mt-10 aspect-video w-full rounded-md object-cover"
+          />
+        )
       )
     }
 
