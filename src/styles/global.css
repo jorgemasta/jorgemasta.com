@@ -4,14 +4,9 @@
 @plugin "@tailwindcss/typography";
 /* Tests never render, so their strings must not generate classes. */
 @source not "../**/*.test.ts";
-/* The vendored renderer styles itself inline; its words must not generate classes either. */
-@source not "../labs/video-presets/destilados-snapshot";
-/* Lab logic modules hold no markup. */
-@source not "../labs/**/*.ts";
-/* Lab transitions UI and composition: plain CSS only, and their words ("transition", "ease-in") are class names. */
-@source not "../labs/video-presets/Transitions.tsx";
-@source not "../labs/video-presets/CutEntrance.tsx";
-@source not "../labs/video-presets/composition.tsx";
+/* Labs style themselves with plain CSS files and inline styles (vendored renderer included);
+   their words ("transition", "ease-in", ...) must not generate classes in the shared CSS. */
+@source not "../labs";
 
 /* Light only. The palette and type follow docs/positioning.md. */
 @theme {

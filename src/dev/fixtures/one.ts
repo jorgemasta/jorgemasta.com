@@ -1,4 +1,4 @@
-import { post, project } from "./entries";
+import { lab, post, project } from "./entries";
 import { item, podcastFrom } from "./podcast";
 import type { DevData } from "./types";
 
@@ -33,6 +33,13 @@ export default async function one(): Promise<DevData> {
         "One body paragraph."
       ),
     ]),
+    labs: [
+      await lab(
+        "tiny",
+        { title: "Tiny", publishedAt: "2026-11-01", excerpt: "One try.", question: "Does it?" },
+        "One line."
+      ),
+    ],
     podcast: podcastFrom(item({ title: "Tokenizados #1: Empezamos", number: 1, pubDate: "Sat, 07 Mar 2026 10:00:00 GMT" })),
     roles: [
       {

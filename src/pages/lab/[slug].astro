@@ -3,7 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { render } from "astro:content";
 import { getLabs } from "../../lib/content";
 import { formatDate } from "../../lib/utils";
-import VideoPresetsLab from "../../labs/video-presets/VideoPresetsLab";
+import VideoPresetsIsland from "../../labs/video-presets/Island.astro";
 
 export async function getStaticPaths() {
   return (await getLabs()).map((lab) => ({
@@ -12,7 +12,11 @@ export async function getStaticPaths() {
   }));
 }
 
+/** Each Lab's interactive island, by slug. */
+const ISLANDS: Record<string, typeof VideoPresetsIsland> = { "video-presets": VideoPresetsIsland };
+
 const { lab } = Astro.props;
+const Island = ISLANDS[lab.id];
 const { Content } = await render(lab);
 ---
 
@@ -27,14 +31,14 @@ const { Content } = await render(lab);
     <p dir="auto" class="mt-4 font-serif text-2xl leading-snug text-green wrap-anywhere">{lab.data.question}</p>
 
     <!--
-      Interactive island. The slug picks the Lab's component; it hydrates with
-      client:visible so the write-up reads without waiting for script, and its
-      server-rendered HTML is the poster.
+      Interactive island, picked by slug. Each Lab's Island.astro hydrates its
+      component with client:visible (a directive needs a static import, so it
+      can't sit on the map lookup). A Lab with no island shows the poster alone.
     -->
     {
-      lab.id === "video-presets" ? (
+      Island ? (
         <div class="mt-10">
-          <VideoPresetsLab client:visible={{ rootMargin: "200px" }} poster={lab.data.mainImage} />
+          <Island poster={lab.data.mainImage} />
         </div>
       ) : (
         lab.data.mainImage && (
@@ -44,6 +48,16 @@ const { Content } = await render(lab);
             class="card-img mt-10 aspect-video w-full rounded-md object-cover"
           />
         )
+      )
+    }
+
+    <!-- Attribution and credits: who built what, and the image sources (filled with the media, #81). -->
+    {
+      (lab.data.attribution || lab.data.imageCredits.length > 0) && (
+        <footer class="mt-4 font-sans text-sm text-muted">
+          {lab.data.attribution && <p>{lab.data.attribution}</p>}
+          {lab.data.imageCredits.length > 0 && <p class="mt-1">Image credits: {lab.data.imageCredits.join(" · ")}</p>}
+        </footer>
       )
     }
 

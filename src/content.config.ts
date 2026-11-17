@@ -74,6 +74,10 @@ const labs = defineCollection({
     question: z.string(),
     /** The poster, shown before the interactive part loads. */
     mainImage,
+    /** Who built what, when the Lab builds on someone else's work. */
+    attribution: z.string().optional(),
+    /** Source credits for the images the Lab shows, one per source. */
+    imageCredits: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
   }),
 });

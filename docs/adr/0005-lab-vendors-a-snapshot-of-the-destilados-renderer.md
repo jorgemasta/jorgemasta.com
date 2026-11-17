@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # The video editor Lab vendors a snapshot of the Destilados renderer

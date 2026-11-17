@@ -6,6 +6,7 @@ import type { Podcast } from "../../lib/tokenizados";
 export type DevData = {
   posts: CollectionEntry<"blog">[];
   projects: CollectionEntry<"projects">[];
+  labs: CollectionEntry<"labs">[];
   podcast: Promise<Podcast>;
   roles: Role[];
   about: string[];
