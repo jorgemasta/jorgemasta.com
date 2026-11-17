@@ -8,6 +8,7 @@ import { LabPlayerProvider, useLabPlayer, usePlayerValue } from "./player-contex
 import { LookPresets } from "./LookPresets";
 import { Transitions, useCutMarkers, type CutTarget } from "./Transitions";
 import { BeatInspector } from "./BeatInspector";
+import { ThemeOptions } from "./ThemeOptions";
 import { findAt, formatTime, tweakableBeatAt } from "./beat-timeline";
 import { hasEdits, reset } from "./edit-model";
 import type { BeatId } from "./timeline";
@@ -33,6 +34,8 @@ export const Editor: React.FC = () => {
   // beat on screen (pauses there, so the beat stays put while it is tweaked).
   const [inspecting, setInspecting] = useState<{ id: BeatId; from: "timeline" | "now" } | null>(null);
   const tweaked = useMemo(() => new Set(tweakedBeats(lab.edits)), [lab.edits]);
+  // Photos given their own motion (committed edits; marked on the timeline).
+  const moved = lab.edits.beatMotions;
   const openFromTimeline = useCallback(
     (id: BeatId) => {
       setInspecting({ id, from: "timeline" });
@@ -94,12 +97,13 @@ export const Editor: React.FC = () => {
         </div>
         <ResetBar lab={lab} />
         <LookPresets lab={lab} />
-        <NowTweak tweaked={tweaked} open={inspecting?.from === "now"} onOpen={openFromNow}>
+        <NowTweak tweaked={tweaked} moved={moved} open={inspecting?.from === "now"} onOpen={openFromNow}>
           {inspector("now")}
         </NowTweak>
+        <ThemeOptions lab={lab} />
         <EditorTransitions
           lab={lab}
-          timeline={{ tweaked, inspecting: inspecting?.from === "timeline" ? inspecting.id : null, onInspect: openFromTimeline }}
+          timeline={{ tweaked, moved, inspecting: inspecting?.from === "timeline" ? inspecting.id : null, onInspect: openFromTimeline }}
         />
         <div className="lab-editor__timeline-insp">{inspector("timeline")}</div>
       </div>
@@ -107,7 +111,7 @@ export const Editor: React.FC = () => {
   );
 };
 
-// One Reset for every edit: looks, per-beat tweaks and transitions go back to the generated original.
+// One Reset for every edit: looks, per-beat tweaks, theme, motions, story cards and transitions go back to the generated original.
 const ResetBar: React.FC<{ lab: LabEdits }> = ({ lab }) => {
   const { edits, setEdits, setPreview } = lab;
   const edited = hasEdits(edits);
@@ -137,17 +141,18 @@ const spoken = (say: string) => say.replace(/\[[^\]]*\]\s*/g, "").trim();
 // and says "Tweaked" when it carries a tweak; the inspector opens right under it.
 const NowTweak: React.FC<{
   tweaked: ReadonlySet<string>;
+  moved: Readonly<Record<string, unknown>>;
   open: boolean;
   onOpen: (id: BeatId) => void;
   children: React.ReactNode;
-}> = ({ tweaked, open, onOpen, children }) => {
+}> = ({ tweaked, moved, open, onOpen, children }) => {
   const { timeline } = useLabPlayer();
   const beat = usePlayerValue(
     useCallback((frame: number) => findAt(timeline, frame).beat, [timeline]),
     timeline.beats[0] ?? null,
   );
   const tweakable = beat !== null && tweakableBeatAt(timeline, beat.from) === beat;
-  const isTweaked = beat !== null && tweaked.has(beat.id);
+  const isTweaked = beat !== null && (tweaked.has(beat.id) || beat.id in moved);
   return (
     <section className="lab-now" aria-label="This beat">
       <div className="lab-now__row">

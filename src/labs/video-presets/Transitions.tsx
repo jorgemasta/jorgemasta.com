@@ -1,3 +1,7 @@
+// Transitions and story cards. The generated story card (a 0.9 s card at each
+// story change) takes a style, from the theme unless the visitor picks one; a
+// transition applied to a story change replaces the card there.
+//
 // Transitions: a small library (cut, whip, slide, zoom), each a named set of
 // settings the visitor can open and adjust. A transition is applied either as
 // the default for every story change or to one cut picked on the timeline,
@@ -8,8 +12,17 @@
 // so the stylesheet every page shares does not change for the Lab.
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatTime, storyChangeToTry } from "./beat-timeline";
-import { effectiveEdition, setCutTransition, setDefaultTransition, type EffectiveTransition, type Edits } from "./edit-model";
+import {
+  effectiveEdition,
+  setCutTransition,
+  setDefaultTransition,
+  setStoryCard,
+  type EffectiveTransition,
+  type Edits,
+  type StoryCardStyle,
+} from "./edit-model";
 import { useLabPlayer } from "./player-context";
+import { PRESETS as THEME_PRESETS } from "./destilados-snapshot/src/themes";
 import type { Cut, CutId } from "./timeline";
 import {
   adjustTransition,
@@ -53,6 +66,9 @@ const DIRECTION_NAMES: Record<TransitionDirection, string> = {
   out: "Zoom out",
 };
 
+const CARD_STYLES: readonly StoryCardStyle[] = ["band", "glitch", "wipe", "zoom"];
+const CARD_NAMES: Record<StoryCardStyle, string> = { band: "Band", glitch: "Glitch", wipe: "Wipe", zoom: "Zoom" };
+
 const seconds = (frames: number, fps: number) => `${(frames / fps).toFixed(2).replace(/0$/, "")} s`;
 
 const nameOf = (t: Transition) => transitionPreset(t.kind).name;
@@ -74,7 +90,7 @@ export type TransitionsProps = { lab: LabEdits; target: CutTarget; onTarget: (ta
 
 export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget }) => {
   const { playerRef, timeline } = useLabPlayer();
-  const { edits, setEdits, setPreview } = lab;
+  const { edits, setEdits, setPreview, effective } = lab;
   const cut = target ? timeline.cuts.find((c) => c.id === target) : undefined;
   const committed = committedOn(edits, target);
   /** A transition picked or adjusted but not applied yet (null = nothing pending). */
@@ -163,7 +179,7 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
         ? committed
           ? `${describe(committed, fps)} on ${cutLabel} (overrides the default).`
           : `${cutLabel[0].toUpperCase()}${cutLabel.slice(1)} follows the default.`
-        : `Story changes: ${edits.defaultTransition ? describe(edits.defaultTransition, fps) : "the generated story card"}${
+        : `Story changes: ${edits.defaultTransition ? describe(edits.defaultTransition, fps) : "the story card"}${
             overrides ? ` · ${overrides} cut${overrides > 1 ? "s" : ""} overridden` : ""
           }.`;
 
@@ -183,12 +199,24 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
     <section className="lab-tx" aria-labelledby="lab-tx-title">
       <div className="lab-tx__head">
         <h2 id="lab-tx-title" className="lab-tx__title">
-          Transitions
+          Transitions &amp; story cards
         </h2>
-        <p className="lab-tx__status" aria-live="polite">
-          {status}
-        </p>
       </div>
+
+      <StoryCardRow
+        card={effective.storyCard}
+        themeStyle={THEME_PRESETS[effective.theme.name].transition}
+        replacedBy={edits.defaultTransition}
+        fps={fps}
+        onChange={(style) => {
+          stopPreview();
+          setEdits(setStoryCard(edits, style));
+        }}
+      />
+
+      <p className="lab-tx__status" aria-live="polite">
+        {status}
+      </p>
 
       {/* A choice of target only exists once a cut is picked on the timeline (tablet and up). */}
       {cut ? (
@@ -304,6 +332,42 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
     </section>
   );
 };
+
+type StoryCardRowProps = {
+  card: { style: StoryCardStyle; source: "theme" | "visitor" };
+  /** The style the current theme brings. */
+  themeStyle: StoryCardStyle;
+  /** The transition on every story change, which plays instead of the card. */
+  replacedBy: Transition | null;
+  fps: number;
+  onChange: (style: StoryCardStyle | null) => void;
+};
+
+/** "Story card: Band (from theme)", and a select to pick another style or follow the theme again. */
+const StoryCardRow: React.FC<StoryCardRowProps> = ({ card, themeStyle, replacedBy, fps, onChange }) => (
+  <div className="lab-tx__storycard">
+    <label className="lab-tx__field">
+      <span>Story card</span>
+      <select
+        value={card.source === "visitor" ? card.style : ""}
+        aria-describedby="lab-tx-card-note"
+        onChange={(e) => onChange((e.currentTarget.value || null) as StoryCardStyle | null)}
+      >
+        <option value="">{CARD_NAMES[themeStyle]} (from theme)</option>
+        {CARD_STYLES.map((s) => (
+          <option key={s} value={s}>
+            {CARD_NAMES[s]}
+          </option>
+        ))}
+      </select>
+    </label>
+    <p className="lab-tx__note" id="lab-tx-card-note">
+      {replacedBy
+        ? `Not shown now: every story change plays ${describe(replacedBy, fps)}. "Back to the story card" below brings it back.`
+        : `${card.source === "theme" ? "The theme's card plays" : "Your choice plays, whatever the theme,"} at each story change. A transition below replaces it.`}
+    </p>
+  </div>
+);
 
 type LibraryCardProps = {
   kind: TransitionKind;

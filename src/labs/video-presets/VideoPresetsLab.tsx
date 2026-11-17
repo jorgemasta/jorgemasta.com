@@ -23,7 +23,7 @@ export default function VideoPresetsLab({ poster }: VideoPresetsLabProps) {
   return (
     <div>
       {/* Server-rendered with the poster, so it is there before the editor loads and nothing shifts. */}
-      <p className="lab-intro">Pick a look, set its intensity, then tweak a single beat by hand.</p>
+      <p className="lab-intro">Pick a look, tweak a single beat by hand, then try a theme and the story transitions.</p>
       {Editor ? (
         <Editor />
       ) : (

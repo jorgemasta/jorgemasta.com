@@ -144,6 +144,59 @@
   text-align: right;
 }
 
+/* Tablet and up: the eight looks wrap into two rows of four. */
+@media (min-width: 48rem) {
+  .lab-looks__strip {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+}
+
+.lab-looks__disclosure {
+  padding: 0.5rem 0.75rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: var(--color-paper);
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.lab-looks__disclosure:active {
+  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+.lab-looks__custom {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 0.5rem;
+}
+
+.lab-looks__param {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) 3.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.lab-looks__param input {
+  min-width: 0;
+  accent-color: var(--color-green);
+}
+
+.lab-looks__note {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
 .lab-looks button:focus-visible,
 .lab-looks input:focus-visible {
   outline: 2px solid var(--color-terracotta);
@@ -151,7 +204,8 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .lab-looks__preset:hover {
+  .lab-looks__preset:hover,
+  .lab-looks__disclosure:hover {
     border-color: var(--color-terracotta);
   }
 }

@@ -157,6 +157,34 @@
   font-weight: 600;
 }
 
+/* A photo's motion: one select, under the look sliders. */
+.lab-insp__motion {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-rule, #d9d1c2);
+}
+
+.lab-insp__motion select {
+  min-width: 0;
+  min-height: 2.25rem;
+  border: 1px solid var(--color-rule, #d9d1c2);
+  border-radius: 0.375rem;
+  padding: 0.3rem 0.4rem;
+  background: var(--color-paper);
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.lab-insp__motion[data-tweaked] select {
+  border-color: var(--color-green, #173f35);
+  color: var(--color-green, #173f35);
+}
+
 .lab-insp__actions {
   display: flex;
   justify-content: flex-end;
@@ -196,7 +224,8 @@
 }
 
 .lab-insp button:focus-visible,
-.lab-insp input:focus-visible {
+.lab-insp input:focus-visible,
+.lab-insp select:focus-visible {
   outline: 2px solid var(--color-terracotta, #b65f3c);
   outline-offset: 2px;
 }
@@ -219,6 +248,10 @@
   .lab-insp__label {
     grid-column: 1 / -1;
     margin-top: 0.375rem;
+  }
+
+  .lab-insp__motion {
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .lab-now .lab-insp__say {

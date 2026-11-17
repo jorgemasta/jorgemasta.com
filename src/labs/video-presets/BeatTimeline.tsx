@@ -6,7 +6,8 @@
 // Tailwind utilities, so the site-wide stylesheet other pages share is untouched.
 import React, { memo, useEffect, useMemo, useRef } from "react";
 import { findAt, formatTime, outline, splitAtWord } from "./beat-timeline";
-import { isGraded } from "./edit-model";
+import { isGraded, type Motion } from "./edit-model";
+import { MOTION_NAMES } from "./motion-names";
 import { useLabPlayer, usePlayerFrame } from "./player-context";
 import type { BeatId, Cut, LabBeat, TimedWord } from "./timeline";
 import "./beat-timeline.css";
@@ -14,6 +15,8 @@ import "./beat-timeline.css";
 export type BeatTimelineProps = {
   /** Beats carrying a manual look tweak (marked on their row). */
   tweaked?: ReadonlySet<BeatId>;
+  /** Photos given their own motion, by beat id (marked on their row). */
+  moved?: Readonly<Record<BeatId, Motion>>;
   /** The beat open in the inspector, if any. */
   inspecting?: BeatId | null;
   /** Opens the inspector on a beat; without it, rows have no tweak button. */
@@ -23,8 +26,9 @@ export type BeatTimelineProps = {
 };
 
 const NONE: ReadonlySet<BeatId> = new Set();
+const NO_MOTIONS: Readonly<Record<BeatId, Motion>> = {};
 
-export const BeatTimeline: React.FC<BeatTimelineProps> = ({ tweaked = NONE, inspecting = null, onInspect, renderCut }) => {
+export const BeatTimeline: React.FC<BeatTimelineProps> = ({ tweaked = NONE, moved = NO_MOTIONS, inspecting = null, onInspect, renderCut }) => {
   const { playerRef, timeline } = useLabPlayer();
   const cutInto = useMemo(() => new Map(timeline.cuts.map((c) => [c.toBeat, c])), [timeline]);
   const frame = usePlayerFrame();
@@ -76,6 +80,7 @@ export const BeatTimeline: React.FC<BeatTimelineProps> = ({ tweaked = NONE, insp
                         word={beat.id === currentId ? word : null}
                         onSeek={seek}
                         tweaked={tweaked.has(beat.id)}
+                        motion={moved[beat.id] ?? null}
                         inspecting={beat.id === inspecting}
                         onInspect={onInspect && isGraded(beat.visualKind) ? onInspect : undefined}
                       />
@@ -98,16 +103,18 @@ type BeatRowProps = {
   word: TimedWord | null;
   onSeek: (frame: number) => void;
   tweaked: boolean;
+  /** The photo's own motion, if the visitor set one on this beat. */
+  motion: Motion | null;
   inspecting: boolean;
   onInspect?: (beatId: BeatId) => void;
 };
 
 // Memoised: on each frame only the current row (whose word changes) re-renders.
 const BeatRow = memo<BeatRowProps>(
-  ({ beat, fps, current, word, onSeek, tweaked, inspecting, onInspect }) => {
+  ({ beat, fps, current, word, onSeek, tweaked, motion, inspecting, onInspect }) => {
     const text = splitAtWord(beat, word);
     return (
-      <li data-beat-id={beat.id} className="lab-tl-beat-row" data-tweaked={tweaked || undefined}>
+      <li data-beat-id={beat.id} className="lab-tl-beat-row" data-tweaked={tweaked || motion !== null || undefined}>
         <button
           type="button"
           className="lab-tl-beat"
@@ -118,6 +125,7 @@ const BeatRow = memo<BeatRowProps>(
             <span className="lab-tl-time">{formatTime(beat.from, fps)}</span>
             <span className="lab-tl-kind">{beat.visualKind}</span>
             {tweaked && <span className="lab-tl-tweaked">Tweaked</span>}
+            {motion && <span className="lab-tl-tweaked">Motion: {MOTION_NAMES[motion].toLowerCase()}</span>}
           </span>
           <span className="lab-tl-say">
             {text.before}
@@ -130,7 +138,7 @@ const BeatRow = memo<BeatRowProps>(
             type="button"
             className="lab-tl-tweak"
             aria-expanded={inspecting}
-            aria-label={`Tweak the look of the beat at ${formatTime(beat.from, fps)}`}
+            aria-label={`Tweak the beat at ${formatTime(beat.from, fps)}`}
             onClick={() => onInspect(beat.id)}
           >
             Tweak
@@ -147,6 +155,7 @@ const BeatRow = memo<BeatRowProps>(
     a.current === b.current &&
     a.word === b.word &&
     a.tweaked === b.tweaked &&
+    a.motion === b.motion &&
     a.inspecting === b.inspecting &&
     a.onInspect === b.onInspect,
 );

@@ -3,12 +3,26 @@
 // (or the last one shown) with its filter, so the strip reads at a glance. A tap,
 // click or Enter applies it, and selecting the applied one again removes it. With
 // a mouse, pointing at a preset previews it on the player; so does keyboard focus.
+// The last card, Custom, is a look whose five values the visitor sets with sliders
+// (collapsed under "Custom values"); it starts from the preset applied when picked.
 //
 // Styles live in looks.css (plain CSS, scoped by the `lab-looks` prefix) so the
 // site's Tailwind build, shared by every page, does not change for the Lab.
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { imageAt } from "./beat-timeline";
-import { applyPreset, LOOK_PRESETS, lookToCssFilter, setIntensity, type Edits, type LookPresetId } from "./edit-model";
+import {
+  applyPreset,
+  LOOK_PRESETS,
+  lookToCssFilter,
+  presetLook,
+  presetName,
+  setCustomLook,
+  setIntensity,
+  type Edits,
+  type Look,
+  type LookPresetId,
+} from "./edit-model";
+import { LOOK_PARAMS } from "./look-params";
 import { EDITION } from "./edition";
 import { imageSrc } from "./destilados-snapshot/src/beats/visuals";
 import { isPending } from "./destilados-snapshot/src/media";
@@ -35,14 +49,27 @@ export const LookPresets: React.FC<LookPresetsProps> = ({ lab }) => {
     setEdits(next);
   };
 
-  const applied = LOOK_PRESETS.find((p) => p.id === edits.preset);
-  const previewing = preview && preview.preset !== edits.preset ? LOOK_PRESETS.find((p) => p.id === preview.preset) : undefined;
+  const [customOpen, setCustomOpen] = useState(false);
+  const applied = edits.preset;
+  // Only a look preview counts here (Try it on a transition previews other edits).
+  const previewing = preview && preview.preset !== edits.preset ? preview.preset : null;
   const percent = Math.round(edits.intensity * 100);
   const status = previewing
-    ? `Previewing ${previewing.name}. Select it to apply.`
+    ? `Previewing ${presetName(previewing)}. Select it to apply.`
     : applied
-      ? `${applied.name} applied at ${percent}%.`
+      ? `${presetName(applied)} applied at ${percent}%.`
       : "The generated original.";
+  // What the Custom card would apply now (it starts from the applied preset the first time).
+  const customLook = presetLook(applyPreset(edits, "custom"), "custom");
+  const cards: { id: LookPresetId; name: string; look: Look }[] = [
+    ...LOOK_PRESETS,
+    { id: "custom", name: "Custom", look: customLook },
+  ];
+  const pick = (id: LookPresetId) => {
+    const off = edits.preset === id;
+    commit(applyPreset(edits, off ? null : id));
+    if (id === "custom") setCustomOpen(!off); // picking Custom is asking for its sliders
+  };
 
   return (
     <section className="lab-looks" aria-labelledby="lab-looks-title">
@@ -56,19 +83,19 @@ export const LookPresets: React.FC<LookPresetsProps> = ({ lab }) => {
       </div>
 
       <div className="lab-looks__strip" role="group" aria-labelledby="lab-looks-title">
-        {LOOK_PRESETS.map((p) => (
+        {cards.map((p) => (
           <button
             key={p.id}
             type="button"
             className="lab-looks__preset"
             aria-pressed={edits.preset === p.id}
-            data-previewing={previewing?.id === p.id || undefined}
+            data-previewing={previewing === p.id || undefined}
             // Touch has no hover: a tap applies straight away, with no hidden press-and-hold preview.
             onPointerEnter={(e) => e.pointerType === "mouse" && startPreview(p.id)}
             onPointerLeave={(e) => e.pointerType === "mouse" && endPreview()}
             onFocus={(e) => e.currentTarget.matches(":focus-visible") && startPreview(p.id)}
             onBlur={endPreview}
-            onClick={() => commit(applyPreset(edits, edits.preset === p.id ? null : p.id))}
+            onClick={() => pick(p.id)}
           >
             <span className="lab-looks__thumb" aria-hidden="true">
               {thumb ? (
@@ -97,6 +124,44 @@ export const LookPresets: React.FC<LookPresetsProps> = ({ lab }) => {
             />
             <output className="lab-looks__value">{percent}%</output>
           </label>
+          {applied === "custom" && (
+            <button
+              type="button"
+              className="lab-looks__disclosure"
+              aria-expanded={customOpen}
+              aria-controls="lab-looks-custom"
+              onClick={() => setCustomOpen((o) => !o)}
+            >
+              {customOpen ? "Hide Custom values" : "Custom values"} <span aria-hidden="true">{customOpen ? "▴" : "▾"}</span>
+            </button>
+          )}
+        </div>
+      )}
+      {applied === "custom" && customOpen && (
+        <div id="lab-looks-custom" className="lab-looks__custom" role="group" aria-label="Custom values, for the whole video">
+          {LOOK_PARAMS.map((p) => {
+            const id = `lab-looks-custom-${p.key}`;
+            const value = customLook[p.key];
+            return (
+              <div key={p.key} className="lab-looks__param">
+                <label htmlFor={id}>{p.label}</label>
+                <input
+                  id={id}
+                  type="range"
+                  min={p.min}
+                  max={p.max}
+                  step={p.step}
+                  value={value}
+                  aria-valuetext={p.format(value)}
+                  onChange={(e) => commit(setCustomLook(edits, { [p.key]: Number(e.currentTarget.value) }))}
+                />
+                <output htmlFor={id} className="lab-looks__value">
+                  {p.format(value)}
+                </output>
+              </div>
+            );
+          })}
+          <p className="lab-looks__note">Beats tweaked by hand keep the values set on them; the rest follow these.</p>
         </div>
       )}
     </section>

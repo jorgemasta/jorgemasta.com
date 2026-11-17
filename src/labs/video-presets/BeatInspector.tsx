@@ -1,27 +1,22 @@
-// The per-beat inspector: the look parameters of one beat, set by hand. A
+// The per-beat inspector: the look parameters of one beat, set by hand, and a
+// photo's motion (scripted, the default for all photos, or set on this beat). A
 // parameter the visitor moves becomes theirs on that beat (marked, with a button
 // to hand it back to the preset); the others keep following the preset. See
 // tweaks.ts for the precedence.
 //
 // Styles in inspector.css (plain CSS, `lab-insp` prefix), loaded with the editor only.
 import React, { useEffect, useRef } from "react";
-import { effectiveEdition, LOOK_PRESETS, NEUTRAL_LOOK, type Look } from "./edit-model";
+import { effectiveEdition, hasMotion, NEUTRAL_LOOK, presetName, setBeatMotion, type Motion } from "./edit-model";
+import { MOTION_NAMES, MOTION_OPTIONS } from "./motion-names";
 import { formatTime } from "./beat-timeline";
+import { LOOK_PARAMS } from "./look-params";
 import { useLabPlayer } from "./player-context";
 import { clearTweak, clearTweakParam, setTweak } from "./tweaks";
 import type { LabEdits } from "./use-lab-edits";
 import type { BeatId } from "./timeline";
 import "./inspector.css";
 
-type Param = { key: keyof Look; label: string; min: number; max: number; step: number; format: (v: number) => string };
-
-const PARAMS: readonly Param[] = [
-  { key: "saturation", label: "Saturation", min: 0, max: 2, step: 0.05, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "contrast", label: "Contrast", min: 0.5, max: 1.5, step: 0.05, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "brightness", label: "Brightness", min: 0.5, max: 1.5, step: 0.05, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "warmth", label: "Warmth", min: 0, max: 1, step: 0.05, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "hue", label: "Hue", min: -45, max: 45, step: 1, format: (v) => `${Math.round(v)}°` },
-];
+const PARAMS = LOOK_PARAMS;
 
 export type BeatInspectorProps = {
   lab: LabEdits;
@@ -44,11 +39,14 @@ export const BeatInspector: React.FC<BeatInspectorProps> = ({ lab, beatId, onClo
     setPreview(null);
     setEdits(next);
   };
-  const look = effectiveEdition({ beats: [beat] }, edits).looks[beat.id] ?? NEUTRAL_LOOK;
+  const effective = effectiveEdition({ beats: [beat] }, edits);
+  const look = effective.looks[beat.id] ?? NEUTRAL_LOOK;
+  const motion = effective.motions[beat.id];
+  // What the beat would do without its own motion: the default for all photos, else its script.
+  const fallback = effectiveEdition({ beats: [beat] }, setBeatMotion(edits, beat.id, null)).motions[beat.id];
   const tweak = edits.tweaks[beat.id] ?? {};
   const touched = PARAMS.filter((p) => p.key in tweak);
-  const preset = LOOK_PRESETS.find((p) => p.id === edits.preset);
-  const follows = preset ? `${preset.name} at ${Math.round(edits.intensity * 100)}%` : "the original";
+  const follows = edits.preset ? `${presetName(edits.preset)} at ${Math.round(edits.intensity * 100)}%` : "the original";
   const status = touched.length
     ? `Set by hand: ${touched.map((p) => p.label.toLowerCase()).join(", ")}. The rest follows ${follows}.`
     : `Follows ${follows}. Move a control to set it by hand on this beat.`;
@@ -63,7 +61,7 @@ export const BeatInspector: React.FC<BeatInspectorProps> = ({ lab, beatId, onClo
     >
       <div className="lab-insp__head">
         <h3 id="lab-insp-title" className="lab-insp__title" tabIndex={-1} ref={heading}>
-          Beat {beat.index + 1} look <span className="lab-insp__time">{formatTime(beat.from, timeline.fps)}</span>
+          Beat {beat.index + 1} <span className="lab-insp__time">{formatTime(beat.from, timeline.fps)}</span>
         </h3>
         <button type="button" className="lab-insp__close" onClick={onClose}>
           Close
@@ -115,6 +113,29 @@ export const BeatInspector: React.FC<BeatInspectorProps> = ({ lab, beatId, onClo
         })}
       </div>
 
+      {hasMotion(beat.visualKind) && motion && fallback && (
+        <div className="lab-insp__motion" data-tweaked={motion.source === "override" || undefined}>
+          <label htmlFor="lab-insp-motion" className="lab-insp__label">
+            Motion
+            {motion.source === "override" && <span className="lab-insp__badge">this beat</span>}
+          </label>
+          <select
+            id="lab-insp-motion"
+            value={motion.source === "override" ? motion.motion : ""}
+            onChange={(e) => commit(setBeatMotion(edits, beat.id, (e.currentTarget.value || null) as Motion | null))}
+          >
+            <option value="">
+              {MOTION_NAMES[fallback.motion]} ({fallback.source === "default" ? "all photos" : "as scripted"})
+            </option>
+            {MOTION_OPTIONS.map((m) => (
+              <option key={m} value={m}>
+                {MOTION_NAMES[m]}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="lab-insp__actions">
         <button
           type="button"
@@ -125,7 +146,7 @@ export const BeatInspector: React.FC<BeatInspectorProps> = ({ lab, beatId, onClo
             heading.current?.focus(); // this button is disabled now
           }}
         >
-          Remove tweak
+          Remove look tweak
         </button>
       </div>
     </section>
