@@ -194,7 +194,8 @@ Reference structure (the homepage ships no client-side script):
    what it amounted to. Not a CV dump.
 3. **Building on my own** — each product he is building in detail: what it is,
    the problem he is exploring, real numbers, links. Below, compactly, the
-   Earlier work picked for the homepage (AIOS, Kontroloo, Food to Bento),
+   Labs (one row each: the question it explores, linking to its page), then
+   the Earlier work picked for the homepage (AIOS, Kontroloo, Food to Bento),
    linking to their detail pages.
 4. **Writing & podcast** — the latest Notes, and Tokenizados as one block with
    platform links and the episode count. No per-episode rows.
