@@ -205,7 +205,8 @@ const holePath = (W: number, H: number, r: { x: number; y: number; w: number; h:
   return `${outer} M${cx - rx} ${cy} a${rx} ${ry} 0 1 0 ${2 * rx} 0 a${rx} ${ry} 0 1 0 ${-2 * rx} 0 Z`;
 };
 
-export const EditedImage: React.FC<{ src: string; edit: ImageEdit; W: number; H: number; dur: number; still?: boolean; delay?: number }> = ({
+// LAB PATCH: `move` = a CSS transform (the visitor's image motion) that replaces the slow drift.
+export const EditedImage: React.FC<{ src: string; edit: ImageEdit; W: number; H: number; dur: number; still?: boolean; delay?: number; move?: string }> = ({
   src,
   edit,
   W,
@@ -213,6 +214,7 @@ export const EditedImage: React.FC<{ src: string; edit: ImageEdit; W: number; H:
   dur,
   still,
   delay = 0,
+  move,
 }) => {
   const frame = useCurrentFrame() - delay;
   const iw = edit.iw ?? 1920;
@@ -233,7 +235,7 @@ export const EditedImage: React.FC<{ src: string; edit: ImageEdit; W: number; H:
   const imgStyle: React.CSSProperties = { position: "absolute", left: v.ox, top: v.oy, width: iw * v.s, height: ih * v.s, maxWidth: "none" };
   return (
     <div style={{ position: "relative", width: W, height: H, overflow: "hidden" }}>
-      <div style={{ position: "absolute", inset: 0, transform: `scale(${drift})` }}>
+      <div style={{ position: "absolute", inset: 0, transform: move ?? `scale(${drift})` /* LAB PATCH: + move */ }}>
         <Img src={src} style={imgStyle} />
         {spot && (
           <div style={{ position: "absolute", inset: 0, opacity: spotOn, clipPath: `path(evenodd, "${holePath(W, H, R(spot.at), spot.shape ?? "circle")}")` }}>

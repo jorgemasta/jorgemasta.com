@@ -1,6 +1,7 @@
 // The composition the Lab's player renders: the vendored Report, fed with the
 // rebuilt timeline. The visitor's edits (per-beat looks, per-cut transitions) are
-// threaded into the snapshot keyed by the beat ids the timeline puts on its beats.
+// threaded into the snapshot keyed by the beat ids the timeline puts on its beats,
+// with the whole-video options (theme, story card style).
 import React from "react";
 import { Report } from "./destilados-snapshot/src/Report";
 import { CutEntrance } from "./CutEntrance";
@@ -33,6 +34,12 @@ export const LabComposition: React.FC<LabCompositionProps> = ({ edition, report,
     }
     return { into, noBumper };
   }, [cuts, effective]);
+  // Image motions the visitor changed (scripted ones render as upstream).
+  const motions = React.useMemo(() => {
+    if (!effective) return undefined;
+    const changed = Object.entries(effective.motions).filter(([, m]) => m.source !== "script");
+    return changed.length ? Object.fromEntries(changed.map(([id, m]) => [id, m.motion])) : undefined;
+  }, [effective]);
   const entrance = React.useCallback(
     (beatId: string, visual: React.ReactNode) => {
       const t = into.get(beatId);
@@ -41,6 +48,16 @@ export const LabComposition: React.FC<LabCompositionProps> = ({ edition, report,
     [into],
   );
   return (
-    <Report edition={edition} lang={report.lang} timeline={report} filters={filters} entrance={entrance} noBumper={noBumper} />
+    <Report
+      edition={edition}
+      lang={report.lang}
+      timeline={report}
+      filters={filters}
+      entrance={entrance}
+      noBumper={noBumper}
+      theme={effective?.theme.name}
+      storyCard={effective?.storyCard.style}
+      motions={motions}
+    />
   );
 };

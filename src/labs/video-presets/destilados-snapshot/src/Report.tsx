@@ -9,16 +9,16 @@ import {
   useCurrentFrame,
 } from "remotion";
 // LAB PATCH: media goes through the Lab's manifest (silent when a file is missing).
-import { Audio, BeatFilterContext, staticFile } from "./media"; // LAB PATCH: + BeatFilterContext
+import { Audio, BeatFilterContext, BeatMotionContext, staticFile } from "./media"; // LAB PATCH: + BeatFilterContext, BeatMotionContext
 import { Intro } from "./Intro";
 import { CHROME_H, CHROME_TOP, INTRO_FRAMES, color, display, mono } from "./theme";
 import { LocaleContext, STRINGS, type Lang } from "./i18n";
 import { LogoMark } from "./Logo";
 import { BUMPER_FRAMES, StoryBumper } from "./StoryBumper";
-import { PRESETS, themeOf } from "./themes";
+import { PRESETS, themeOf, type ThemeName, type Transition as StoryCardStyle } from "./themes"; // LAB PATCH: + types
 import { ThemeTexture } from "./ThemeTexture";
 import { CustomBeat } from "./custom/CustomBeat";
-import type { Sfx, Timeline, TimedBeat } from "./types";
+import type { Motion, Sfx, Timeline, TimedBeat } from "./types"; // LAB PATCH: + Motion
 import * as V from "./beats/visuals";
 
 // LAB PATCH: `filters` = the visitor's look per beat (beat `id` from the timeline → CSS filter), applied to images and clips.
@@ -31,6 +31,11 @@ export type ReportProps = {
   // own first frames, or as is); `noBumper` = ids of first beats of stories whose story card a transition replaces.
   entrance?: (beatId: string, visual: React.ReactNode) => React.ReactNode;
   noBumper?: readonly string[];
+  // LAB PATCH: the visitor's whole-video options. `theme` replaces the edition's (accent2, texture, story card);
+  // `storyCard` replaces the story card's style alone; `motions` = beat `id` → image motion, for changed beats only.
+  theme?: ThemeName;
+  storyCard?: StoryCardStyle;
+  motions?: Record<string, Motion>;
 };
 
 export const calculateReportMetadata: CalculateMetadataFunction<
@@ -268,11 +273,12 @@ export const storyStarts = (tl: Timeline) => {
   return out;
 };
 
-export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entrance, noBumper }) => {
+export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entrance, noBumper, theme: themeName, storyCard, motions }) => {
   if (!timeline) return <AbsoluteFill style={{ backgroundColor: color.bg }} />;
   const splitFrame = Math.round(timeline.voiceSplitSec * 30);
   const audio = staticFile(timeline.audio);
-  const theme = PRESETS[themeOf(timeline)]; // per-edition seed: texture, accent2, story transition
+  const seeded = PRESETS[themeName ?? themeOf(timeline)]; // per-edition seed: texture, accent2, story transition (LAB PATCH: + themeName)
+  const theme = storyCard ? { ...seeded, transition: storyCard } : seeded; // LAB PATCH: the visitor's story card
   return (
     <LocaleContext.Provider value={STRINGS[timeline.lang].locale}>
     <AbsoluteFill style={{ backgroundColor: color.bg }}>
@@ -286,8 +292,11 @@ export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entr
           <AbsoluteFill>
             {/* LAB PATCH: the beat's look reaches every Img/OffthreadVideo through context. */}
             <BeatFilterContext.Provider value={(b.id && filters?.[b.id]) || ""}>
-              {/* LAB PATCH: the visitor's transition into this beat, if any. */}
-              {entrance && b.id ? entrance(b.id, <BeatVisual beat={b} edition={edition} />) : <BeatVisual beat={b} edition={edition} />}
+              {/* LAB PATCH: the visitor's image motion for this beat, if changed. */}
+              <BeatMotionContext.Provider value={(b.id && motions?.[b.id]) || null}>
+                {/* LAB PATCH: the visitor's transition into this beat, if any. */}
+                {entrance && b.id ? entrance(b.id, <BeatVisual beat={b} edition={edition} />) : <BeatVisual beat={b} edition={edition} />}
+              </BeatMotionContext.Provider>
             </BeatFilterContext.Provider>
             {/* 4 Nov 2026: dry cuts between beats (Fireship); the old every-3rd-beat white flash is gone. */}
           </AbsoluteFill>

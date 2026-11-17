@@ -4,6 +4,7 @@
 // (`timeline.<lang>.json`), which is not in its repository. This is a pure port of
 // that step, so the Lab needs only the vendored script and voice JSON.
 import type { ScriptBeat, Timeline, Visual } from "./destilados-snapshot/src/types";
+import { themeOf, type ThemeName } from "./destilados-snapshot/src/themes";
 import { clamp } from "./math";
 
 export type { ScriptBeat, Timeline, Visual };
@@ -111,6 +112,8 @@ export type EditionTimeline = {
   beats: LabBeat[];
   chapters: Chapter[];
   cuts: Cut[];
+  /** The theme the edition was published in (script `theme`, else hashed from its date, as the renderer does). */
+  theme: ThemeName;
   /** The same timing in the shape the vendored `Report` composition renders; its beats carry the ids above. */
   report: Timeline;
 };
@@ -280,6 +283,7 @@ export function buildTimeline(script: Script, voice: VoiceTiming, opts: BuildOpt
     beats,
     chapters,
     cuts,
+    theme: themeOf(script),
     report,
   };
 }

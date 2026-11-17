@@ -5,6 +5,7 @@
 // `Audio`. Remotion's `<Img>` throws when a file fails to load, which would crash
 // the whole composition, so nothing is ever pointed at a missing file: a file
 // exists only if it is in `src/labs/video-presets/media/` at build time.
+import type { Motion } from "./types";
 import React from "react";
 import {
   Audio as RemotionAudio,
@@ -67,6 +68,12 @@ const Placeholder: React.FC<{ src: string | undefined; kind: string; style?: Rea
  * generated). Report provides it per beat; every image and clip below reads it.
  */
 export const BeatFilterContext = React.createContext("");
+
+/**
+ * The beat's image motion when the visitor changed it (null = as scripted). Read by
+ * ImageBeat (beats/visuals.tsx), which moves even a framed (`focus`) image with it.
+ */
+export const BeatMotionContext = React.createContext<Motion | null>(null);
 
 /** Adds the beat's look after the element's own filter (blurred backdrops keep their blur). */
 const useGraded = (style: React.CSSProperties | undefined): React.CSSProperties | undefined => {

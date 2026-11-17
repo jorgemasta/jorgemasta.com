@@ -6,7 +6,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 // LAB PATCH: media goes through the Lab's manifest (placeholders when a file is missing).
-import { Img, OffthreadVideo, staticFile } from "../media";
+import { BeatMotionContext, Img, OffthreadVideo, staticFile } from "../media"; // LAB PATCH: + BeatMotionContext
 import { SAFE_TOP, color, display, impact, mono } from "../theme";
 import type { Mood, Motion, Visual } from "../types";
 import {
@@ -48,12 +48,8 @@ export const imageSrc = (ref: string, edition: string) => {
   return staticFile(ref);
 };
 
-const MovingImage: React.FC<{
-  src: string;
-  motion: Motion;
-  dur: number;
-  fit?: "cover" | "contain";
-}> = ({ src, motion, dur, fit = "cover" }) => {
+// LAB PATCH: the motion's transform, moved out of MovingImage so a framed image (EditedImage) can take it too.
+const useMotionTransform = (motion: Motion, dur: number) => {
   const frame = useCurrentFrame();
   const t = Math.min(frame / Math.max(dur, 1), 1);
   const punch = usePop(0, 320);
@@ -67,6 +63,16 @@ const MovingImage: React.FC<{
     const k = frame < 14 ? (14 - frame) * 1.6 : 0;
     transform = `scale(1.08) translate(${Math.sin(frame * 2.1) * k}px, ${Math.cos(frame * 1.7) * k}px)`;
   }
+  return transform;
+};
+
+const MovingImage: React.FC<{
+  src: string;
+  motion: Motion;
+  dur: number;
+  fit?: "cover" | "contain";
+}> = ({ src, motion, dur, fit = "cover" }) => {
+  const transform = useMotionTransform(motion, dur); // LAB PATCH: was computed here
   return (
     <Img
       src={src}
@@ -250,14 +256,20 @@ export const NumberBeat: React.FC<P<"number">> = ({ v, edition }) => {
 // itself sits below the top ticker (SAFE_TOP) so mastheads/headlines never collide with it. Other images stay full-bleed.
 const SAFE_W = 1640;
 const SAFE_H = Math.round((SAFE_W * 9) / 16); // 923
-export const ImageBeat: React.FC<P<"image">> = ({ v, dur, edition }) => {
+export const ImageBeat: React.FC<P<"image">> = ({ v: scripted, dur, edition }) => {
+  // LAB PATCH: the visitor's motion for this beat, if changed. A framed image then moves with it too (`move`);
+  // as scripted, a framed image only eases to its focus and drifts.
+  const labMotion = React.useContext(BeatMotionContext);
+  const v = labMotion ? { ...scripted, motion: labMotion } : scripted;
+  const labTransform = useMotionTransform(labMotion ?? "still", dur);
+  const move = labMotion ? labTransform : undefined;
   const src = imageSrc(v.image, edition);
   if (v.with) return <CompareImages v={v} dur={dur} edition={edition} />;
   const edited = hasEdits(v);
   if (edited && !v.image.startsWith("real:"))
     return (
       <AbsoluteFill style={{ backgroundColor: color.bg }}>
-        <EditedImage src={src} edit={v} W={1920} H={1080} dur={dur} still={v.motion === "still"} />
+        <EditedImage src={src} edit={v} W={1920} H={1080} dur={dur} still={v.motion === "still"} move={move} />
         <Caption text={v.caption} />
       </AbsoluteFill>
     );
@@ -288,7 +300,7 @@ export const ImageBeat: React.FC<P<"image">> = ({ v, dur, edition }) => {
         }}
       >
         {edited ? (
-          <EditedImage src={src} edit={v} W={SAFE_W} H={SAFE_H} dur={dur} still={v.motion === "still"} />
+          <EditedImage src={src} edit={v} W={SAFE_W} H={SAFE_H} dur={dur} still={v.motion === "still"} move={move} />
         ) : (
           <MovingImage src={src} motion={v.motion ?? "zoom"} dur={dur} />
         )}

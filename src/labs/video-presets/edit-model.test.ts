@@ -15,36 +15,41 @@ const edition = {
 
 describe("effectiveEdition", () => {
   it("returns the generated original when there are no edits", () => {
-    expect(effectiveEdition(edition, NO_EDITS)).toEqual({ looks: {}, transitions: {} });
+    expect(effectiveEdition(edition, NO_EDITS)).toMatchObject({ looks: {}, transitions: {} });
   });
 
   it("grades every image and clip beat with a preset at full intensity, and nothing else", () => {
     const edits = applyPreset(NO_EDITS, "newsprint");
     const newsprint = { saturation: 0, contrast: 1.25, brightness: 1.05, warmth: 0.15, hue: 0 };
-    expect(effectiveEdition(edition, edits)).toEqual({
-      looks: { b0: newsprint, b2: newsprint, b3: newsprint },
-      transitions: {},
-    });
+    expect(effectiveEdition(edition, edits).looks).toEqual({ b0: newsprint, b2: newsprint, b3: newsprint });
   });
 
   it("scales the preset between the original and full with its intensity", () => {
     const edits = setIntensity(applyPreset(NO_EDITS, "newsprint"), 0.5);
     const halfNewsprint = { saturation: 0.5, contrast: 1.125, brightness: 1.025, warmth: 0.075, hue: 0 };
-    expect(effectiveEdition(edition, edits)).toEqual({
-      looks: { b0: halfNewsprint, b2: halfNewsprint, b3: halfNewsprint },
-      transitions: {},
-    });
+    expect(effectiveEdition(edition, edits).looks).toEqual({ b0: halfNewsprint, b2: halfNewsprint, b3: halfNewsprint });
   });
 
   it("renders the original at zero intensity", () => {
     const edits = setIntensity(applyPreset(NO_EDITS, "newsprint"), 0);
-    expect(effectiveEdition(edition, edits)).toEqual({ looks: {}, transitions: {} });
+    expect(effectiveEdition(edition, edits).looks).toEqual({});
   });
 
-  it("returns to the generated original on reset: no look, tweak or transition", () => {
+  it("returns to the generated original on reset: no look, tweak, transition, theme, story card or motion", () => {
     const after = reset();
-    expect(after).toEqual({ preset: null, intensity: 1, tweaks: {}, defaultTransition: null, cutTransitions: {} });
-    expect(effectiveEdition(edition, after)).toEqual({ looks: {}, transitions: {} });
+    expect(after).toEqual({
+      preset: null,
+      custom: null,
+      intensity: 1,
+      tweaks: {},
+      defaultTransition: null,
+      cutTransitions: {},
+      theme: null,
+      storyCard: null,
+      motion: null,
+      beatMotions: {},
+    });
+    expect(effectiveEdition(edition, after)).toEqual(effectiveEdition(edition, NO_EDITS));
     // and a preset applied after a reset starts again from full intensity
     expect(effectiveEdition(edition, applyPreset(after, "newsprint")).looks.b0).toMatchObject({ saturation: 0 });
   });

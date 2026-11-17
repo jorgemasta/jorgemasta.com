@@ -47,6 +47,15 @@ Every change from the upstream files is marked `LAB PATCH` (or `LAB FILE`):
   visitor's transition plays over the beat's first frames, inside its own
   `<Sequence>`, so no beat moves off the voice) and `noBumper` (ids of the first beats of
   stories whose generated story card a visitor transition replaces).
+- `src/Report.tsx`: optional `theme` (plays the whole video in another of the
+  six themes: accent, texture and story card), `storyCard` (the story card's
+  style alone) and `motions` (beat `id` → image motion, for the beats the visitor
+  changed), passed per beat through `BeatMotionContext` (`src/media.tsx`).
+- `src/beats/visuals.tsx`: `ImageBeat` reads `BeatMotionContext`; the motion
+  transform moved out of `MovingImage` into `useMotionTransform` so a framed
+  (`focus`) image can take it too. `src/beats/edits.tsx`: `EditedImage` takes
+  `move` (that transform), which replaces its slow drift. With no visitor
+  motion, both render as upstream.
 - `src/custom/index.ts`: hand-written with edition 078's one custom beat
   (upstream it is generated for every edition).
 
