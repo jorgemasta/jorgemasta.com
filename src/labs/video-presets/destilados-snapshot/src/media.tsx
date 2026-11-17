@@ -11,6 +11,7 @@ import {
   Img as RemotionImg,
   OffthreadVideo as RemotionVideo,
 } from "remotion";
+import { resolveMedia } from "../../media-path";
 
 const PREFIX = "../../media/";
 const files = import.meta.glob<string>("../../media/**/*.{png,jpg,jpeg,webp,gif,svg,mp4,webm,mp3,m4a,wav}", {
@@ -27,10 +28,8 @@ export const MEDIA: ReadonlyMap<string, string> = new Map(
 const PENDING = "pending:";
 
 /** Like Remotion's `staticFile`: the built URL, or a `pending:<path>` marker when missing. */
-export const staticFile = (path: string): string => {
-  const clean = path.replace(/^\/+/, "");
-  return MEDIA.get(clean) ?? `${PENDING}${clean}`;
-};
+export const staticFile = (path: string): string =>
+  resolveMedia(path, MEDIA) ?? `${PENDING}${path.replace(/^\/+/, "")}`;
 
 export const isPending = (src: string | undefined) => !src || src.startsWith(PENDING);
 

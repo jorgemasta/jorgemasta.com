@@ -4,7 +4,7 @@ import { findAt, formatTime, outline, splitAtWord } from "./beat-timeline";
 
 // Frame ranges of edition 78 (see timeline.test.ts): cold open b0–b4 (0–754),
 // intro 754–859, b5 "Muse Spaces" 859–1050 with the voice resuming at 873, …,
-// last beat b31 5000–5122.
+// last beat b31 5000–5120 (edition.test.ts).
 describe("findAt: the beat and word playing at a frame", () => {
   it("finds the first beat and its first word at frame 0", () => {
     const { beat, word } = findAt(edition78, 0);
@@ -28,8 +28,8 @@ describe("findAt: the beat and word playing at a frame", () => {
   });
 
   it("finds nothing past the end", () => {
-    expect(findAt(edition78, 5121).beat?.id).toBe("b31");
-    expect(findAt(edition78, 5122).beat).toBeNull();
+    expect(findAt(edition78, 5119).beat?.id).toBe("b31");
+    expect(findAt(edition78, 5120).beat).toBeNull();
   });
 });
 

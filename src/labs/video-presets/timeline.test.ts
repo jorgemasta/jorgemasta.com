@@ -1,20 +1,22 @@
 import { describe, expect, it } from "vitest";
 import script from "./destilados-snapshot/editions/078/script.en.json";
 import voice from "./destilados-snapshot/editions/078/voice.en.json";
+import { VOICE_DURATION_SEC } from "./edition";
 import { buildTimeline, type Script, type VoiceTiming } from "./timeline";
 
-const edition78 = () => buildTimeline(script as Script, voice as VoiceTiming);
+const edition78 = () => buildTimeline(script as Script, voice as VoiceTiming, { voiceDurationSec: VOICE_DURATION_SEC });
 
 describe("buildTimeline on edition 78 (English)", () => {
-  // Expected values: the published video is 2:51, its chapters sit at
+  // Expected values: the published video is 2:51 (5120 frames in its rendered
+  // timeline.en.json, given the real voice length), its chapters sit at
   // 0:28 / 1:09 / 1:41 / 2:05 / 2:28 (youtube.en.md), and these frame ranges
   // were measured with an independent port of the pipeline's voice.mjs.
   it("places every beat on the published frames", () => {
     const tl = edition78();
-    expect(tl.durationInFrames).toBe(5122);
+    expect(tl.durationInFrames).toBe(5120);
     expect(tl.introAtFrame).toBe(754);
     expect(tl.beats.map((b) => `${b.from}-${b.to}`).join(" ")).toBe(
-      "0-177 177-349 349-488 488-607 607-754 859-1050 1050-1239 1239-1414 1414-1592 1592-1763 1763-1927 1927-2081 2081-2218 2218-2335 2335-2423 2423-2571 2571-2760 2760-2942 2942-3047 3047-3207 3207-3404 3404-3595 3595-3769 3769-3900 3900-4092 4092-4337 4337-4449 4449-4579 4579-4725 4725-4819 4819-5000 5000-5122",
+      "0-177 177-349 349-488 488-607 607-754 859-1050 1050-1239 1239-1414 1414-1592 1592-1763 1763-1927 1927-2081 2081-2218 2218-2335 2335-2423 2423-2571 2571-2760 2760-2942 2942-3047 3047-3207 3207-3404 3404-3595 3595-3769 3769-3900 3900-4092 4092-4337 4337-4449 4449-4579 4579-4725 4725-4819 4819-5000 5000-5120",
     );
   });
 
@@ -33,7 +35,7 @@ describe("buildTimeline on edition 78 (English)", () => {
     ]);
     expect(tl.beats.slice(0, 5).every((b) => b.coldOpen && b.chapterIndex === null)).toBe(true);
     expect(tl.beats[11]).toMatchObject({ chapter: "Muse Spaces", chapterIndex: 0 });
-    expect(tl.chapters.at(-1)?.to).toBe(5122);
+    expect(tl.chapters.at(-1)?.to).toBe(5120);
   });
 
   it("times all 477 spoken words, in order, inside their beat", () => {

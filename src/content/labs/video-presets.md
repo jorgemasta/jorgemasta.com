@@ -7,8 +7,18 @@ mainImage:
   src: /images/lab/video-presets/poster.jpg
   alt: "Distilled #78 thumbnail: Muse Spaces, one description becomes your mini-app"
 attribution: The video pipeline is Antonio Sejas's (Destilados); the editor on top of it is Jorge's.
-# Filled with the media (#81): one line per image source.
-imageCredits: []
+# One line per image source, from the edition's published "Image credits" (youtube.en.md) and gifs.json.
+imageCredits:
+  - Meta Newsroom (Muse Spaces and Muse voice social images, newsroom page screenshots, the Muse character on the poster)
+  - OpenAI / Contentful (Cult.fit social image)
+  - img.destilados (BioBasicsBench illustration)
+  - OpenAI (wet-lab measuring page screenshot)
+  - TechCrunch (Axiom team photo)
+  - Axiom (CFSG blueprint)
+  - Perplexity (Teammates product page screenshot)
+  - Meta, OpenAI, Perplexity and Slack logos
+  - GIFs via GIPHY (StoryBots; Parks and Recreation)
+  - Rights belong to their owners; shown for news reporting and commentary.
 draft: true
 ---
 

@@ -8,7 +8,8 @@ A **fixed snapshot**, not a dependency. It is copied once and never synced
 - Copied: the `Report` composition and what it imports (`src/`), the beat
   visuals edition 078 uses, its custom beat (`src/custom/078/MuseSpaces.tsx`),
   and edition 078's English data (`editions/078/`: script, voice timing, GIF
-  records, sources, published YouTube description).
+  records, sources, published YouTube description), plus the rendered
+  `timeline.en.json` from Antonio's edition-78 media (release `media-078`).
 - Not copied: `Root.tsx`, `index.ts`, `Short.tsx`, `shorts/`, `Thumbnail.tsx`,
   `Banner.tsx`, `google/`, other editions' custom beats, and the offline
   scripts. Media (audio, images, GIFs) lives outside the snapshot, in
@@ -23,7 +24,8 @@ folder is deleted, not synced.
 Every change from the upstream files is marked `LAB PATCH` (or `LAB FILE`):
 
 - `src/media.tsx` (new): `staticFile`, `Img`, `OffthreadVideo` and `Audio`
-  resolve through the Lab's media folder; missing files render an explicit
+  resolve through the Lab's media folder (`../media-path.ts`, which also serves
+  a photo's WebP copy for its `.png`/`.jpg` name); missing files render an explicit
   placeholder (images, clips) or are left out (audio) instead of crashing.
 - `src/beats/visuals.tsx`, `src/beats/edits.tsx`, `src/Intro.tsx`,
   `src/Report.tsx`: import those from `media.tsx` instead of `remotion`.
@@ -49,4 +51,9 @@ Every change from the upstream files is marked `LAB PATCH` (or `LAB FILE`):
   (upstream it is generated for every edition).
 
 The frame-timed timeline the pipeline renders (`timeline.en.json`) is not in
-its repository; `../timeline.ts` rebuilds it from the script and voice timing.
+its repository; `../timeline.ts` rebuilds it from the script and voice timing
+(it also needs the per-word timing the rendered file drops). The rendered file
+came with the media and is kept as the reference: `../edition.ts` takes each
+beat's visual from it (the pipeline fills in image sizes, OCR text boxes and GIF
+credits after the script is written), and `../edition.test.ts` checks that the
+rebuilt timeline lands on its frames.
