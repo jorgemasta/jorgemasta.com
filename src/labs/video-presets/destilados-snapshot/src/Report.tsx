@@ -22,7 +22,16 @@ import type { Sfx, Timeline, TimedBeat } from "./types";
 import * as V from "./beats/visuals";
 
 // LAB PATCH: `filters` = the visitor's look per beat (`b<index>` → CSS filter), applied to images and clips.
-export type ReportProps = { edition: string; lang: Lang; timeline: Timeline | null; filters?: Record<string, string> };
+export type ReportProps = {
+  edition: string;
+  lang: Lang;
+  timeline: Timeline | null;
+  filters?: Record<string, string>;
+  // LAB PATCH: the visitor's transitions. `entrance` wraps a beat's visual (beat id → the beat drawn entering over its
+  // own first frames, or as is); `noBumper` = first beats of stories whose story card a transition replaces.
+  entrance?: (beatId: string, visual: React.ReactNode) => React.ReactNode;
+  noBumper?: readonly string[];
+};
 
 export const calculateReportMetadata: CalculateMetadataFunction<
   ReportProps
@@ -258,7 +267,7 @@ export const storyStarts = (tl: Timeline) => {
   return out;
 };
 
-export const Report: React.FC<ReportProps> = ({ edition, timeline, filters }) => {
+export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entrance, noBumper }) => {
   if (!timeline) return <AbsoluteFill style={{ backgroundColor: color.bg }} />;
   const splitFrame = Math.round(timeline.voiceSplitSec * 30);
   const audio = staticFile(timeline.audio);
@@ -276,7 +285,8 @@ export const Report: React.FC<ReportProps> = ({ edition, timeline, filters }) =>
           <AbsoluteFill>
             {/* LAB PATCH: the beat's look reaches every Img/OffthreadVideo through context. */}
             <BeatFilterContext.Provider value={filters?.[`b${i}`] ?? ""}>
-              <BeatVisual beat={b} edition={edition} />
+              {/* LAB PATCH: the visitor's transition into this beat, if any. */}
+              {entrance ? entrance(`b${i}`, <BeatVisual beat={b} edition={edition} />) : <BeatVisual beat={b} edition={edition} />}
             </BeatFilterContext.Provider>
             {/* 4 Nov 2026: dry cuts between beats (Fireship); the old every-3rd-beat white flash is gone. */}
           </AbsoluteFill>
@@ -294,11 +304,14 @@ export const Report: React.FC<ReportProps> = ({ edition, timeline, filters }) =>
 
       {/* Story separators: a 0.9 s card over the opening of each story's first beat (audio untouched). */}
       {storyStarts(timeline).map((s, k, all) => (
+        // LAB PATCH: a story whose first beat has a visitor transition plays that instead of the card.
+        noBumper?.includes(`b${timeline.beats.findIndex((b) => b.from === s.from)}`) ? null : (
         <Sequence key={`bumper-${k}`} from={s.from} durationInFrames={BUMPER_FRAMES} layout="none">
           <StoryBumper n={k + 1} total={all.length} title={s.chapter} kicker={STRINGS[timeline.lang].story} transition={theme.transition} accent2={theme.accent2} />
           {theme.transition === "glitch" && <Glitch />}
           {s.sfx !== "whoosh" && <Audio src={staticFile("sfx/whoosh.mp3")} volume={0.22} />}
         </Sequence>
+        )
       ))}
 
       <Sequence from={timeline.introAtFrame} durationInFrames={INTRO_FRAMES}>

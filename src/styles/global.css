@@ -8,6 +8,10 @@
 @source not "../labs/video-presets/destilados-snapshot";
 /* Lab logic modules hold no markup. */
 @source not "../labs/**/*.ts";
+/* Lab transitions UI and composition: plain CSS only, and their words ("transition", "ease-in") are class names. */
+@source not "../labs/video-presets/Transitions.tsx";
+@source not "../labs/video-presets/CutEntrance.tsx";
+@source not "../labs/video-presets/composition.tsx";
 
 /* Light only. The palette and type follow docs/positioning.md. */
 @theme {

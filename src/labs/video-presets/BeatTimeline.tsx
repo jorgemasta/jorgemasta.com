@@ -7,11 +7,17 @@
 import React, { memo, useEffect, useMemo, useRef } from "react";
 import { findAt, formatTime, outline, splitAtWord } from "./beat-timeline";
 import { useLabPlayer, usePlayerFrame } from "./player-context";
-import type { LabBeat, TimedWord } from "./timeline";
+import type { Cut, LabBeat, TimedWord } from "./timeline";
 import "./beat-timeline.css";
 
-export const BeatTimeline: React.FC = () => {
+export type BeatTimelineProps = {
+  /** Draws the cut into a beat, between its row and the previous one (transitions, #85). */
+  renderCut?: (cut: Cut) => React.ReactNode;
+};
+
+export const BeatTimeline: React.FC<BeatTimelineProps> = ({ renderCut }) => {
   const { playerRef, timeline } = useLabPlayer();
+  const cutInto = useMemo(() => new Map(timeline.cuts.map((c) => [c.toBeat, c])), [timeline]);
   const frame = usePlayerFrame();
   const { beat: current, word } = findAt(timeline, frame);
   const sections = useMemo(() => outline(timeline), [timeline]);
@@ -49,16 +55,21 @@ export const BeatTimeline: React.FC = () => {
                 <span className="lab-tl-time">{formatTime(section.from, timeline.fps)}</span>
               </button>
               <ol className="lab-tl-beats">
-                {section.beats.map((beat) => (
-                  <BeatRow
-                    key={beat.id}
-                    beat={beat}
-                    fps={timeline.fps}
-                    current={beat.id === currentId}
-                    word={beat.id === currentId ? word : null}
-                    onSeek={seek}
-                  />
-                ))}
+                {section.beats.map((beat) => {
+                  const cut = renderCut && cutInto.get(beat.id);
+                  return (
+                    <React.Fragment key={beat.id}>
+                      {cut && renderCut(cut)}
+                      <BeatRow
+                        beat={beat}
+                        fps={timeline.fps}
+                        current={beat.id === currentId}
+                        word={beat.id === currentId ? word : null}
+                        onSeek={seek}
+                      />
+                    </React.Fragment>
+                  );
+                })}
               </ol>
             </li>
           );

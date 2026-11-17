@@ -37,6 +37,10 @@ Every change from the upstream files is marked `LAB PATCH` (or `LAB FILE`):
   CSS filter) on `Report`, passed per beat through `BeatFilterContext` and
   added after the own filter of every `Img` and `OffthreadVideo` (the Lab's
   look presets).
+- `src/Report.tsx`: optional `entrance` (wraps a beat's visual so the
+  visitor's transition plays over the beat's first frames, inside its own
+  `<Sequence>`, so no beat moves off the voice) and `noBumper` (first beats of
+  stories whose generated story card a visitor transition replaces).
 - `src/custom/index.ts`: hand-written with edition 078's one custom beat
   (upstream it is generated for every edition).
 

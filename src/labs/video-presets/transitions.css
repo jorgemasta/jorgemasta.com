@@ -1,0 +1,355 @@
+/* The Lab's transitions panel and the cut markers on the beat timeline (Transitions.tsx).
+   Plain CSS, loaded with the editor only. Only theme variables the site already uses:
+   a new one would land in the stylesheet every page shares. */
+.lab-tx {
+  margin-top: 1.5rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  color: var(--color-charcoal);
+}
+
+.lab-tx__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.lab-tx__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-terracotta);
+}
+
+.lab-tx__status {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+:where(.lab-tx) button,
+:where(.lab-tx) select {
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+:where(.lab-tx) button {
+  cursor: pointer;
+}
+
+.lab-tx button:focus-visible,
+.lab-tx select:focus-visible,
+.lab-tx input:focus-visible {
+  outline: 2px solid var(--color-terracotta);
+  outline-offset: 2px;
+}
+
+/* Target: every story change, or the cut picked on the timeline. */
+.lab-tx__target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.lab-tx__chip {
+  border: 1px solid var(--color-rule);
+  border-radius: 9999px;
+  padding: 0.3rem 0.8rem;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.lab-tx__chip[aria-pressed="true"],
+.lab-tx__chip[data-on] {
+  border-color: var(--color-green);
+  box-shadow: inset 0 0 0 1px var(--color-green);
+  color: var(--color-green);
+}
+
+.lab-tx__hint {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+/* The library: a strip that snaps on phones, a row of four from tablet width. */
+.lab-tx__library {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(7.5rem, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+  padding: 0.25rem;
+  margin-inline: -0.25rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.lab-tx__library::-webkit-scrollbar {
+  display: none;
+}
+
+.lab-tx__card {
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 0.5rem;
+  background: var(--color-paper);
+  text-align: left;
+  user-select: none;
+}
+
+.lab-tx__card[aria-pressed="true"] {
+  border-color: var(--color-terracotta);
+  box-shadow: inset 0 0 0 1px var(--color-terracotta);
+}
+
+.lab-tx__card:active,
+.lab-tx__button:active,
+.lab-tx__chip:active,
+.lab-tx__disclosure:active {
+  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+/* A two-frame demo: the outgoing frame (A) and the incoming one (B) entering over it. */
+.lab-tx__demo {
+  position: relative;
+  display: block;
+  height: 2.25rem;
+  overflow: hidden;
+  border-radius: 0.3rem;
+}
+
+.lab-tx__demo-a,
+.lab-tx__demo-b {
+  position: absolute;
+  inset: 0;
+}
+
+.lab-tx__demo-a {
+  background: linear-gradient(135deg, #3f74b1, #7d5aa8);
+}
+
+.lab-tx__demo-b {
+  background:
+    radial-gradient(circle at 70% 40%, #e7c7a6 0 22%, transparent 23%),
+    linear-gradient(135deg, #e39b48, #c8453a);
+}
+
+.lab-tx__name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.lab-tx__badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-green);
+}
+
+.lab-tx__blurb {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--color-muted);
+}
+
+.lab-tx__disclosure {
+  margin-top: 0.5rem;
+  border: 0;
+  border-radius: 0.375rem;
+  padding: 0.3rem 0.25rem;
+  background: transparent;
+  color: var(--color-green);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.lab-tx__settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 0.5rem;
+}
+
+.lab-tx__field {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.875rem;
+}
+
+.lab-tx__field > span {
+  flex: none;
+  width: 4.5rem;
+  color: var(--color-muted);
+}
+
+.lab-tx__field input,
+.lab-tx__field select {
+  flex: 1;
+  min-width: 0;
+}
+
+.lab-tx__field input {
+  accent-color: var(--color-green);
+}
+
+.lab-tx__field select {
+  border: 1px solid var(--color-rule);
+  border-radius: 0.375rem;
+  padding: 0.3rem 0.4rem;
+  background: var(--color-paper);
+}
+
+.lab-tx__field :disabled {
+  opacity: 0.45;
+}
+
+.lab-tx__value {
+  min-width: 4.5ch;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+  text-align: right;
+}
+
+.lab-tx__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.lab-tx__button {
+  border: 1px solid var(--color-rule);
+  border-radius: 9999px;
+  padding: 0.4rem 1rem;
+  background: transparent;
+  color: var(--color-green);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.lab-tx__button--primary {
+  border-color: var(--color-green);
+  background: var(--color-green);
+  color: var(--color-paper);
+}
+
+.lab-tx__button--primary:active {
+  background: color-mix(in srgb, var(--color-chocolate) 25%, var(--color-green));
+}
+
+.lab-tx__button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Cuts on the beat timeline: a thin divider between rows with the transition it carries. */
+.lab-tl-cut {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0 4.375rem;
+}
+
+.lab-tl-cut::before,
+.lab-tl-cut::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-rule) 70%, transparent);
+}
+
+.lab-tl-cut::before {
+  flex: 0 0 0.75rem;
+}
+
+.lab-tl .lab-tl-cut-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.375rem;
+  width: auto;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  padding: 0.0625rem 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lab-tl-cut[data-source="default"] .lab-tl-cut-button {
+  color: var(--color-green);
+}
+
+.lab-tl-cut[data-source="override"] .lab-tl-cut-button {
+  border-color: var(--color-terracotta);
+  color: var(--color-terracotta);
+}
+
+.lab-tl .lab-tl-cut-button[aria-pressed="true"] {
+  border-color: var(--color-green);
+  background: var(--color-green);
+  color: var(--color-paper);
+}
+
+.lab-tl-cut-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+.lab-tl .lab-tl-cut-button:active {
+  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lab-tx__card:hover,
+  .lab-tx__chip:hover,
+  .lab-tx__button:hover {
+    border-color: var(--color-terracotta);
+  }
+
+  .lab-tx__button--primary:hover:not(:disabled) {
+    border-color: var(--color-green);
+    background: color-mix(in srgb, var(--color-chocolate) 15%, var(--color-green));
+  }
+
+  .lab-tx__disclosure:hover {
+    text-decoration: underline;
+  }
+
+  .lab-tl .lab-tl-cut-button:hover {
+    border-color: currentColor;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lab-tx__card,
+  .lab-tx__chip,
+  .lab-tx__button {
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+}

@@ -1,0 +1,125 @@
+// The Lab's transition library: how one beat hands over to the next. Each
+// transition is a named set of the same few settings (kind, duration, easing,
+// direction), which the visitor can open and adjust.
+//
+// A transition never moves a beat. It plays over the opening frames of the
+// incoming beat, starting on the cut, so every beat stays where the voice puts
+// it (overlapping beats, as Remotion's TransitionSeries does, would shorten the
+// video and drift the pictures away from the voice).
+
+export type TransitionKind = "cut" | "whip" | "slide" | "zoom";
+export type TransitionEasing = "linear" | "ease-in" | "ease-out" | "ease-in-out" | "overshoot";
+/** Where the incoming beat comes from (whip, slide), or which way it scales (zoom). */
+export type TransitionDirection = "left" | "right" | "up" | "down" | "in" | "out";
+
+export type Transition = {
+  kind: TransitionKind;
+  /** Length in frames (30 fps). A cut has none. */
+  durationFrames: number;
+  easing: TransitionEasing;
+  direction: TransitionDirection;
+};
+
+export type TransitionPreset = { id: TransitionKind; name: string; blurb: string; settings: Transition };
+
+export const TRANSITIONS = [
+  {
+    id: "cut",
+    name: "Cut",
+    blurb: "A dry cut, no card.",
+    settings: { kind: "cut", durationFrames: 0, easing: "linear", direction: "left" },
+  },
+  {
+    id: "whip",
+    name: "Whip",
+    blurb: "A fast blurred pan.",
+    settings: { kind: "whip", durationFrames: 8, easing: "ease-out", direction: "right" },
+  },
+  {
+    id: "slide",
+    name: "Slide",
+    blurb: "The next beat slides in.",
+    settings: { kind: "slide", durationFrames: 14, easing: "ease-in-out", direction: "right" },
+  },
+  {
+    id: "zoom",
+    name: "Zoom",
+    blurb: "The next beat punches in.",
+    settings: { kind: "zoom", durationFrames: 12, easing: "overshoot", direction: "in" },
+  },
+] as const satisfies readonly TransitionPreset[];
+
+export const transitionPreset = (kind: TransitionKind): TransitionPreset => TRANSITIONS.find((t) => t.id === kind)!;
+
+/** The directions that mean something for each kind. */
+export const DIRECTIONS: Record<TransitionKind, readonly TransitionDirection[]> = {
+  cut: [],
+  whip: ["left", "right", "up", "down"],
+  slide: ["left", "right", "up", "down"],
+  zoom: ["in", "out"],
+};
+
+export const EASINGS: readonly TransitionEasing[] = ["linear", "ease-in", "ease-out", "ease-in-out", "overshoot"];
+
+/**
+ * Each easing as a cubic Bézier, shared by the player (Remotion's
+ * `Easing.bezier`) and the editor's small previews (CSS), so both move alike.
+ */
+export const EASING_CURVES: Record<TransitionEasing, readonly [number, number, number, number]> = {
+  linear: [0, 0, 1, 1],
+  "ease-in": [0.32, 0, 0.67, 0],
+  "ease-out": [0.33, 1, 0.68, 1],
+  "ease-in-out": [0.65, 0, 0.35, 1],
+  overshoot: [0.34, 1.56, 0.64, 1],
+};
+
+export const cssEasing = (e: TransitionEasing): string => `cubic-bezier(${EASING_CURVES[e].join(", ")})`;
+
+/**
+ * The incoming beat's pose `p` (0–1) of the way through a transition: where it
+ * sits (in % of the frame), its scale, blur and opacity. 1 is the beat at rest.
+ */
+export type Pose = { x: number; y: number; scale: number; blur: number; opacity: number };
+
+export const poseAt = (t: Transition, p: number): Pose => {
+  const rest: Pose = { x: 0, y: 0, scale: 1, blur: 0, opacity: 1 };
+  const left = 1 - p; // how far there is still to go
+  const away = (d: number) => ({
+    x: t.direction === "left" ? -d : t.direction === "right" ? d : 0,
+    y: t.direction === "up" ? -d : t.direction === "down" ? d : 0,
+  });
+  switch (t.kind) {
+    case "cut":
+      return rest;
+    case "slide":
+      return { ...rest, ...away(100 * left) };
+    case "whip":
+      // Comes in fast from off-frame, smeared until it lands.
+      return { ...rest, ...away(100 * left), blur: 36 * Math.min(1, Math.max(0, left) * 1.5) };
+    case "zoom":
+      return { ...rest, scale: 1 + (t.direction === "out" ? -0.45 : 0.6) * left, opacity: Math.min(1, Math.max(0, p * 2.5)) };
+  }
+};
+
+/** A pose as CSS (transform, filter, opacity). */
+export const poseStyle = (pose: Pose): { transform: string; filter?: string; opacity: number } => ({
+  transform: `translate(${pose.x}%, ${pose.y}%) scale(${pose.scale})`,
+  filter: pose.blur > 0 ? `blur(${pose.blur}px)` : undefined,
+  opacity: pose.opacity,
+});
+
+/** Duration bounds the settings panel offers, in frames. */
+export const MIN_FRAMES = 4;
+export const MAX_FRAMES = 30;
+
+/** Adjusts a transition's settings, keeping them valid for its kind. */
+export const adjustTransition = (t: Transition, change: Partial<Omit<Transition, "kind">>): Transition => {
+  const next = { ...t, ...change };
+  if (t.kind === "cut") return { ...next, durationFrames: 0 };
+  next.durationFrames = Math.round(Math.min(MAX_FRAMES, Math.max(MIN_FRAMES, next.durationFrames)));
+  if (!DIRECTIONS[t.kind].includes(next.direction)) next.direction = t.direction;
+  return next;
+};
+
+export const sameTransition = (a: Transition | null | undefined, b: Transition | null | undefined): boolean =>
+  !!a && !!b && a.kind === b.kind && a.durationFrames === b.durationFrames && a.easing === b.easing && a.direction === b.direction;
