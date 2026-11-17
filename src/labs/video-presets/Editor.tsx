@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
 import { LabComposition, type LabCompositionProps } from "./composition";
 import { EDITION, edition78 } from "./edition";
+import { BeatTimeline } from "./BeatTimeline";
 import { LabPlayerProvider } from "./player-context";
 
 export type EditorProps = Record<string, never>;
@@ -32,6 +33,7 @@ export const Editor: React.FC<EditorProps> = () => {
           style={{ width: "100%", aspectRatio: `${tl.width} / ${tl.height}` }}
         />
       </div>
+      <BeatTimeline />
     </LabPlayerProvider>
   );
 };
