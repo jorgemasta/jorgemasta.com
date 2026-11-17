@@ -32,7 +32,7 @@ const projects = () =>
           { value: "0", label: "ads" },
         ],
       },
-      `Each day it reads 26 newsletters, plus 9 outlets directly, and condenses them into a few stories, each with context and an honest opinion.
+      `Every morning it reads dozens of newsletters and outlets and keeps the few stories worth a reader's time, each with context and an honest opinion.
 
 Subscribe at https://destilados.tokenizadospodcast.com/subscribe?utm_source=jorgemasta.com&utm_medium=homepage&utm_campaign=building-section`
     ),
@@ -116,6 +116,7 @@ const matcher = createMatcher({ stores: ["${LONG_HOST}"], threshold: 0.92 });
       {
         title: "Donaudampfschifffahrtsgesellschaftskapitänsmütze",
         publishedAt: "1999-12-31",
+        featured: true,
         excerpt: `Inventory sync for ${LONG_HOST} and its 14 regional storefronts`,
         url: `https://${LONG_HOST}/es/tiendas/inventario-en-tiempo-real`,
         stats: [
@@ -144,10 +145,24 @@ const endpoint = "https://${LONG_HOST}/api/v2/inventory/reconcile?since=1999-12-
 
 ![Arquitectura completa del sistema](${placeholderImage(4000, 12000, "Arquitectura")})`
     ),
+    // Earlier work that was a co-founded company (as AIOS is): no url, no image, no stats,
+    // a German compound in the excerpt, an excerpt at the 200-character limit.
+    project(
+      "aios",
+      {
+        title: "AIOS",
+        publishedAt: "2025-01-01",
+        featured: true,
+        excerpt:
+          "Produktentwicklungsverantwortlichkeitenübernahme for mostly Spanish SMEs that wanted an edge from AI. We meant to productise it; it became a conventional agency, which we had not set out to b.",
+      },
+      "I co-founded it. More than 10 companies."
+    ),
     // Thai title with no spaces, RTL excerpt, leap day, no image, empty body.
     project("thai", {
       title: "ระบบจองตั๋วคอนเสิร์ตแบบไร้เงินสด",
       publishedAt: "2016-02-29",
+      featured: true,
       excerpt: "منصة لبيع التذاكر والدفع بدون تلامس في المهرجانات",
     }),
   ]);
@@ -271,24 +286,26 @@ const roles: Role[] = [
     impact: "",
     url: `https://${LONG_HOST}`,
   },
-  // A German compound in running text.
+  // A German compound in running text, and an impact several sentences long.
   {
-    company: "AIOS",
-    title: "Co-founder",
-    start: "2025",
-    end: "Aug 2026",
-    impact: "Took on Produktentwicklungsverantwortlichkeitenübernahme in AI teams.",
+    company: "Nexcess (formerly Liquid Web)",
+    title: "Engineer III",
+    start: "Mar 2024",
+    end: "Sep 2026",
+    impact:
+      "Took on Produktentwicklungsverantwortlichkeitenübernahme for the customer portal. Led the move from GitLab to GitHub Actions, rebuilt the checkout in React, integrated Salesforce, built a back-office for customer chat, and helped about 25 engineers adopt AI-assisted development with AGENTS.md, Claude skills and OpenSpec.",
+    url: "https://www.nexcess.net",
   },
   // Long company, no url, an unbreakable package name.
   {
     company: "Laboratorio de Inteligencia Artificial Aplicada de Canarias",
-    title: "Co-founder",
+    title: "Senior Software Engineer",
     start: "Mar 2020",
     end: "Mar 2024",
     impact: "Shipped @northwind/experimental-server-components-runtime-instrumentation used by 1,284,000+ developers.",
   },
   // One-letter company and title, single-year dates.
-  { company: "Q", title: "CTO", start: "2017", end: "2017", impact: "Built it." },
+  { company: "Q", title: "QA", start: "2017", end: "2017", impact: "Tested it." },
   // Very old.
   {
     company: "Secret Source",

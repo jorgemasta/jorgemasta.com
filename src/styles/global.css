@@ -21,6 +21,18 @@
   --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-serif: "Newsreader Variable", Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /*
+   * Motion. Every transition and animation uses these; nothing hand-typed.
+   * --ease-standard is the plain curve for colour fades and the crossfade;
+   * --ease-out-strong is for anything that moves or arrives.
+   */
+  --ease-standard: ease;
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --duration-fast: 150ms;
+  --duration-enter: 260ms;
+  --duration-page: 200ms;
+  --stagger: 50ms;
 }
 
 @layer base {
@@ -30,6 +42,8 @@
     color-scheme: light;
     -webkit-font-smoothing: antialiased;
     scroll-behavior: smooth;
+    /* No sideways jump of the centred layout when a page gains a scrollbar. */
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -54,11 +68,21 @@
     text-decoration: underline;
     text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
     text-underline-offset: 0.2em;
-    transition: text-decoration-color 0.15s;
+    transition-property: color, text-decoration-color;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-standard);
   }
 
-  a:hover {
-    text-decoration-color: currentColor;
+  /* Hover only where hover is real, so a tap on a phone leaves no sticky underline. */
+  @media (hover: hover) {
+    a:hover {
+      text-decoration-color: currentColor;
+    }
+  }
+
+  p,
+  dd {
+    text-wrap: pretty;
   }
 
   :focus-visible {
@@ -89,18 +113,81 @@
   }
 
   /*
-   * A link that reads as an action: no underline until hover. Inline, so when a
-   * long label wraps the arrow (joined by a no-break space) follows the last word.
+   * A link that reads as an action: the underline stays transparent until hover,
+   * so it fades in. Inline, so a long label wraps; keep the .arrow inside a
+   * whitespace-nowrap span with the last word, since an inline-block allows a
+   * break before it.
    */
   .action {
     display: inline;
     font-weight: 500;
-    text-decoration: none;
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
     overflow-wrap: anywhere;
+    transition: text-decoration-color var(--duration-fast) var(--ease-standard);
   }
 
-  .action:hover {
-    text-decoration: underline;
+  /*
+   * A quiet link: the underline is always there but transparent, so on hover it
+   * fades in instead of popping in. It carries its own transition because it
+   * also sits on non-links (a title inside a card link).
+   */
+  .link-quiet {
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    transition-property: color, text-decoration-color;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .action:hover,
+    .link-quiet:hover,
+    .group:hover .link-quiet {
+      text-decoration-color: currentColor;
+    }
+  }
+
+  /* Keyboard users get the same title underline when they tab onto a card. */
+  .group:focus-visible .link-quiet {
+    text-decoration-color: currentColor;
+  }
+
+  /* Header section link. The current section carries a terracotta underline. */
+  .nav-link {
+    color: var(--color-charcoal);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.35em;
+    text-decoration-color: transparent;
+  }
+
+  @media (hover: hover) {
+    .nav-link:hover {
+      text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    }
+  }
+
+  .nav-link[aria-current="page"] {
+    color: var(--color-green);
+    text-decoration-color: var(--color-terracotta);
+    text-decoration-thickness: 2px;
+  }
+
+  /*
+   * The call-to-action arrow nudges forward on hover. The no-break space sits
+   * inside the span: an inline-block gets no underline from its link, so the
+   * underline ends cleanly at the last word instead of under a blank gap.
+   */
+  .arrow {
+    display: inline-block;
+    transition: transform var(--duration-fast) var(--ease-out-strong);
+  }
+
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    a:hover .arrow {
+      transform: translateX(3px);
+    }
   }
 
   .button {
@@ -115,12 +202,25 @@
     text-decoration: none;
     /* At large text sizes a long word breaks rather than pushing the button off a phone. */
     overflow-wrap: anywhere;
-    transition: background-color 0.15s;
+    transition:
+      background-color var(--duration-fast) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-out-strong);
   }
 
-  .button:hover {
-    background: var(--color-green-soft);
-    text-decoration: none;
+  @media (hover: hover) {
+    .button:hover {
+      background: var(--color-green-soft);
+    }
+  }
+
+  .button:active {
+    transform: scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .button:active {
+      transform: none;
+    }
   }
 
   .badge-archive {
@@ -133,33 +233,25 @@
     font-weight: 500;
   }
 
-  .prose {
-    --tw-prose-body: var(--color-charcoal);
-    --tw-prose-headings: var(--color-green);
-    --tw-prose-lead: var(--color-charcoal);
-    --tw-prose-links: var(--color-green);
-    --tw-prose-bold: var(--color-chocolate);
-    --tw-prose-counters: var(--color-muted);
-    --tw-prose-bullets: var(--color-terracotta);
-    --tw-prose-hr: var(--color-rule);
-    --tw-prose-quotes: var(--color-charcoal);
-    --tw-prose-quote-borders: var(--color-terracotta);
-    --tw-prose-captions: var(--color-muted);
-    --tw-prose-code: var(--color-chocolate);
-    --tw-prose-pre-code: #e6e1d6;
-    --tw-prose-pre-bg: #2a2c2a;
-    --tw-prose-th-borders: var(--color-rule);
-    --tw-prose-td-borders: var(--color-rule);
+  /* A hairline edge that reads on dark and white screenshots alike. */
+  .card-img,
+  .prose :where(img) {
+    outline: 1px solid color-mix(in srgb, var(--color-chocolate) 14%, transparent);
+    outline-offset: -1px;
   }
 
-  .prose :where(h1, h2, h3, h4) {
-    font-family: var(--font-serif);
-    font-weight: 500;
+  .card-img {
+    transition: outline-color var(--duration-fast) var(--ease-standard);
   }
 
-  .prose :where(blockquote) {
-    font-style: normal;
-    font-weight: 400;
+  @media (hover: hover) {
+    .group:hover .card-img {
+      outline-color: color-mix(in srgb, var(--color-chocolate) 28%, transparent);
+    }
+  }
+
+  .group:focus-visible .card-img {
+    outline-color: color-mix(in srgb, var(--color-chocolate) 28%, transparent);
   }
 
   /* Long compound words in text wrap instead of pushing the page wider than a phone. */
@@ -200,8 +292,115 @@
     overflow-wrap: normal;
     font-variant-numeric: tabular-nums;
   }
+}
 
-  .prose :where(pre) {
-    border-radius: 8px;
+/*
+ * Overrides of the typography plugin. The plugin emits into the utilities
+ * layer, which beats any components rule, so these stay unlayered.
+ */
+.prose {
+  --tw-prose-body: var(--color-charcoal);
+  --tw-prose-headings: var(--color-green);
+  --tw-prose-lead: var(--color-charcoal);
+  --tw-prose-links: var(--color-green);
+  --tw-prose-bold: var(--color-chocolate);
+  --tw-prose-counters: var(--color-muted);
+  --tw-prose-bullets: var(--color-terracotta);
+  --tw-prose-hr: var(--color-rule);
+  --tw-prose-quotes: var(--color-chocolate);
+  --tw-prose-quote-borders: var(--color-terracotta);
+  --tw-prose-captions: var(--color-muted);
+  --tw-prose-code: var(--color-chocolate);
+  --tw-prose-pre-code: #e6e1d6;
+  --tw-prose-pre-bg: #2a2c2a;
+  --tw-prose-th-borders: var(--color-rule);
+  --tw-prose-td-borders: var(--color-rule);
+}
+
+.prose :where(h1, h2, h3, h4) {
+  font-family: var(--font-serif);
+  font-weight: 500;
+}
+
+.prose :where(blockquote) {
+  border-inline-start-width: 2px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+/* No fake curly quotes around notes and TLDRs. */
+.prose :where(blockquote p:first-of-type)::before,
+.prose :where(blockquote p:last-of-type)::after {
+  content: none;
+}
+
+.prose :where(pre) {
+  border-radius: 8px;
+}
+
+/*
+ * Body links match the rest of the site: a 35% underline that fades to full on
+ * hover. The plugin's text-decoration shorthand would otherwise reset the colour.
+ */
+.prose :where(a):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+}
+
+@media (hover: hover) {
+  .prose :where(a:hover):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+    text-decoration-color: currentColor;
+  }
+}
+
+/*
+ * Cross-page crossfade with no JS. The masthead holds still while the content
+ * fades. Browsers without support navigate normally.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+}
+
+.site-header {
+  view-transition-name: site-header;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-page);
+  animation-timing-function: var(--ease-standard);
+}
+
+/* The masthead swaps in place: no movement and no double-image fade. */
+::view-transition-group(site-header),
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+::view-transition-old(site-header) {
+  display: none;
+}
+
+/*
+ * Home hero: one calm arrival on first paint. Visible by default. It starts
+ * at 0.01, not 0, so the h1 still counts as painted for LCP.
+ *
+ * It also replays, on purpose, when navigating back to the home page inside
+ * the root crossfade. Suppressing it with :active-view-transition would only
+ * defer it: the animation restarts once the transition ends, which is worse.
+ * Fade plus an 8px rise, 360ms in total, stays calm.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-enter {
+    animation: hero-enter var(--duration-enter) var(--ease-out-strong) backwards;
+    animation-delay: calc(var(--i, 0) * var(--stagger));
+  }
+}
+
+@keyframes hero-enter {
+  from {
+    opacity: 0.01;
+    transform: translateY(8px);
   }
 }

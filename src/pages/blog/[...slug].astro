@@ -41,7 +41,7 @@ const { Content } = await render(post);
         <img
           src={post.data.mainImage.src}
           alt={post.data.mainImage.alt}
-          class="mt-10 max-h-[400px] w-full rounded-md object-cover object-top"
+          class="card-img mt-10 max-h-[400px] w-full rounded-md object-cover object-top"
         />
       )
     }
@@ -53,11 +53,11 @@ const { Content } = await render(post);
         <p class="mt-12 border-t border-rule pt-5 text-sm text-muted">
           <a
             href={post.data.episode}
-            class="underline-offset-4 hover:text-green hover:underline"
+            class="link-quiet hover:text-green"
             target="_blank"
             rel="noopener noreferrer"
           >
-            From an episode of Tokenizados&nbsp;<span aria-hidden="true">→</span>
+            From an episode of <span class="whitespace-nowrap">Tokenizados<span class="arrow" aria-hidden="true">&nbsp;→</span></span>
           </a>
         </p>
       )
