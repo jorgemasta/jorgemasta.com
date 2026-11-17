@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Data = { title: string; publishedAt: Date; status: "building" | "earlier"; featured: boolean; draft: boolean };
 const collection: { id: string; data: Data }[] = [];
@@ -9,7 +9,7 @@ vi.mock("astro:content", () => ({
     filter ? collection.filter(filter) : collection,
 }));
 
-const { getHomepageProjects } = await import("./content");
+const { getHomepageProjects, getLabs } = await import("./content");
 
 const project = (id: string, publishedAt: string, more: Partial<Data> = {}) => ({
   id,
@@ -42,5 +42,28 @@ describe("getHomepageProjects", () => {
     );
 
     expect(ids((await getHomepageProjects()).earlier)).toEqual(["aios", "food-to-bento", "kontroloo"]);
+  });
+});
+
+describe("getLabs", () => {
+  beforeEach(() => {
+    collection.length = 0;
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns published Labs newest first", async () => {
+    collection.push(project("first", "2026-01-10"), project("latest", "2026-11-01"), project("middle", "2026-06-01"));
+
+    expect(ids(await getLabs())).toEqual(["latest", "middle", "first"]);
+  });
+
+  it("leaves drafts out of a build", async () => {
+    vi.stubEnv("DEV", false);
+    collection.push(project("published", "2026-06-01"), project("draft", "2026-11-01", { draft: true }));
+
+    expect(ids(await getLabs())).toEqual(["published"]);
   });
 });

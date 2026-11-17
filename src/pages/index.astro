@@ -6,12 +6,13 @@ import {
   getCurrentPosts,
   getEpisodeCount,
   getHomepageProjects,
+  getLabs,
   getProjectHref,
   getRoles,
   getShownPodcast,
 } from "../lib/content";
 import { EMAIL, SITE_DESCRIPTION, SITE_TITLE, TOKENIZADOS } from "../lib/consts";
-import { formatDate, getBlogUrl } from "../lib/utils";
+import { formatDate, getBlogUrl, getLabUrl } from "../lib/utils";
 import { hostname, withTail } from "../lib/hostname";
 
 const { building: buildingProjects, earlier } = await getHomepageProjects();
@@ -23,6 +24,7 @@ const building = await Promise.all(
   }))
 );
 
+const labs = await getLabs();
 const roles = await getRoles();
 const notes = (await getCurrentPosts()).slice(0, 3);
 const episodeCount = getEpisodeCount(await getShownPodcast());
@@ -91,7 +93,7 @@ const year = (date: Date) => date.getUTCFullYear();
   }
 
   {
-    (building.length > 0 || earlier.length > 0) && (
+    (building.length > 0 || labs.length > 0 || earlier.length > 0) && (
       <section id="building" class="mx-auto mt-24 max-w-5xl px-4 sm:px-6">
         <h2 class="section-heading">Building on my own</h2>
         {building.length > 0 && (
@@ -132,6 +134,27 @@ const year = (date: Date) => date.getUTCFullYear();
             </div>
           </article>
         ))}
+
+        {labs.length > 0 && (
+          <div class="mt-16">
+            <h3 class="eyebrow font-sans">Labs</h3>
+            <ul class="mt-4">
+              {labs.map((lab) => (
+                <li class="grid grid-cols-1 gap-x-10 gap-y-1 border-t border-rule py-4 sm:grid-cols-[9rem_minmax(0,1fr)]">
+                  <p class="pt-0.5 font-mono text-xs text-muted">
+                    <time datetime={lab.data.publishedAt.toISOString()}>{year(lab.data.publishedAt)}</time>
+                  </p>
+                  <p class="min-w-0 leading-relaxed text-muted wrap-anywhere">
+                    <span class="font-medium text-charcoal">
+                      <a href={getLabUrl(lab.id)}>{lab.data.title}</a>
+                    </span>
+                    . <span dir="auto">{lab.data.question}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {earlier.length > 0 && (
           <div class="mt-16">

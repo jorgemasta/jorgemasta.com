@@ -19,6 +19,10 @@ export function getProjectUrl(id: string) {
   return `/projects/${id}/`;
 }
 
+export function getLabUrl(id: string) {
+  return `/lab/${id}/`;
+}
+
 export function formatDate(date: Date) {
   // Content dates are UTC midnight, so the shown day must not depend on the build machine's zone.
   return date.toLocaleDateString("en-US", {
