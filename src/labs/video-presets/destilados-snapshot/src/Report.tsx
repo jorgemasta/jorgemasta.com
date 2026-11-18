@@ -329,7 +329,7 @@ export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entr
       {/* Theme texture over the beats, under the separators and the top bar (5 Nov 2026). */}
       <ThemeTexture texture={theme.texture} accent2={theme.accent2} />
 
-      {/* Story separators: a 0.9 s card over the opening of each story's first beat (audio untouched). */}
+      {/* Story separators: a 1.8 s card (LAB PATCH: was 0.9 s) over the opening of each story's first beat (audio untouched). */}
       {storyStarts(timeline).map((s, k, all) => (
         // LAB PATCH: a story whose first beat has a visitor transition plays that instead of the card.
         s.id && noBumper?.includes(s.id) ? null : (

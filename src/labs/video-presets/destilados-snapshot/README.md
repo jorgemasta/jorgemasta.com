@@ -64,6 +64,8 @@ Every change from the upstream files is marked `LAB PATCH` (or `LAB FILE`):
   (`focus`) image can take it too. `src/beats/edits.tsx`: `EditedImage` takes
   `move` (that transform), which replaces its slow drift. With no visitor
   motion, both render as upstream.
+- `src/StoryBumper.tsx`: `BUMPER_FRAMES` is 54 (1.8 s) instead of 27, so the
+  story card holds long enough to read; its entrance and exit keep their speed.
 - `src/custom/index.ts`: hand-written with edition 078's one custom beat
   (upstream it is generated for every edition).
 

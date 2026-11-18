@@ -7,7 +7,8 @@ import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { color, display, mono } from "./theme";
 import type { Transition } from "./themes";
 
-export const BUMPER_FRAMES = 27;
+// LAB PATCH: held 1.8 s instead of 0.9 s (27 frames), so the card reads; entrance and exit keep their speed.
+export const BUMPER_FRAMES = 54;
 
 const ease = Easing.inOut(Easing.cubic);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
