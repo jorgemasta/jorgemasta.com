@@ -121,12 +121,12 @@ export const Editor: React.FC = () => {
 
 // Wide, tall-enough windows get the studio layout (studio-layout.ts): the video, its reset bar
 // and the beat timeline in a stage that stays in view, the other controls in a panel beside it
-// that scrolls with the page. The stage (video first) and the panel. Elsewhere both wrappers are display: contents, so the
-// player stays a direct child of .lab-editor (the phone sticky rule relies on it). The timeline
-// and its inspector are placed in the DOM where they show, so tab order follows what is seen:
-// in the studio the timeline sits under the video and the inspector tops the panel, like a
-// properties panel that follows the selection; elsewhere both come after the transitions.
-// Transitions and the timeline share the cut being edited.
+// that scrolls with the page. Elsewhere both wrappers are display: contents, so the player
+// stays a direct child of .lab-editor (the phone sticky rule relies on it). The timeline and
+// its inspector are placed in the DOM where they show, so tab order follows what is seen:
+// in the studio the timeline sits under the video (one tab stop: arrows move inside it) and
+// the inspector tops the panel, like a properties panel that follows the selection; elsewhere
+// both come after the transitions. Transitions and the timeline share the cut being edited.
 const EditorLayout: React.FC<{
   lab: LabEdits;
   player: React.ReactNode;
@@ -137,7 +137,19 @@ const EditorLayout: React.FC<{
 }> = ({ lab, player, resetBar, nowTweak, timeline, inspector }) => {
   const studio = useStudio();
   const [target, setTarget] = useState<CutTarget>(null);
-  const renderCut = useCutMarkers(lab, target, setTarget);
+  // Picking a cut on the timeline edits it in the transitions section. In the studio that
+  // section is further down the panel: bring it just into view (the stage stays pinned) so
+  // the pick shows its effect beside the video. Focus stays on the marker.
+  const panel = useRef<HTMLDivElement>(null);
+  const [picks, setPicks] = useState(0);
+  const pickCut = useCallback((t: CutTarget) => {
+    setTarget(t);
+    setPicks((n) => n + 1);
+  }, []);
+  useEffect(() => {
+    if (picks && studio) panel.current?.querySelector(".lab-tx")?.scrollIntoView({ block: "nearest" });
+  }, [picks]); // only on a pick, not when the layout changes
+  const renderCut = useCutMarkers(lab, target, pickCut);
   const beats = <BeatTimeline {...timeline} renderCut={renderCut} />;
   const insp = <div className="lab-editor__timeline-insp">{inspector}</div>;
   return (
@@ -147,7 +159,7 @@ const EditorLayout: React.FC<{
         {resetBar}
         {studio && beats}
       </div>
-      <div className="lab-panel">
+      <div className="lab-panel" ref={panel}>
         {studio && insp}
         <LookPresets lab={lab} />
         {nowTweak}

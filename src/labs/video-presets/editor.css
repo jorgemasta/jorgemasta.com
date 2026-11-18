@@ -204,6 +204,11 @@
     scroll-margin-top: 2.5rem;
   }
 
+  /* Picking a cut on the timeline scrolls the transitions just into view (Editor.tsx). */
+  .lab-panel .lab-tx {
+    scroll-margin-block: 1rem;
+  }
+
   /* The panel is narrower than the tablet column the grids were laid out for. */
   .lab-panel .lab-looks__strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));

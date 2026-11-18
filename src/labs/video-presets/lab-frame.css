@@ -50,8 +50,10 @@
     min-width: 0;
   }
 
-  /* Pinned below the top of the window until the editor ends, then it lets go with it. */
-  .lab-stage {
+  /* Pinned below the top of the window until the editor ends, then it lets go with it. Only
+     the editor's stage is a full window tall (it holds the timeline); the poster's is as tall
+     as the poster, so the credits are not pushed a window down before the editor loads. */
+  .lab-editor > .lab-stage {
     position: sticky;
     top: 1rem;
     display: flex;

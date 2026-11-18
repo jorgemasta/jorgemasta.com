@@ -4,7 +4,7 @@
 //
 // Styles live in beat-timeline.css (loaded with the editor chunk only), not in
 // Tailwind utilities, so the site-wide stylesheet other pages share is untouched.
-import React, { memo, useEffect, useMemo, useRef } from "react";
+import React, { memo, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { findAt, formatTime, outline, splitAtWord } from "./beat-timeline";
 import { isGraded, type Motion } from "./edit-model";
 import { MOTION_NAMES } from "./motion-names";
@@ -38,10 +38,53 @@ export const BeatTimeline: React.FC<BeatTimelineProps> = ({ tweaked = NONE, move
 
   const seek = (to: number) => playerRef.current?.seekTo(to);
 
+  // One tab stop for the whole list (roving tabindex): Tab skips past its rows to the next
+  // control, the arrows move inside it. The stop follows focus, and the playing beat while
+  // focus is elsewhere, so tabbing in lands on what is on screen. Set on the DOM, not as a
+  // prop, so the memoised rows do not re-render when it moves.
+  const stop = useRef<HTMLButtonElement | null>(null);
+  const setStop = (to: HTMLButtonElement | null | undefined) => {
+    const list = scroller.current;
+    if (!list || !to || (to === stop.current && to.tabIndex === 0)) return;
+    for (const b of list.querySelectorAll("button")) b.tabIndex = b === to ? 0 : -1;
+    stop.current = to;
+  };
+  const beatButton = (id: BeatId | undefined) =>
+    id ? scroller.current?.querySelector<HTMLButtonElement>(`[data-beat-id="${id}"] .lab-tl-beat`) : null;
+  // Rows can come and go (cut markers, tweak buttons): keep exactly one stop.
+  useLayoutEffect(() => {
+    const list = scroller.current;
+    if (!list) return;
+    const keep = stop.current && list.contains(stop.current) ? stop.current : null;
+    stop.current = null;
+    setStop(keep ?? beatButton(current?.id) ?? list.querySelector("button"));
+  }, [sections, onInspect, renderCut]);
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLOListElement>) => {
+    const list = scroller.current;
+    const at = e.target as HTMLElement;
+    if (!list || !(at instanceof HTMLButtonElement)) return;
+    // Rows: chapters, beats and cuts; a beat's Tweak button is to its right.
+    const rows = Array.from(list.querySelectorAll<HTMLButtonElement>("button:not(.lab-tl-tweak)"));
+    const row = at.classList.contains("lab-tl-tweak") ? at.parentElement?.querySelector<HTMLButtonElement>(".lab-tl-beat") : at;
+    const i = row ? rows.indexOf(row) : -1;
+    let to: HTMLButtonElement | null | undefined;
+    if (e.key === "ArrowDown") to = rows[Math.min(i + 1, rows.length - 1)];
+    else if (e.key === "ArrowUp") to = rows[Math.max(i - 1, 0)];
+    else if (e.key === "Home") to = rows[0];
+    else if (e.key === "End") to = rows[rows.length - 1];
+    else if (e.key === "ArrowRight") to = at.classList.contains("lab-tl-beat") ? at.parentElement?.querySelector<HTMLButtonElement>(".lab-tl-tweak") : null;
+    else if (e.key === "ArrowLeft") to = row;
+    else return;
+    e.preventDefault();
+    if (to && to !== at) to.focus();
+  };
+
   // Keep the current beat in view inside the list (never scrolls the page).
   const currentId = current?.id;
   useEffect(() => {
     const list = scroller.current;
+    if (list && !list.contains(document.activeElement)) setStop(beatButton(currentId));
     const row = currentId ? list?.querySelector<HTMLElement>(`[data-beat-id="${currentId}"]`) : null;
     if (!list || !row) return;
     const top = row.offsetTop; // the list is the rows' offsetParent (position: relative)
@@ -52,8 +95,13 @@ export const BeatTimeline: React.FC<BeatTimelineProps> = ({ tweaked = NONE, move
   }, [currentId]);
 
   return (
-    <nav className="lab-tl" aria-label="Beats">
-      <ol className="lab-tl-list" ref={scroller}>
+    <nav className="lab-tl" aria-label="Beats (up and down arrows move between rows, right arrow reaches Tweak)">
+      <ol
+        className="lab-tl-list"
+        ref={scroller}
+        onKeyDown={onKeyDown}
+        onFocus={(e) => e.target instanceof HTMLButtonElement && setStop(e.target)}
+      >
         {sections.map((section) => {
           const live = current !== null && current.chapterIndex === section.chapterIndex;
           return (
