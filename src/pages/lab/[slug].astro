@@ -51,18 +51,18 @@ const { Content } = await render(lab);
       )
     }
 
-    <!-- Attribution and credits: who built what, and the image sources (filled with the media, #81). -->
+    <div class="prose prose-lg mt-10 max-w-none">
+      <Content />
+    </div>
+
+    <!-- Attribution and credits, after the write-up: who built what, and the image sources (#81). -->
     {
       (lab.data.attribution || lab.data.imageCredits.length > 0) && (
-        <footer class="mt-4 font-sans text-sm text-muted">
+        <footer class="mt-16 border-t border-rule pt-4 font-sans text-xs text-muted">
           {lab.data.attribution && <p>{lab.data.attribution}</p>}
           {lab.data.imageCredits.length > 0 && <p class="mt-1">Image credits: {lab.data.imageCredits.join(" · ")}</p>}
         </footer>
       )
     }
-
-    <div class="prose prose-lg mt-10 max-w-none">
-      <Content />
-    </div>
   </article>
 </BaseLayout>
