@@ -19,7 +19,7 @@ imageCredits:
   - Meta, OpenAI, Perplexity and Slack logos
   - GIFs via GIPHY (StoryBots; Parks and Recreation)
   - Rights belong to their owners; shown for news reporting and commentary.
-draft: true
+draft: false
 ---
 
 Every day, Destilados, our pipeline, turns the day's AI news into a short video. Edition 78: 2:50, 32 beats, five story changes. The video is generated again tomorrow, so most of what you change has to survive that.
