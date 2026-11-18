@@ -1,6 +1,6 @@
 import type { CollectionEntry } from "astro:content";
-import { getPosts, getProjectHref, getProjects } from "../lib/content";
-import { getBlogUrl } from "../lib/utils";
+import { getLabs, getPosts, getProjectHref, getProjects } from "../lib/content";
+import { getBlogUrl, getLabUrl } from "../lib/utils";
 import { SITE_AUTHOR, SITE_DESCRIPTION, SITE_URL } from "../lib/consts";
 
 type Link = { title: string; url: string; description: string };
@@ -21,7 +21,7 @@ const section = (heading: string, links: Link[]) =>
 
 /** Generated at build time, so it lists every published entry without upkeep. */
 export async function GET() {
-  const [posts, projects] = await Promise.all([getPosts(), getProjects()]);
+  const [posts, projects, labs] = await Promise.all([getPosts(), getProjects(), getLabs()]);
 
   const postLinks = (type: CollectionEntry<"blog">["data"]["type"]) =>
     posts
@@ -45,6 +45,14 @@ export async function GET() {
         title: project.data.title,
         url: getProjectHref(project),
         description: project.data.excerpt,
+      }))
+    ),
+    ...section(
+      "Labs",
+      labs.map((lab) => ({
+        title: lab.data.title,
+        url: getLabUrl(lab.id),
+        description: lab.data.excerpt,
       }))
     ),
   ].join("\n");

@@ -1,0 +1,275 @@
+/* Per-beat tweaks: the inspector (BeatInspector.tsx) and the timeline's tweak
+   marks and buttons. Plain CSS, loaded with the editor only. Only theme variables
+   the site already uses: a new one would land in every page's CSS. */
+
+/* Timeline rows: the beat button plus a Tweak button beside it. */
+.lab-tl-beat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.lab-tl .lab-tl-tweak {
+  flex: none;
+  width: auto;
+  margin-top: 0.375rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--color-rule, #d9d1c2);
+  border-radius: 9999px;
+  color: var(--color-green, #173f35);
+  font-size: 0.75rem;
+  font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lab-tl .lab-tl-tweak[aria-expanded="true"] {
+  border-color: var(--color-green, #173f35);
+  box-shadow: inset 0 0 0 1px var(--color-green, #173f35);
+}
+
+.lab-tl .lab-tl-tweak:active {
+  background: #ebe5d8;
+}
+
+.lab-tl-beat-row[data-tweaked] .lab-tl-beat {
+  box-shadow: inset -3px 0 0 var(--color-green, #173f35);
+}
+
+.lab-tl-beat-row[data-tweaked] .lab-tl-beat[aria-current="true"] {
+  box-shadow:
+    inset 3px 0 0 var(--color-terracotta, #b65f3c),
+    inset -3px 0 0 var(--color-green, #173f35);
+}
+
+.lab-tl-tweaked {
+  align-self: flex-start;
+  margin-top: 0.125rem;
+  padding: 0 0.3rem;
+  border-radius: 0.2rem;
+  background: var(--color-green, #173f35);
+  color: var(--color-paper, #f4f0e8);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The inspector. */
+.lab-insp {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-rule, #d9d1c2);
+  border-radius: 0.5rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  color: var(--color-charcoal, #3e403e);
+}
+
+.lab-insp__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lab-insp__title {
+  margin: 0;
+  color: var(--color-terracotta, #b65f3c);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.lab-insp__title:focus {
+  outline: none;
+}
+
+.lab-insp__title:focus-visible {
+  outline: 2px solid var(--color-terracotta, #b65f3c);
+  outline-offset: 2px;
+}
+
+.lab-insp__time {
+  margin-left: 0.5rem;
+  color: var(--color-muted, #6b6a63);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0;
+}
+
+.lab-insp__say {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.lab-insp__status {
+  margin: 0.375rem 0 0;
+  color: var(--color-muted, #6b6a63);
+  font-size: 0.8125rem;
+}
+
+.lab-insp__params {
+  display: grid;
+  grid-template-columns: 8rem 1fr 3.5rem auto;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.875rem;
+}
+
+.lab-insp__param {
+  display: contents;
+}
+
+.lab-insp__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.lab-insp__badge {
+  color: var(--color-green, #173f35);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lab-insp__param input {
+  min-width: 0;
+  accent-color: var(--color-muted, #6b6a63);
+}
+
+.lab-insp__param[data-tweaked] input {
+  accent-color: var(--color-green, #173f35);
+}
+
+.lab-insp__value {
+  color: var(--color-muted, #6b6a63);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.lab-insp__param[data-tweaked] .lab-insp__value {
+  color: var(--color-green, #173f35);
+  font-weight: 600;
+}
+
+/* A photo's motion: one select, under the look sliders. */
+.lab-insp__motion {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-rule, #d9d1c2);
+}
+
+.lab-insp__motion select {
+  min-width: 0;
+  min-height: 2.25rem;
+  border: 1px solid var(--color-rule, #d9d1c2);
+  border-radius: 0.375rem;
+  padding: 0.3rem 0.4rem;
+  background: var(--color-paper);
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.lab-insp__motion[data-tweaked] select {
+  border-color: var(--color-green, #173f35);
+  color: var(--color-green, #173f35);
+}
+
+.lab-insp__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.lab-insp button {
+  border: 1px solid var(--color-rule, #d9d1c2);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-green, #173f35);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lab-insp__close,
+.lab-insp__remove {
+  padding: 0.3rem 0.875rem;
+}
+
+.lab-insp__revert {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+}
+
+.lab-insp button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.lab-insp button:not(:disabled):active {
+  background: #ebe5d8;
+}
+
+.lab-insp button:focus-visible,
+.lab-insp input:focus-visible,
+.lab-insp select:focus-visible {
+  outline: 2px solid var(--color-terracotta, #b65f3c);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lab-tl .lab-tl-tweak:hover,
+  .lab-insp button:not(:disabled):hover {
+    border-color: var(--color-green, #173f35);
+  }
+}
+
+/* Phones (opened from "Tweak this beat"): each label on its own row, so the slider gets
+   the full width, and the line it repeats from the row above is left out. */
+@media (max-width: 47.99rem) {
+  .lab-insp__params {
+    grid-template-columns: 1fr 3.5rem auto;
+    gap: 0.25rem 0.75rem;
+  }
+
+  .lab-insp__label {
+    grid-column: 1 / -1;
+    margin-top: 0.375rem;
+  }
+
+  .lab-insp__motion {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .lab-now .lab-insp__say {
+    display: none;
+  }
+}
+
+/* Comfortable touch targets. */
+@media (pointer: coarse) {
+  .lab-insp__close,
+  .lab-insp__remove {
+    min-height: 2.75rem;
+  }
+
+  .lab-insp__revert {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+/* The timeline's inspector is hidden below tablet width with the timeline: see editor.css. */

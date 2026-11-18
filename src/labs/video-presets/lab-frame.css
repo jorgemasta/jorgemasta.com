@@ -1,0 +1,72 @@
+/* The video frame: the server-rendered poster and, once loaded, the player.
+   Imported by the island (VideoPresetsLab.tsx), so it is on the Lab page from the
+   first paint and the poster and the player share one box. Plain CSS, not Tailwind. */
+
+/* Phones: edge to edge, the column's side padding (1rem below 40rem) given back to the video. */
+@media (max-width: 39.99rem) {
+  .lab-frame {
+    margin-inline: -1rem;
+    border-radius: 0;
+  }
+}
+
+/* The one line of instructions above the editor. */
+.lab-intro {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--color-charcoal);
+}
+
+/* The studio layout's frame, shared by the poster and the editor so the video does not move
+   when the editor loads. Narrower or short windows: the wrappers add no box at all, so the
+   player stays a direct child of .lab-editor (the phone sticky rule in editor.css needs it). */
+.lab-stage,
+.lab-panel {
+  display: contents;
+}
+
+/* Wide and tall enough (laptops and up; the same query as STUDIO_QUERY in studio-layout.ts): the Lab
+   leaves the 42rem reading column, the video and the beat timeline stay in view on the left
+   while the controls scroll with the page on the right. The write-up below keeps its column.
+   rem queries, so zooming in falls back to the single column. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .lab-wide {
+    /* 4rem of slack covers a classic scrollbar: no horizontal scroll. */
+    --lab-w: min(76rem, 100vw - 4rem);
+    width: var(--lab-w);
+    margin-inline: calc((100% - var(--lab-w)) / 2);
+  }
+
+  .lab-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(20rem, 36%, 27rem);
+    column-gap: 2rem;
+    align-items: start;
+  }
+
+  .lab-panel {
+    display: block;
+    min-width: 0;
+  }
+
+  /* Pinned below the top of the window until the editor ends, then it lets go with it. Only
+     the editor's stage is a full window tall (it holds the timeline); the poster's is as tall
+     as the poster, so the credits are not pushed a window down before the editor loads. */
+  .lab-editor > .lab-stage {
+    position: sticky;
+    top: 1rem;
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 2rem);
+  }
+
+  /* The video is as wide as its column unless the window is short: then it shrinks (centred)
+     to leave the reset bar and at least ~10 rows of timeline (14.5rem) under it. */
+  .lab-stage > .lab-frame {
+    flex: none;
+    width: 100%;
+    max-width: calc((100dvh - 16.5rem) * 16 / 9);
+    margin-inline: auto;
+  }
+}

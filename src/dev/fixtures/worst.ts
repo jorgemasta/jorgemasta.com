@@ -1,5 +1,5 @@
 import type { Role } from "../../data/roles";
-import { placeholderImage, post, project } from "./entries";
+import { lab, placeholderImage, post, project } from "./entries";
 import { item, podcastFrom } from "./podcast";
 import type { DevData } from "./types";
 
@@ -252,6 +252,27 @@ export const handler = async (event: StripeWebhookEvent, context: WorkerContext)
 
 // Season 2 restarts numbering (so the count reads "1 episodes"), a title with a different
 // separator (so the prefix isn't stripped), an entity inside CDATA, a late-night GMT date.
+const labs = () =>
+  Promise.all([
+    // Long unbreakable title and question, no poster: the homepage row and the Lab page must wrap.
+    lab(
+      "rechtsschutz-lab",
+      {
+        title: "Rechtsschutzversicherungsgesellschaftsvergleichsrechner",
+        publishedAt: "2026-11-10",
+        excerpt: "A comparison tool for legal protection insurers, built to find out how far a single page of filters can go.",
+        question: `How many filters can https://${LONG_HOST}/compare?insurer=all&sort=premium&order=asc take before nobody reads them, and what replaces them when they stop working?`,
+      },
+      "Placeholder."
+    ),
+    // Right-to-left question: the row keeps its own direction.
+    lab(
+      "rtl",
+      { title: "مختبر", publishedAt: "2026-09-01", excerpt: "نص عربي.", question: "هل يعمل هذا مع النص العربي؟" },
+      "نص."
+    ),
+  ]);
+
 const podcast = () =>
   podcastFrom(
     [
@@ -328,6 +349,7 @@ export default async function worst(): Promise<DevData> {
   return {
     posts: await posts(),
     projects: await projects(),
+    labs: await labs(),
     podcast: podcast(),
     roles,
     about,

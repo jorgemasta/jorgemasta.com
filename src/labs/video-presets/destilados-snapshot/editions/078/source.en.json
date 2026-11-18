@@ -1,0 +1,79 @@
+{
+  "edition": 78,
+  "lang": "en",
+  "sourceFile": "/workspace/destilados/data-main/data/translations/078-2026-11-07.md",
+  "date": "2026-11-07",
+  "title": "Make room",
+  "kicker": "Muse is built to order / Codex moves beyond engineering / Agents for the lab / Math without hallucinations",
+  "hook": "The personal operating system is back in fashion. Except now you program it by describing what you want.",
+  "stories": [
+    {
+      "n": 1,
+      "emoji": "🪄",
+      "headline": "Meta turns Muse into a customizable app with mini-apps, voice and avatars.",
+      "fact": "The new spaces are built from a description and can bring together shopping, calendars, orders or customers by connecting other applications. Muse also adds real-time conversations, hundreds of voices and avatars that gesture and react while listening.",
+      "take": "They are more than prompt-powered widgets: they update in the background, can be scheduled and let you edit tasks or notes. Meta is trying to make Muse the place where every user builds their own software. Little custom apps.",
+      "urls": [
+        "https://about.fb.com/news/2026/11/introducing-spaces-customize-muse-app/",
+        "https://about.fb.com/news/2026/11/introducing-muse-ai-voice-expressive-avatars/",
+        "https://destilados.tokenizadospodcast.com/destilado/60"
+      ]
+    },
+    {
+      "n": 2,
+      "emoji": "🏋️",
+      "headline": "Cult.fit extends Codex from engineering to operations and non-technical teams.",
+      "fact": "The Indian fitness company has standardized its development on Codex and says a social feed planned to take more than a year reached production in two months. Its non-technical teams have created more than 20 internal applications; one engineer also rebuilt in a weekend a dashboard that cost more than $100,000 a year.",
+      "take": "The interesting part is not another percentage of generated code; it is the rollout: a hackathon, training for executives, open sessions twice a week and engineers embedded in other departments. Adoption still needs people. How old-fashioned.",
+      "urls": [
+        "https://openai.com/index/cultfit-builds-with-codex"
+      ]
+    },
+    {
+      "n": 3,
+      "emoji": "🧫",
+      "headline": "OpenAI and Ligo measure agents against 100 routine lab tasks.",
+      "fact": "BioBasicsBench evaluates whether they interpret gels, plates, microscopy, sequences, videos and instrument readings, including the ability to admit when evidence is missing. GPT-6 Astra earns 66.7% of the available credit with maximum reasoning, compared with 43.8% for GPT-5.6 Sol.",
+      "take": "The evaluation adds up 18,500 results and rewards concrete decisions, not answers that sound like they are wearing a lab coat. Astra managed to spot an incorrect antibiotic in a negative control and interpret a z-stack, but models still fail to check controls and apply experimental context.",
+      "urls": [
+        "https://openai.com/index/measuring-how-ai-agents-handle-wet-lab-science"
+      ],
+      "imageRef": "story:3",
+      "imageFile": "editions/078/story/3.png"
+    },
+    {
+      "n": 4,
+      "emoji": "🧑‍💼",
+      "headline": "Perplexity launches persistent agents that receive work from Slack.",
+      "fact": "Teammates keeps an agent within a role without requiring a new prompt for every task. It can join a Slack channel, receive assignments from the team and follow up using Projects, Skills and Memory; it is available on the web for the $200-per-month Max plan.",
+      "take": "The artificial coworker is starting to look less like a chat and more like a user account with memory and pending tasks. It remains to be seen how much follow-up it actually does and how much work supervising the coworker who never goes home creates.",
+      "urls": [
+        "https://www.perplexity.ai/hub/products/teammate"
+      ]
+    },
+    {
+      "n": 5,
+      "emoji": "📐",
+      "headline": "Axiom turns two mathematical monuments into computer-verifiable proofs.",
+      "fact": "Its agents have translated the 7,654 pages of the Stacks Project into nearly 16 million lines of Lean, reviewable line by line. The company also announces the formalization of the classification of finite simple groups, an original proof of around 15,000 pages, and invites external mathematicians to validate it.",
+      "take": "Axiom combines its own mathematical models with parallel agents that find tasks on their own. The promise is not that AI writes convincing proofs: it requires every step to pass through a checker incapable of being seduced by prose.",
+      "urls": [
+        "https://techcrunch.com/2026/11/05/axiom-math-wants-to-keep-ai-slop-out-of-mathematics/",
+        "https://axiommath.ai/research/the-enormous-theorem-formalized/"
+      ]
+    },
+    {
+      "n": 6,
+      "emoji": "📚",
+      "headline": "Google says its adaptive reader improves student recall by 11 points.",
+      "fact": "Learn Your Way adapts textbooks to each student's level and turns them into lessons. According to Google, those who used it scored 11 points higher on a recall test than those who studied with a conventional digital reader.",
+      "take": "It is a concrete result, but the excerpt does not clarify duration, sample size or how much personalization contributes versus simply changing the format. Promising; not a final grade yet.",
+      "urls": [
+        "https://blog.google/outreach-initiatives/education/learn-your-way/"
+      ]
+    }
+  ],
+  "brief": [
+    "Yesterday we told you that Fal was doubling its valuation; Bloomberg now puts the round at $1.3 billion, intended to expand its inference infrastructure."
+  ]
+}

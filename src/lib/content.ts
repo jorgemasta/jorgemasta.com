@@ -35,6 +35,12 @@ export async function getProjects(): Promise<CollectionEntry<"projects">[]> {
   return (dev ? dev.projects.filter(isVisible) : await getCollection("projects", isVisible)).sort(newestFirst);
 }
 
+/** Labs that belong on the site, newest first: the homepage rows and /lab/ both list these. */
+export async function getLabs(): Promise<CollectionEntry<"labs">[]> {
+  const dev = await devData();
+  return (dev ? dev.labs.filter(isVisible) : await getCollection("labs", isVisible)).sort(newestFirst);
+}
+
 /** Where Jorge worked, most recent first. */
 export async function getRoles(): Promise<Role[]> {
   return (await devData())?.roles ?? ROLES;

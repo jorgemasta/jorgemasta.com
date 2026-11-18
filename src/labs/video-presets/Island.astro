@@ -1,0 +1,9 @@
+---
+// The Lab's island as its page mounts it: hydrated when it scrolls near view, so
+// the write-up reads without waiting for script. Its server-rendered HTML is the poster.
+import VideoPresetsLab, { type VideoPresetsLabProps } from "./VideoPresetsLab";
+
+type Props = VideoPresetsLabProps;
+---
+
+<VideoPresetsLab client:visible={{ rootMargin: "200px" }} poster={Astro.props.poster} />

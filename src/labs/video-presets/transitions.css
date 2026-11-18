@@ -1,0 +1,899 @@
+/* The Lab's story changes panel and the cut markers on the beat timeline (Transitions.tsx).
+   Plain CSS, loaded with the editor only. Only theme variables the site already uses:
+   a new one would land in the stylesheet every page shares. */
+.lab-tx {
+  margin-top: 1.5rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  color: var(--color-charcoal);
+}
+
+.lab-tx__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-terracotta);
+}
+
+.lab-tx__status {
+  margin: 0.375rem 0 0;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+:where(.lab-tx) button,
+:where(.lab-tx) select {
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+:where(.lab-tx) button {
+  cursor: pointer;
+}
+
+.lab-tx button:focus-visible,
+.lab-tx select:focus-visible,
+.lab-tx input:focus-visible {
+  outline: 2px solid var(--color-terracotta);
+  outline-offset: 2px;
+}
+
+/* Target: every story change, or the cut picked on the timeline. */
+.lab-tx__target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.lab-tx__chip {
+  border: 1px solid var(--color-rule);
+  border-radius: 9999px;
+  padding: 0.3rem 0.8rem;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.lab-tx__chip[aria-pressed="true"],
+.lab-tx__chip[data-on] {
+  border-color: var(--color-green);
+  box-shadow: inset 0 0 0 1px var(--color-green);
+  color: var(--color-green);
+}
+
+/* The choice's heading: every story change, or the cut picked. */
+.lab-tx__label {
+  margin: 1rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* One choice in two rows: the cards, then the transitions with no card. */
+.lab-tx__kind {
+  margin-top: 0.625rem;
+}
+
+.lab-tx__kind + .lab-tx__kind {
+  margin-top: 0.875rem;
+}
+
+.lab-tx__kind-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.lab-tx__kind-chip {
+  flex: none;
+  border: 1px solid var(--color-rule);
+  border-radius: 9999px;
+  padding: 0.0625rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-charcoal);
+}
+
+/* On a single cut a card can't be picked: the row stays visible, quieter. */
+.lab-tx__kind[data-off] .lab-tx__library {
+  opacity: 0.5;
+}
+
+.lab-tx__note {
+  margin: 0.375rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.lab-tx__hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+/* Each row: a strip that snaps on phones, a row of four from tablet width. */
+.lab-tx__library {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(7.5rem, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+  padding: 0.25rem;
+  margin-inline: -0.25rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.25rem;
+  scrollbar-width: none;
+}
+
+.lab-tx__library::-webkit-scrollbar {
+  display: none;
+}
+
+.lab-tx__card {
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 0.5rem;
+  background: var(--color-paper);
+  text-align: left;
+  user-select: none;
+}
+
+/* The one option on: what plays on the video. */
+.lab-tx__card[aria-checked="true"] {
+  border-color: var(--color-green);
+  box-shadow: inset 0 0 0 1px var(--color-green);
+  background: color-mix(in srgb, var(--color-green) 6%, var(--color-paper));
+}
+
+.lab-tx__card:disabled {
+  cursor: default;
+}
+
+.lab-tx__card:active:not(:disabled),
+.lab-tx__button:active,
+.lab-tx__chip:active,
+.lab-tx__disclosure:active {
+  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+/* The mini previews: the same two scenes in every card, A (the beat before) and B (the next one).
+   A story card plays A → card → B; a transition plays A → B moving, with no card.
+   One 4 s loop: A holds, the change plays from 25 %, B holds to the end. Transform and
+   opacity only. Paused (on a frame partway through, from the negative delay) unless the
+   section is on screen or the card is pointed at or focused; held there with reduced motion. */
+.lab-tx__mini {
+  position: relative;
+  display: block;
+  height: 3rem;
+  overflow: hidden;
+  border-radius: 0.3rem;
+  background: #0c0b10;
+  isolation: isolate;
+}
+
+.lab-tx__mini > * {
+  position: absolute;
+  inset: 0;
+  /* Slow enough to read, and still until asked: hover or focus on desktop, a tap on touch. */
+  animation-duration: 4s;
+  /* The still: the moment that tells each option apart (below), else 45% in. */
+  animation-delay: var(--lab-tx-still, -1.8s);
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+/* Each still caught mid-change, so the options read apart at rest: the band mid-sweep, the
+   slab mid-wipe, the RGB jolt, the card still big, the whip's smear, the zoom's crossfade. */
+.lab-tx__mini[data-card="band"] {
+  --lab-tx-still: -1.12s;
+}
+
+.lab-tx__mini[data-card="glitch"] {
+  --lab-tx-still: -1.36s;
+}
+
+.lab-tx__mini[data-card="wipe"] {
+  --lab-tx-still: -1.16s;
+}
+
+.lab-tx__mini[data-card="zoom"] {
+  --lab-tx-still: -1.2s;
+}
+
+.lab-tx__mini[data-tx="whip"] {
+  --lab-tx-still: -1.56s;
+}
+
+.lab-tx__mini[data-tx="zoom"] {
+  --lab-tx-still: -1.6s;
+}
+
+.lab-tx__card[data-mini-playing] .lab-tx__mini > *,
+.lab-tx__card:focus-visible .lab-tx__mini > * {
+  animation-play-state: running;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lab-tx__card:hover .lab-tx__mini > * {
+    animation-play-state: running;
+  }
+}
+
+.lab-tx__mini-a,
+.lab-tx__mini-b {
+  padding: 0.2rem 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  color: rgb(255 255 255 / 0.9);
+}
+
+.lab-tx__mini-a {
+  background: #3f74b1;
+}
+
+.lab-tx__mini-b {
+  background: #e3893a;
+}
+
+/* ── Story cards: B waits under the card; the card covers A, holds, then leaves on B. ── */
+.lab-tx__mini[data-card] .lab-tx__mini-b {
+  animation-name: lab-tx-b-after-card;
+}
+
+@keyframes lab-tx-b-after-card {
+  0%,
+  33.9% {
+    opacity: 0;
+  }
+  34%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* The card: near-black, the story number big in the theme's accent, "Story 2/5" in violet. */
+.lab-tx__sc {
+  overflow: hidden;
+}
+
+.lab-tx__sc-in {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 30% 50%, rgb(124 58 237 / 0.35), transparent 65%),
+    #0c0b10;
+  /* Inherits the loop's timing and play state; only a wipe moves it. */
+  animation: inherit;
+  animation-name: none;
+}
+
+.lab-tx__sc-txt {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  animation: inherit;
+  animation-name: lab-tx-card-text;
+}
+
+.lab-tx__sc-num {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--lab-tx-accent2, #5cf08a);
+}
+
+.lab-tx__sc-kicker {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #a78bfa;
+}
+
+/* The card's text comes in just after the card, and goes just before it. */
+@keyframes lab-tx-card-text {
+  0%,
+  28% {
+    opacity: 0;
+    transform: translateX(25%);
+  }
+  32% {
+    opacity: 1;
+    transform: none;
+  }
+  60% {
+    opacity: 1;
+  }
+  64%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Band: a hard cut to the card, an accent band sweeping down over it on the way in and out. */
+.lab-tx__mini[data-card="band"] .lab-tx__sc {
+  animation-name: lab-tx-card-hard;
+}
+
+@keyframes lab-tx-card-hard {
+  0%,
+  24.9% {
+    opacity: 0;
+  }
+  25%,
+  69.9% {
+    opacity: 1;
+  }
+  70%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.lab-tx__band {
+  bottom: auto;
+  height: 22%;
+  background: linear-gradient(#7c3aed, var(--lab-tx-accent2, #5cf08a));
+  animation-name: lab-tx-band;
+}
+
+@keyframes lab-tx-band {
+  0%,
+  25% {
+    transform: translateY(-100%);
+  }
+  32% {
+    transform: translateY(460%);
+  }
+  32.1%,
+  62% {
+    transform: translateY(-100%);
+  }
+  69% {
+    transform: translateY(460%);
+  }
+  69.1%,
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+/* Wipe and glitch: the card wipes in from the left behind a skewed violet slab and wipes out to
+   the right (the card slides, its contents counter-slide so they stay put: a wipe). */
+.lab-tx__mini[data-card="wipe"] .lab-tx__sc,
+.lab-tx__mini[data-card="glitch"] .lab-tx__sc {
+  animation-name: lab-tx-wipe;
+}
+
+.lab-tx__mini[data-card="wipe"] .lab-tx__sc-in,
+.lab-tx__mini[data-card="glitch"] .lab-tx__sc-in {
+  animation-name: lab-tx-wipe-counter;
+}
+
+@keyframes lab-tx-wipe {
+  0%,
+  25% {
+    transform: translateX(-101%);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  33%,
+  62% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  70%,
+  100% {
+    transform: translateX(101%);
+  }
+}
+
+@keyframes lab-tx-wipe-counter {
+  0%,
+  25% {
+    transform: translateX(101%);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  33%,
+  62% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  70%,
+  100% {
+    transform: translateX(-101%);
+  }
+}
+
+/* The slab rides the card's leading edge in, its trailing edge out: violet with an accent line. */
+.lab-tx__slab {
+  inset: -20% 0;
+  background: linear-gradient(90deg, transparent 0 80%, #7c3aed 80% 95%, var(--lab-tx-accent2, #5cf08a) 95%);
+  animation-name: lab-tx-slab;
+}
+
+@keyframes lab-tx-slab {
+  0%,
+  25% {
+    opacity: 1;
+    transform: translateX(-101%) skewX(-14deg);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  33% {
+    opacity: 1;
+    transform: translateX(0) skewX(-14deg);
+  }
+  33.1%,
+  61.9% {
+    opacity: 0;
+    transform: translateX(-100%) skewX(-14deg);
+  }
+  62% {
+    opacity: 1;
+    transform: translateX(-100%) skewX(-14deg);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(1%) skewX(-14deg);
+  }
+  70.1%,
+  100% {
+    opacity: 0;
+    transform: translateX(1%) skewX(-14deg);
+  }
+}
+
+/* Glitch: an RGB split jolts the frame as the card lands and as it leaves. */
+.lab-tx__rgb {
+  mix-blend-mode: screen;
+  animation-name: lab-tx-rgb;
+}
+
+.lab-tx__rgb--r {
+  --lab-tx-k: 1;
+  inset: 18% 0 58%;
+  background: rgb(255 42 109 / 0.75);
+}
+
+.lab-tx__rgb--c {
+  --lab-tx-k: -1;
+  inset: 55% 0 22%;
+  background: rgb(5 217 232 / 0.75);
+}
+
+@keyframes lab-tx-rgb {
+  0%,
+  32.9% {
+    opacity: 0;
+    transform: none;
+  }
+  33% {
+    opacity: 1;
+    transform: translateX(calc(var(--lab-tx-k) * 14%));
+  }
+  34.5% {
+    opacity: 0.8;
+    transform: translateX(calc(var(--lab-tx-k) * -9%));
+  }
+  36% {
+    opacity: 0.5;
+    transform: translateX(calc(var(--lab-tx-k) * 5%));
+  }
+  36.1%,
+  69.9% {
+    opacity: 0;
+    transform: none;
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(calc(var(--lab-tx-k) * -14%));
+  }
+  71.5% {
+    opacity: 0.6;
+    transform: translateX(calc(var(--lab-tx-k) * 8%));
+  }
+  71.6%,
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+/* Pop (the "zoom" style): the card pops in from big, holds, and shrinks away. */
+.lab-tx__mini[data-card="zoom"] .lab-tx__sc {
+  animation-name: lab-tx-card-zoom;
+}
+
+@keyframes lab-tx-card-zoom {
+  0%,
+  25% {
+    opacity: 0;
+    transform: scale(1.35);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  29% {
+    opacity: 1;
+  }
+  33%,
+  62% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  66% {
+    opacity: 1;
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+}
+
+/* ── Transitions: no card; B itself comes in over A at 30 %, pushing A out (a cut just covers it). ── */
+.lab-tx__mini[data-tx="cut"] .lab-tx__mini-b {
+  animation-name: lab-tx-cut;
+}
+
+@keyframes lab-tx-cut {
+  0%,
+  37.4% {
+    opacity: 0;
+  }
+  37.5%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.lab-tx__mini[data-tx="slide"] .lab-tx__mini-b {
+  animation-name: lab-tx-slide;
+}
+
+@keyframes lab-tx-slide {
+  0%,
+  30% {
+    transform: translateY(101%);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Slide: B comes up from below, pushing A out the top, edge to edge. */
+.lab-tx__mini[data-tx="slide"] .lab-tx__mini-a {
+  animation-name: lab-tx-slide-out;
+}
+
+@keyframes lab-tx-slide-out {
+  0%,
+  30% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  60%,
+  100% {
+    transform: translateY(-101%);
+  }
+}
+
+/* Whip: fast, with a soft smear on its leading edge until it lands. */
+.lab-tx__mini[data-tx="whip"] .lab-tx__mini-b {
+  animation-name: lab-tx-whip;
+}
+
+.lab-tx__smear {
+  right: auto;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, #e3893a 70%);
+  animation-name: lab-tx-smear;
+}
+
+@keyframes lab-tx-whip {
+  0%,
+  37% {
+    transform: translateX(101%);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  48%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes lab-tx-smear {
+  0%,
+  36.9% {
+    opacity: 0;
+    transform: translateX(124%);
+  }
+  37% {
+    opacity: 0.9;
+    transform: translateX(124%);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  48% {
+    opacity: 0.9;
+    transform: translateX(-60%);
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: translateX(-60%);
+  }
+}
+
+/* A is thrown out with B, the same way. */
+.lab-tx__mini[data-tx="whip"] .lab-tx__mini-a {
+  animation-name: lab-tx-whip-out;
+}
+
+@keyframes lab-tx-whip-out {
+  0%,
+  37% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  48%,
+  100% {
+    transform: translateX(-101%);
+  }
+}
+
+/* Zoom: A swells a little and fades as B punches in over it. */
+.lab-tx__mini[data-tx="zoom"] .lab-tx__mini-a {
+  animation-name: lab-tx-zoom-out;
+}
+
+@keyframes lab-tx-zoom-out {
+  0%,
+  37% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  55%,
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+.lab-tx__mini[data-tx="zoom"] .lab-tx__mini-b {
+  animation-name: lab-tx-zoom;
+}
+
+@keyframes lab-tx-zoom {
+  0%,
+  37% {
+    opacity: 0;
+    transform: scale(1.6);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  48% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-tx .lab-tx__mini > * {
+    animation-play-state: paused !important;
+  }
+}
+
+.lab-tx__name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* "theme's": the style the theme brings. */
+.lab-tx__badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.lab-tx__blurb {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--color-muted);
+}
+
+.lab-tx__disclosure {
+  margin-top: 0.5rem;
+  border: 0;
+  border-radius: 0.375rem;
+  padding: 0.3rem 0.25rem;
+  background: transparent;
+  color: var(--color-green);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.lab-tx__settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 0.5rem;
+}
+
+.lab-tx__field {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.875rem;
+}
+
+.lab-tx__field > span {
+  flex: none;
+  width: 4.5rem;
+  color: var(--color-muted);
+}
+
+.lab-tx__field input,
+.lab-tx__field select {
+  flex: 1;
+  min-width: 0;
+}
+
+.lab-tx__field input {
+  accent-color: var(--color-green);
+}
+
+.lab-tx__field select {
+  border: 1px solid var(--color-rule);
+  border-radius: 0.375rem;
+  padding: 0.3rem 0.4rem;
+  background: var(--color-paper);
+}
+
+.lab-tx__value {
+  min-width: 4.5ch;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+  text-align: right;
+}
+
+.lab-tx__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.lab-tx__button {
+  border: 1px solid var(--color-rule);
+  border-radius: 9999px;
+  padding: 0.4rem 1rem;
+  background: transparent;
+  color: var(--color-green);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Cuts on the beat timeline: a thin divider between rows with the transition it carries. */
+.lab-tl-cut {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0 4.375rem;
+}
+
+.lab-tl-cut::before,
+.lab-tl-cut::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-rule) 70%, transparent);
+}
+
+.lab-tl-cut::before {
+  flex: 0 0 0.75rem;
+}
+
+.lab-tl .lab-tl-cut-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.375rem;
+  width: auto;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  padding: 0.0625rem 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lab-tl-cut[data-source="default"] .lab-tl-cut-button {
+  color: var(--color-green);
+}
+
+.lab-tl-cut[data-source="override"] .lab-tl-cut-button {
+  border-color: var(--color-terracotta);
+  color: var(--color-terracotta);
+}
+
+.lab-tl .lab-tl-cut-button[aria-pressed="true"] {
+  border-color: var(--color-green);
+  background: var(--color-green);
+  color: var(--color-paper);
+}
+
+.lab-tl-cut-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+.lab-tl .lab-tl-cut-button:active {
+  background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lab-tx__card:hover:not(:disabled, [aria-checked="true"]),
+  .lab-tx__chip:hover,
+  .lab-tx__button:hover {
+    border-color: var(--color-terracotta);
+  }
+
+  .lab-tx__disclosure:hover {
+    text-decoration: underline;
+  }
+
+  .lab-tl .lab-tl-cut-button:hover {
+    border-color: currentColor;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lab-tx__card,
+  .lab-tx__chip,
+  .lab-tx__button {
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+}

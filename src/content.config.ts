@@ -60,4 +60,26 @@ const projects = defineCollection({
   }),
 });
 
-export const collections = { blog, projects };
+/**
+ * A Lab is an interactive experiment exploring one question. The markdown body
+ * is the write-up; the slug picks the interactive part on its page.
+ */
+const labs = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/labs" }),
+  schema: z.object({
+    title: z.string(),
+    publishedAt: z.coerce.date(),
+    excerpt,
+    /** The one question the Lab explores, stated first on its page and in its homepage row. */
+    question: z.string(),
+    /** The poster, shown before the interactive part loads. */
+    mainImage,
+    /** Who built what, when the Lab builds on someone else's work. */
+    attribution: z.string().optional(),
+    /** Source credits for the images the Lab shows, one per source. */
+    imageCredits: z.array(z.string()).default([]),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { blog, projects, labs };

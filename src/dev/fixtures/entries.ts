@@ -18,7 +18,7 @@ const renderer = createSatteriMarkdownProcessor({
   shikiConfig: { theme: "one-dark-pro", wrap: true },
 });
 
-type Collection = "blog" | "projects";
+type Collection = "blog" | "projects" | "labs";
 
 async function entry<C extends Collection>(
   collection: C,
@@ -48,6 +48,9 @@ export const post = (id: string, frontmatter: Record<string, unknown>, body = ""
 
 export const project = (id: string, frontmatter: Record<string, unknown>, body = "") =>
   entry("projects", id, frontmatter, body);
+
+export const lab = (id: string, frontmatter: Record<string, unknown>, body = "") =>
+  entry("labs", id, frontmatter, body);
 
 /**
  * A stand-in screenshot as an SVG data URI, so fixtures can use odd image

@@ -1,0 +1,34 @@
+// Per-beat manual look tweaks, and how they meet the preset (the Lab's question).
+//
+// Precedence: a tweak owns only the parameters the visitor touched on that beat.
+// Those keep the value the visitor set, whatever the preset or its intensity;
+// every parameter left untouched keeps following the current preset. Changing
+// the preset never discards manual work, and a beat still moves with the preset
+// on everything the visitor didn't fix by hand.
+import type { Edits, Look } from "./edit-model";
+import { withKey } from "./records";
+import type { BeatId } from "./timeline";
+
+/** The parameters the visitor set by hand on one beat, as absolute values. */
+export type BeatTweak = Partial<Look>;
+
+/** The beat's look: the preset's look with the tweaked parameters taken over. */
+export const withTweak = (presetLook: Look, tweak: BeatTweak | undefined): Look => ({ ...presetLook, ...tweak });
+
+/** Sets some of a beat's look parameters by hand (merged into its existing tweak). */
+export const setTweak = (edits: Edits, beatId: BeatId, values: BeatTweak): Edits => ({
+  ...edits,
+  tweaks: { ...edits.tweaks, [beatId]: { ...edits.tweaks[beatId], ...values } },
+});
+
+/** Removes a beat's tweak: the beat follows the current preset again. */
+export const clearTweak = (edits: Edits, beatId: BeatId): Edits => ({ ...edits, tweaks: withKey(edits.tweaks, beatId, undefined) });
+
+/** Hands one parameter of a beat back to the preset; no parameters left = no tweak. */
+export const clearTweakParam = (edits: Edits, beatId: BeatId, param: keyof Look): Edits => {
+  const rest = withKey(edits.tweaks[beatId] ?? {}, param, undefined);
+  return { ...edits, tweaks: withKey(edits.tweaks, beatId, Object.keys(rest).length ? rest : undefined) };
+};
+
+/** The ids of the beats that carry a tweak. */
+export const tweakedBeats = (edits: Edits): BeatId[] => Object.keys(edits.tweaks) as BeatId[];

@@ -1,0 +1,68 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { render } from "astro:content";
+import { getLabs } from "../../lib/content";
+import { formatDate } from "../../lib/utils";
+import VideoPresetsIsland from "../../labs/video-presets/Island.astro";
+
+export async function getStaticPaths() {
+  return (await getLabs()).map((lab) => ({
+    params: { slug: lab.id },
+    props: { lab },
+  }));
+}
+
+/** Each Lab's interactive island, by slug. */
+const ISLANDS: Record<string, typeof VideoPresetsIsland> = { "video-presets": VideoPresetsIsland };
+
+const { lab } = Astro.props;
+const Island = ISLANDS[lab.id];
+const { Content } = await render(lab);
+---
+
+<BaseLayout title={`${lab.data.title} | Jorge Masta`} description={lab.data.excerpt}>
+  <article class="mx-auto max-w-2xl px-4 pt-16 sm:px-6 sm:pt-24">
+    <p class="eyebrow font-sans">
+      <a href="/lab/" class="link-quiet">Lab</a> ·
+      <time datetime={lab.data.publishedAt.toISOString()}>{formatDate(lab.data.publishedAt)}</time>
+    </p>
+    <h1 class="mt-3 text-4xl leading-tight tracking-tight sm:text-5xl">{lab.data.title}</h1>
+    <!-- The question comes first: it is what the experiment tries to find out. -->
+    <p dir="auto" class="mt-4 font-serif text-2xl leading-snug text-green wrap-anywhere">{lab.data.question}</p>
+
+    <!--
+      Interactive island, picked by slug. Each Lab's Island.astro hydrates its
+      component with client:visible (a directive needs a static import, so it
+      can't sit on the map lookup). A Lab with no island shows the poster alone.
+    -->
+    {
+      Island ? (
+        <div class="mt-10">
+          <Island poster={lab.data.mainImage} />
+        </div>
+      ) : (
+        lab.data.mainImage && (
+          <img
+            src={lab.data.mainImage.src}
+            alt={lab.data.mainImage.alt}
+            class="card-img mt-10 aspect-video w-full rounded-md object-cover"
+          />
+        )
+      )
+    }
+
+    <div class="prose prose-lg mt-10 max-w-none">
+      <Content />
+    </div>
+
+    <!-- Attribution and credits, after the write-up: who built what, and the image sources (#81). -->
+    {
+      (lab.data.attribution || lab.data.imageCredits.length > 0) && (
+        <footer class="mt-16 border-t border-rule pt-4 font-sans text-xs text-muted">
+          {lab.data.attribution && <p>{lab.data.attribution}</p>}
+          {lab.data.imageCredits.length > 0 && <p class="mt-1">Image credits: {lab.data.imageCredits.join(" · ")}</p>}
+        </footer>
+      )
+    }
+  </article>
+</BaseLayout>

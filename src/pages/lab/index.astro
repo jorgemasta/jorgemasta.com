@@ -1,0 +1,36 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getLabs } from "../../lib/content";
+import { formatDate, getLabUrl } from "../../lib/utils";
+
+const labs = await getLabs();
+---
+
+<BaseLayout title="Lab | Jorge Masta" description="Interactive experiments Jorge Masta built to explore a question, with the decisions behind each one.">
+  <div class="mx-auto max-w-5xl px-4 pt-16 sm:px-6 sm:pt-24">
+    <h1 class="text-5xl tracking-tight sm:text-6xl">Lab</h1>
+    <p class="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
+      Experiments I built to explore a question. They make no claim of real use; the decisions behind each one are on its page.
+    </p>
+    {labs.length === 0 && <p class="mt-6 text-muted">No Labs to show yet.</p>}
+
+    {
+      labs.length > 0 && (
+        <ul class="mt-12">
+          {labs.map((lab) => (
+            <li class="border-t border-rule py-6 wrap-anywhere">
+              <time class="font-mono text-xs text-muted" datetime={lab.data.publishedAt.toISOString()}>
+                {formatDate(lab.data.publishedAt)}
+              </time>
+              <a href={getLabUrl(lab.id)} class="link-quiet mt-1 block font-serif text-2xl leading-snug text-green">
+                {lab.data.title}
+              </a>
+              <p class="mt-1 leading-relaxed text-charcoal" dir="auto">{lab.data.question}</p>
+              <p class="mt-1 text-muted" dir="auto">{lab.data.excerpt}</p>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </div>
+</BaseLayout>

@@ -41,6 +41,14 @@ focus (`status: earlier`), whenever they happened. All of it is on /projects;
 the homepage shows only the ones marked `featured`.
 _Avoid_: old projects, legacy
 
+**Lab**:
+An interactive experiment Jorge built to explore a question, playable on the
+site. Unlike a Project, it makes no claim of real use or users; unlike a Note,
+the artefact itself is the point. Its page carries the experiment and the
+decisions behind it together. A Lab that ends up in real use gains a Project
+that links back to it; the Lab stays as the record of the experiment.
+_Avoid_: demo, playground, prototype, side project
+
 **Draft**:
 An entry present in the repository but excluded from the built site
 (`draft: true`). Replaces the publish toggle a CMS would provide.
