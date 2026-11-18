@@ -94,6 +94,9 @@ export const Editor: React.FC = () => {
             controls
             clickToPlay
             acknowledgeRemotionLicense
+            // Around a story change the voice, the bed, the beat's sfx and the card's whoosh
+            // overlap (the intro adds four more); past the default 5 the player crashes to ⚠️.
+            numberOfSharedAudioTags={12}
             style={{ width: "100%", aspectRatio: `${timeline.width} / ${timeline.height}` }}
           />
           <LoopBadge status={loop.status} onStop={loop.controls.stop} />
