@@ -9,7 +9,8 @@ import { LookPresets } from "./LookPresets";
 import { Transitions, useCutMarkers, type CutTarget } from "./Transitions";
 import { BeatInspector } from "./BeatInspector";
 import { ThemeOptions } from "./ThemeOptions";
-import { findAt, formatTime, tweakableBeatAt } from "./beat-timeline";
+import { ExportPanel } from "./ExportPanel";
+import { findAt, formatTime, spoken, tweakableBeatAt } from "./beat-timeline";
 import { hasEdits, reset } from "./edit-model";
 import type { BeatId } from "./timeline";
 import { tweakedBeats } from "./tweaks";
@@ -127,6 +128,7 @@ export const Editor: React.FC = () => {
 // in the studio the timeline sits under the video (one tab stop: arrows move inside it) and
 // the inspector tops the panel, like a properties panel that follows the selection; elsewhere
 // both come after the transitions. Transitions and the timeline share the cut being edited.
+// Export closes the panel everywhere.
 const EditorLayout: React.FC<{
   lab: LabEdits;
   player: React.ReactNode;
@@ -167,6 +169,7 @@ const EditorLayout: React.FC<{
         <Transitions lab={lab} target={target} onTarget={setTarget} />
         {!studio && beats}
         {!studio && insp}
+        <ExportPanel lab={lab} />
       </div>
     </div>
   );
@@ -212,9 +215,6 @@ const LoopBadge: React.FC<{ status: LoopStatus; onStop: () => void }> = ({ statu
     )}
   </p>
 );
-
-/** The beat's line without the voice's stage tags (`[curious]`). */
-const spoken = (say: string) => say.replace(/\[[^\]]*\]\s*/g, "").trim();
 
 // Phones only (the timeline is hidden there): tweak the beat on screen. The button names the beat
 // and says "Tweaked" when it carries a tweak; the inspector opens right under it.

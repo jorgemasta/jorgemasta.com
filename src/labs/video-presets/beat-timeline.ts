@@ -2,6 +2,9 @@
 import { isGraded } from "./edit-model";
 import type { Cut, EditionTimeline, LabBeat, TimedWord } from "./timeline";
 
+/** The beat's line without the voice's stage tags (`[curious]`). */
+export const spoken = (say: string) => say.replace(/\[[^\]]*\]\s*/g, "").trim();
+
 /** The beat and word on screen at `frame` (word is null between words). */
 export const findAt = (timeline: EditionTimeline, frame: number): { beat: LabBeat | null; word: TimedWord | null } => {
   const beat = timeline.beats.find((b) => frame >= b.from && frame < b.to) ?? null;

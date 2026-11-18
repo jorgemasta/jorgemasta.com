@@ -1,12 +1,14 @@
 // The composition the Lab's player renders: the vendored Report, fed with the
 // rebuilt timeline. The visitor's edits (per-beat looks, per-cut transitions) are
 // threaded into the snapshot keyed by the beat ids the timeline puts on its beats,
-// with the whole-video options (theme, story card style).
+// with the whole-video options (theme, story card style). What the Report gets is
+// the same `render` the export writes (report-inputs.ts).
 import React from "react";
 import { Report } from "./destilados-snapshot/src/Report";
 import { CutEntrance, CutExit } from "./CutEntrance";
 import { hasMotion } from "./transitions";
-import { lookToCssFilter, type EffectiveEdition, type EffectiveTransition } from "./edit-model";
+import type { EffectiveEdition } from "./edit-model";
+import { reportInputs } from "./report-inputs";
 import type { BeatId, Cut, Timeline } from "./timeline";
 
 export type LabCompositionProps = {
@@ -19,31 +21,12 @@ export type LabCompositionProps = {
 };
 
 export const LabComposition: React.FC<LabCompositionProps> = ({ edition, report, cuts, effective }) => {
-  const filters = React.useMemo(
-    () => (effective ? Object.fromEntries(Object.entries(effective.looks).map(([id, look]) => [id, lookToCssFilter(look)])) : undefined),
-    [effective],
-  );
-  // Transitions by incoming beat, and the story cards they replace.
-  const { into, noBumper } = React.useMemo(() => {
-    const into = new Map<string, EffectiveTransition>(); // keyed by the beat ids the Report hands back
-    const noBumper: BeatId[] = [];
-    for (const cut of cuts ?? []) {
-      const t = effective?.transitions[cut.id];
-      if (!t) continue;
-      into.set(cut.toBeat, t);
-      if (cut.storyChange) noBumper.push(cut.toBeat);
-    }
-    return { into, noBumper };
-  }, [cuts, effective]);
-  // Image motions the visitor changed (scripted ones render as upstream).
-  const motions = React.useMemo(() => {
-    if (!effective) return undefined;
-    const changed = Object.entries(effective.motions).filter(([, m]) => m.source !== "script");
-    return changed.length ? Object.fromEntries(changed.map(([id, m]) => [id, m.motion])) : undefined;
-  }, [effective]);
+  // The Report's data props, computed as the export writes them (report-inputs.ts).
+  const inputs = React.useMemo(() => (effective ? reportInputs(effective, cuts ?? []) : {}), [effective, cuts]);
+  const into = inputs.transitions;
   const entrance = React.useCallback(
     (beatId: string, visual: React.ReactNode) => {
-      const t = into.get(beatId);
+      const t = into?.[beatId as BeatId];
       return t ? <CutEntrance transition={t}>{visual}</CutEntrance> : visual;
     },
     [into],
@@ -51,7 +34,7 @@ export const LabComposition: React.FC<LabCompositionProps> = ({ edition, report,
   // The beat before a moving transition stays on under it, leaving the way it is pushed.
   const exit = React.useCallback(
     (nextBeatId: string) => {
-      const t = into.get(nextBeatId);
+      const t = into?.[nextBeatId as BeatId];
       if (!t || !hasMotion(t) || t.durationFrames <= 0) return undefined;
       return {
         frames: t.durationFrames,
@@ -69,13 +52,13 @@ export const LabComposition: React.FC<LabCompositionProps> = ({ edition, report,
       edition={edition}
       lang={report.lang}
       timeline={report}
-      filters={filters}
+      filters={inputs.filters}
       entrance={entrance}
       exit={exit}
-      noBumper={noBumper}
-      theme={effective?.theme.name}
-      storyCard={effective?.storyCard.style}
-      motions={motions}
+      noBumper={inputs.noBumper}
+      theme={inputs.theme}
+      storyCard={inputs.storyCard}
+      motions={inputs.motions}
     />
   );
 };

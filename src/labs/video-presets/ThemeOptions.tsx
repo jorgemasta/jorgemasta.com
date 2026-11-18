@@ -4,18 +4,12 @@
 //
 // Styles in theme-options.css (plain CSS, `lab-theme` prefix), loaded with the editor only.
 import React from "react";
-import { MOTIONS, setMotion, setTheme, type Motion, type ThemeName } from "./edit-model";
+import { MOTIONS, setMotion, setTheme, themeLabel, type Motion, type ThemeName } from "./edit-model";
 import { THEMES, PRESETS } from "./destilados-snapshot/src/themes";
 import { MOTION_NAMES } from "./motion-names";
 import { useLabPlayer } from "./player-context";
 import type { LabEdits } from "./use-lab-edits";
 import "./theme-options.css";
-
-/** "amber-paper" → "Amber paper". */
-export const themeLabel = (name: ThemeName) => {
-  const words = name.replace("-", " ");
-  return words[0].toUpperCase() + words.slice(1);
-};
 
 export const ThemeOptions: React.FC<{ lab: LabEdits }> = ({ lab }) => {
   const { timeline } = useLabPlayer();

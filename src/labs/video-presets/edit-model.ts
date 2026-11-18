@@ -156,9 +156,12 @@ const effectiveMotions = (edition: EditionShape, edits: Edits): EffectiveEdition
   return out;
 };
 
+/** The look every graded beat takes from the preset at its intensity (neutral with none). */
+export const videoLook = (edits: Edits): Look => (edits.preset !== null ? mix(presetLook(edits, edits.preset), edits.intensity) : NEUTRAL_LOOK);
+
 const effectiveLooks = (edition: EditionShape, edits: Edits): EffectiveEdition["looks"] => {
   const looks: EffectiveEdition["looks"] = {};
-  const look = edits.preset !== null ? mix(presetLook(edits, edits.preset), edits.intensity) : NEUTRAL_LOOK;
+  const look = videoLook(edits);
   // A look that changes nothing (no preset, zero intensity, an untouched Custom) leaves beats as generated.
   const graded = !sameLook(look, NEUTRAL_LOOK);
   for (const beat of edition.beats) {
@@ -212,6 +215,12 @@ export const setDefaultTransition = (edits: Edits, transition: Transition | null
 export const setCutTransition = (edits: Edits, cutId: CutId, transition: Transition | null): Edits => {
   const { [cutId]: _removed, ...rest } = edits.cutTransitions;
   return { ...edits, cutTransitions: transition ? { ...rest, [cutId]: transition } : rest };
+};
+
+/** "amber-paper" → "Amber paper". */
+export const themeLabel = (name: ThemeName) => {
+  const words = name.replace("-", " ");
+  return words[0].toUpperCase() + words.slice(1);
 };
 
 /** Plays the whole video in a theme (null = the edition's own). */
