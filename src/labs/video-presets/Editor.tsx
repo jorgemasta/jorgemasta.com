@@ -15,6 +15,7 @@ import type { BeatId } from "./timeline";
 import { tweakedBeats } from "./tweaks";
 import { useLabEdits, type LabEdits } from "./use-lab-edits";
 import { seekForKey } from "./seek-keys";
+import { useStudio } from "./studio-layout";
 import { useTransitionLoop, type LoopControls, type LoopStatus } from "./use-transition-loop";
 import "./editor.css";
 
@@ -73,47 +74,89 @@ export const Editor: React.FC = () => {
     },
     [timeline],
   );
+  const player = (
+    <div
+      className="lab-frame lab-player card-img rounded-md"
+      style={{ overflow: "hidden" }}
+      role="group"
+      aria-label="Video. On its controls, the arrow keys seek 5 seconds (1 with Shift); Home and End go to the start and the end."
+      onKeyDown={onPlayerKey}
+    >
+      <Player
+        ref={playerRef}
+        component={LabComposition}
+        inputProps={inputProps}
+        durationInFrames={timeline.durationInFrames}
+        fps={timeline.fps}
+        compositionWidth={timeline.width}
+        compositionHeight={timeline.height}
+        controls
+        clickToPlay
+        acknowledgeRemotionLicense
+        // Around a story change the voice, the bed, the beat's sfx and the card's whoosh
+        // overlap (the intro adds four more); past the default 5 the player crashes to ⚠️.
+        numberOfSharedAudioTags={12}
+        style={{ width: "100%", aspectRatio: `${timeline.width} / ${timeline.height}` }}
+      />
+      <LoopBadge status={loop.status} onStop={loop.controls.stop} />
+    </div>
+  );
   return (
     <LabPlayerProvider playerRef={playerRef} timeline={timeline} loop={loop.controls}>
-      <div className="lab-editor">
-        <div
-          className="lab-frame lab-player card-img rounded-md"
-          style={{ overflow: "hidden" }}
-          role="group"
-          aria-label="Video. On its controls, the arrow keys seek 5 seconds (1 with Shift); Home and End go to the start and the end."
-          onKeyDown={onPlayerKey}
-        >
-          <Player
-            ref={playerRef}
-            component={LabComposition}
-            inputProps={inputProps}
-            durationInFrames={timeline.durationInFrames}
-            fps={timeline.fps}
-            compositionWidth={timeline.width}
-            compositionHeight={timeline.height}
-            controls
-            clickToPlay
-            acknowledgeRemotionLicense
-            // Around a story change the voice, the bed, the beat's sfx and the card's whoosh
-            // overlap (the intro adds four more); past the default 5 the player crashes to ⚠️.
-            numberOfSharedAudioTags={12}
-            style={{ width: "100%", aspectRatio: `${timeline.width} / ${timeline.height}` }}
-          />
-          <LoopBadge status={loop.status} onStop={loop.controls.stop} />
-        </div>
-        <ResetBar lab={lab} loop={loop.controls} />
-        <LookPresets lab={lab} />
-        <NowTweak tweaked={tweaked} moved={moved} open={inspecting?.from === "now"} onOpen={openFromNow}>
-          {inspector("now")}
-        </NowTweak>
-        <ThemeOptions lab={lab} />
-        <EditorTransitions
-          lab={lab}
-          timeline={{ tweaked, moved, inspecting: inspecting?.from === "timeline" ? inspecting.id : null, onInspect: openFromTimeline }}
-        />
-        <div className="lab-editor__timeline-insp">{inspector("timeline")}</div>
-      </div>
+      <EditorLayout
+        lab={lab}
+        player={player}
+        resetBar={<ResetBar lab={lab} loop={loop.controls} />}
+        nowTweak={
+          <NowTweak tweaked={tweaked} moved={moved} open={inspecting?.from === "now"} onOpen={openFromNow}>
+            {inspector("now")}
+          </NowTweak>
+        }
+        timeline={{ tweaked, moved, inspecting: inspecting?.from === "timeline" ? inspecting.id : null, onInspect: openFromTimeline }}
+        inspector={inspector("timeline")}
+      />
     </LabPlayerProvider>
+  );
+};
+
+// Wide, tall-enough windows get the studio layout (studio-layout.ts): the video, its reset bar
+// and the beat timeline in a stage that stays in view, the other controls in a panel beside it
+// that scrolls with the page. The stage (video first) and the panel. Elsewhere both wrappers are display: contents, so the
+// player stays a direct child of .lab-editor (the phone sticky rule relies on it). The timeline
+// and its inspector are placed in the DOM where they show, so tab order follows what is seen:
+// in the studio the timeline sits under the video and the inspector tops the panel, like a
+// properties panel that follows the selection; elsewhere both come after the transitions.
+// Transitions and the timeline share the cut being edited.
+const EditorLayout: React.FC<{
+  lab: LabEdits;
+  player: React.ReactNode;
+  resetBar: React.ReactNode;
+  nowTweak: React.ReactNode;
+  timeline: BeatTimelineProps;
+  inspector: React.ReactNode;
+}> = ({ lab, player, resetBar, nowTweak, timeline, inspector }) => {
+  const studio = useStudio();
+  const [target, setTarget] = useState<CutTarget>(null);
+  const renderCut = useCutMarkers(lab, target, setTarget);
+  const beats = <BeatTimeline {...timeline} renderCut={renderCut} />;
+  const insp = <div className="lab-editor__timeline-insp">{inspector}</div>;
+  return (
+    <div className="lab-editor lab-layout">
+      <div className="lab-stage">
+        {player}
+        {resetBar}
+        {studio && beats}
+      </div>
+      <div className="lab-panel">
+        {studio && insp}
+        <LookPresets lab={lab} />
+        {nowTweak}
+        <ThemeOptions lab={lab} />
+        <Transitions lab={lab} target={target} onTarget={setTarget} />
+        {!studio && beats}
+        {!studio && insp}
+      </div>
+    </div>
   );
 };
 
@@ -141,7 +184,7 @@ const ResetBar: React.FC<{ lab: LabEdits; loop: LoopControls }> = ({ lab, loop }
   );
 };
 
-// Over the video's top corner (sticky with it on phones) while a pick replays: "Replaying 2/3", and a way to stop it.
+// Over the video's top corner (it sticks with the video on phones, tablets and in the studio layout) while a pick replays: "Replaying 2/3", and a way to stop it.
 const LoopBadge: React.FC<{ status: LoopStatus; onStop: () => void }> = ({ status, onStop }) => (
   <p className="lab-loop" role="status">
     {status && status.repeats > 1 && (
@@ -206,18 +249,6 @@ const NowTweak: React.FC<{
       </div>
       {children}
     </section>
-  );
-};
-
-// Transitions panel + the timeline with its cuts: they share the cut being edited.
-const EditorTransitions: React.FC<{ lab: LabEdits; timeline: BeatTimelineProps }> = ({ lab, timeline }) => {
-  const [target, setTarget] = useState<CutTarget>(null);
-  const renderCut = useCutMarkers(lab, target, setTarget);
-  return (
-    <>
-      <Transitions lab={lab} target={target} onTarget={setTarget} />
-      <BeatTimeline {...timeline} renderCut={renderCut} />
-    </>
   );
 };
 

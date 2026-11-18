@@ -1,5 +1,7 @@
 /* Editor-wide rules (Editor.tsx). Plain CSS, loaded with the editor chunk only.
-   The page stays a normal scrolling document: no overscroll lock, no full-height shell. */
+   The page stays a normal scrolling document: no overscroll lock, no full-height shell.
+   Even the wide "studio" layout (lab-frame.css, below) pins only the video's column inside
+   the editor; the controls scroll with the page, so there is no scroll box to get stuck in. */
 
 .lab-editor {
   /* Inherited: no grey flash on tap anywhere in the editor; every control has its own :active. */
@@ -142,6 +144,80 @@
      The player is at most the viewport's width at 16:9. */
   .lab-editor :is(button, input, select, h2, h3) {
     scroll-margin-top: calc(56.25vw + 1rem);
+  }
+}
+
+/* Tablets and narrow windows, tall enough: the phone pattern, a sticky video over the
+   controls (it is about 22rem tall here, so only with room to spare under it). */
+@media (min-width: 48rem) and (max-width: 63.99rem) and (min-height: 46rem) {
+  .lab-player {
+    position: sticky;
+    top: 1rem;
+    z-index: 2;
+    box-shadow: 0 10px 14px -12px rgb(0 0 0 / 0.45);
+  }
+
+  /* The video is the column's width (42rem less 1.5rem of padding each side) at 16:9. */
+  .lab-editor :is(button, input, select, h2, h3) {
+    scroll-margin-top: calc(min(39rem, 100vw - 3rem) * 0.5625 + 2rem);
+  }
+}
+
+/* The studio layout (wide and tall: lab-frame.css has the grid and the pinned stage). The beat
+   timeline fills the stage under the video and scrolls on its own; the panel beside it holds
+   the inspector (on top, following the selection), looks, theme and transitions. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .lab-editor {
+    margin-bottom: 1rem;
+  }
+
+  .lab-stage > .lab-editor__bar {
+    flex: none;
+  }
+
+  .lab-stage > .lab-tl {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.75rem;
+  }
+
+  .lab-stage .lab-tl-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  /* The panel's first section (the inspector when open, else the looks) is level with the video. */
+  .lab-panel .lab-looks,
+  .lab-panel .lab-insp {
+    margin-top: 0;
+  }
+
+  .lab-panel .lab-insp {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Opening it scrolls its heading just into view, with the box's top edge showing too. */
+  .lab-panel .lab-insp__title {
+    scroll-margin-top: 2.5rem;
+  }
+
+  /* The panel is narrower than the tablet column the grids were laid out for. */
+  .lab-panel .lab-looks__strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lab-panel .lab-theme__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* The four transitions wrap two by two instead of a strip that hides one off the edge. */
+  .lab-panel .lab-tx__library {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
   }
 }
 

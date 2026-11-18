@@ -21,18 +21,21 @@ export default function VideoPresetsLab({ poster }: VideoPresetsLabProps) {
   }, []);
 
   return (
-    <div>
+    <div className="lab-wide">
       {/* Server-rendered with the poster, so it is there before the editor loads and nothing shifts. */}
       <p className="lab-intro">Pick a look, tweak a single beat by hand, then try a theme and the story transitions.</p>
       {Editor ? (
         <Editor />
       ) : (
-        <>
-          {poster && (
-            <img src={poster.src} alt={poster.alt} className="lab-frame card-img aspect-video w-full rounded-md object-cover" />
-          )}
-          {failed && <p className="mt-2 font-sans text-sm text-muted">The editor could not load. Reload the page to try again.</p>}
-        </>
+        // The poster sits in the same stage slot the player will take (lab-frame.css).
+        <div className="lab-layout">
+          <div className="lab-stage">
+            {poster && (
+              <img src={poster.src} alt={poster.alt} className="lab-frame card-img aspect-video w-full rounded-md object-cover" />
+            )}
+            {failed && <p className="mt-2 font-sans text-sm text-muted">The editor could not load. Reload the page to try again.</p>}
+          </div>
+        </div>
       )}
     </div>
   );

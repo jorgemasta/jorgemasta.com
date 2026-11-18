@@ -11,6 +11,7 @@ import { MOTION_NAMES, MOTION_OPTIONS } from "./motion-names";
 import { formatTime } from "./beat-timeline";
 import { LOOK_PARAMS } from "./look-params";
 import { useLabPlayer } from "./player-context";
+import { isStudio } from "./studio-layout";
 import { clearTweak, clearTweakParam, setTweak } from "./tweaks";
 import type { LabEdits } from "./use-lab-edits";
 import type { BeatId } from "./timeline";
@@ -31,8 +32,15 @@ export const BeatInspector: React.FC<BeatInspectorProps> = ({ lab, beatId, onClo
   const beat = timeline.beats.find((b) => b.id === beatId);
   const heading = useRef<HTMLHeadingElement>(null);
 
-  // Opening (or switching beats) moves focus to the panel.
-  useEffect(() => heading.current?.focus(), [beatId]);
+  // Opening (or switching beats) moves focus to the panel. In the studio layout it tops the side
+  // panel: scroll only as far as needed, so the pinned video and timeline stay where they are.
+  useEffect(() => {
+    const h = heading.current;
+    if (!h) return;
+    if (!isStudio()) return h.focus();
+    h.focus({ preventScroll: true });
+    h.scrollIntoView({ block: "nearest" });
+  }, [beatId]);
 
   if (!beat) return null;
   const commit = (next: typeof edits) => {
