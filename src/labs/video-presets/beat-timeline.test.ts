@@ -146,4 +146,8 @@ describe("storyChangeToTry: where \"Try it\" seeks and which story change it pla
     expect(storyChangeToTry(edition78, 2081 + 45)?.cut.at).toBe(2081);
     expect(storyChangeToTry(edition78, 2081 + 61)?.cut.at).toBe(3047);
   });
+
+  it("skips the story change right after the intro: no beat there for a transition to push out", () => {
+    expect(storyChangeToTry(edition78, 0)?.cut.at).toBe(2081);
+  });
 });

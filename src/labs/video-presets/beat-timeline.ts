@@ -88,9 +88,13 @@ export const imageAt = (timeline: EditionTimeline, frame: number): string | unde
 /**
  * The story change "Try it" plays and the frame it starts from (a second before
  * the cut). One that played in the last two seconds counts as next, so trying
- * again right after a preview repeats it instead of skipping ahead.
+ * again right after a preview repeats it instead of skipping ahead. Story changes
+ * with no beat ending on the cut (the one after the intro) are skipped.
  */
 export const storyChangeToTry = (timeline: EditionTimeline, frame: number): { cut: Cut; from: number } | undefined => {
-  const cut = nextStoryChange(timeline, Math.max(0, frame - 2 * timeline.fps));
+  // Only where the outgoing beat runs up to the cut: after the intro there is nothing for a transition to push out.
+  const ends = new Map(timeline.beats.map((b) => [b.id, b.to]));
+  const shown = { ...timeline, cuts: timeline.cuts.filter((c) => !c.storyChange || ends.get(c.fromBeat) === c.at) };
+  const cut = nextStoryChange(shown.cuts.some((c) => c.storyChange) ? shown : timeline, Math.max(0, frame - 2 * timeline.fps));
   return cut && { cut, from: Math.max(0, cut.at - timeline.fps) };
 };
