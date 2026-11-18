@@ -22,9 +22,11 @@ imageCredits:
 draft: true
 ---
 
-Every morning a pipeline Antonio Sejas built turns the day's AI news into a short video: a script, a voice, and around thirty beats of screenshots, titles and GIFs, rendered with Remotion. Edition 78 is 2:50 long, with 32 beats and five story changes. Nobody edits it by hand.
+Every day, Destilados, our pipeline, turns the day's AI news into a short video: a script, a voice, and around thirty beats of screenshots, titles and GIFs, rendered with Remotion. Edition 78 is 2:50 long, with 32 beats and five story changes.
 
-I wanted to know what editing it would feel like. Not a timeline editor: the video is generated again tomorrow, so most of what you change has to survive that. Above is the editor I built on top of a snapshot of the renderer. It forced four decisions.
+I wanted to know what editing it would feel like. Not a timeline editor: the video is generated again tomorrow, so most of what you change has to survive that. Above is the editor I built on top of a snapshot of the renderer.
+
+This is an early experiment: one edition, one editor, and the first decisions it forced. There were four.
 
 ## A tweak owns only what you touched
 
@@ -46,12 +48,14 @@ My first version did exactly that and looked like nothing. The outgoing beat dis
 
 ## One choice, not two
 
-At every story change the original plays a title card ("Story 2/5" and the headline). I added transitions as a second row next to the card styles. That gave you two selected options for one moment, and the transition silently won. I didn't understand my own screen.
+At every story change the original plays a title card ("Story 2/5" and the headline). I added transitions as a second row next to the card styles. Testing it, the video didn't match what the screen said: two rows let two options look selected for the same moment, and the transition quietly won.
 
-Now it is one choice of eight: four cards, four ways in without one, and a pick applies straight away and replays on the video three times. I gave up one thing for it: on a phone you can't try a transition without applying it. Reset and picking something else are the undo.
+The fix was one choice of eight: four cards, four ways in without one. A pick applies straight away and replays on the video three times. It cost one thing: on a phone you can't try a transition without applying it. Reset, or picking something else, is the undo.
 
 ## What leaves the editor
 
 Export gives two files, and the split is the answer to the question I started with. The **preset** holds the rules: look, theme, story change, photo motion, with no beat in it, so it applies to tomorrow's edition as it is. The **edits** are this video: the preset plus every one-off fix, keyed by beat, plus the exact inputs the renderer takes.
 
-My current hypothesis is that a generated video wants its taste in the preset and only its exceptions by hand, and that an editor should make you notice when you are writing the wrong one.
+Having the AI generate the video is the good part, and changing it should still mostly happen upstream, through the agent: the prompt and the pipeline. But trying variants and alternatives in a couple of taps, and seeing them play straight away, earned its place.
+
+My current hypothesis is that the taste belongs in the preset and the agent, and only the exceptions belong by hand.
