@@ -10,6 +10,12 @@
 // once. A draft plays without being committed. With reduced motion it holds a
 // still mid-transition instead.
 //
+// Every card carries a tiny looping demo of the same two scenes, A then B: a
+// story card plays "A → card → B", a transition "A → B moving", so the two
+// choices read side by side. The demos are CSS keyframes that run while the
+// section is on screen (and on hover or focus); with reduced motion they hold
+// a still partway through.
+//
 // Styles live in transitions.css (plain CSS, `lab-tx` prefix), not Tailwind,
 // so the stylesheet every page shares does not change for the Lab.
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -31,14 +37,11 @@ import type { LoopEnd } from "./use-transition-loop";
 import type { Cut, CutId } from "./timeline";
 import {
   adjustTransition,
-  cssEasing,
   DIRECTIONS,
   EASINGS,
   hasMotion,
   MAX_FRAMES,
   MIN_FRAMES,
-  poseAt,
-  poseStyle,
   sameTransition,
   transitionPreset,
   TRANSITIONS,
@@ -73,6 +76,12 @@ const DIRECTION_NAMES: Record<TransitionDirection, string> = {
 
 const CARD_STYLES: readonly StoryCardStyle[] = ["band", "glitch", "wipe", "zoom"];
 const CARD_NAMES: Record<StoryCardStyle, string> = { band: "Band", glitch: "Glitch", wipe: "Wipe", zoom: "Zoom" };
+const CARD_BLURBS: Record<StoryCardStyle, string> = {
+  band: "Cuts to the card, a band sweeps down.",
+  glitch: "A slab wipes it in, with a glitch.",
+  wipe: "A slab wipes it in and out.",
+  zoom: "The card punches in and out.",
+};
 
 const seconds = (frames: number, fps: number) => `${(frames / fps).toFixed(2).replace(/0$/, "")} s`;
 
@@ -109,6 +118,17 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   const previewingRef = useRef(false);
   /** Drops a preview held after it played (see `hold`). */
   const release = useRef<(() => void) | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  /** Whether the section is on screen: the cards' demos only loop then. */
+  const [onScreen, setOnScreen] = useState(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting), { threshold: 0.15 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   // Picking another target shows what it carries; a draft carries over to a target with nothing on it.
   useEffect(() => {
@@ -244,12 +264,21 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   const still = !shown || !hasMotion(shown);
 
   return (
-    <section className="lab-tx" aria-labelledby="lab-tx-title">
+    <section
+      ref={sectionRef}
+      className="lab-tx"
+      aria-labelledby="lab-tx-title"
+      data-playing={onScreen || undefined}
+      style={{ "--lab-tx-accent2": THEME_PRESETS[effective.theme.name].accent2 } as React.CSSProperties}
+    >
       <div className="lab-tx__head">
         <h2 id="lab-tx-title" className="lab-tx__title">
           Transitions &amp; story cards
         </h2>
       </div>
+      <p className="lab-tx__intro">
+        At each story change, play a card between stories, or skip the card and move straight into the next one.
+      </p>
 
       <StoryCardRow
         card={effective.storyCard}
@@ -271,6 +300,9 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
         }}
       />
 
+      <h3 className="lab-tx__label" id="lab-tx-library-label">
+        Or a transition, no card
+      </h3>
       <p className="lab-tx__status" aria-live="polite">
         {status}
       </p>
@@ -289,7 +321,7 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
         <p className="lab-tx__hint">Pick a cut on the timeline to make an exception.</p>
       )}
 
-      <div className="lab-tx__library" role="group" aria-label="Transition">
+      <div className="lab-tx__library" role="group" aria-labelledby="lab-tx-library-label">
         {TRANSITIONS.map((t) => {
           const isDraft = draft?.kind === t.id;
           const isApplied = committed?.kind === t.id;
@@ -299,7 +331,6 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
               kind={t.id}
               name={t.name}
               blurb={t.blurb}
-              settings={isDraft ? draft : isApplied ? committed : t.settings}
               state={isDraft ? "draft" : isApplied ? "applied" : null}
               onPick={pick}
             />
@@ -404,96 +435,113 @@ type StoryCardRowProps = {
   /** The transition on every story change, which plays instead of the card. */
   replacedBy: Transition | null;
   fps: number;
+  /** A style, or null to follow the theme again. */
   onChange: (style: StoryCardStyle | null) => void;
 };
 
-/** "Story card: Band (from theme)", and a select to pick another style or follow the theme again. */
+/**
+ * The four story card styles as cards, the one playing pressed. The theme's
+ * style is marked; picking it follows the theme again (null), so a theme
+ * change brings its own card.
+ */
 const StoryCardRow: React.FC<StoryCardRowProps> = ({ card, themeStyle, replacedBy, fps, onChange }) => (
   <div className="lab-tx__storycard">
-    <label className="lab-tx__field">
-      <span>Story card</span>
-      <select
-        value={card.source === "visitor" ? card.style : ""}
-        aria-describedby="lab-tx-card-note"
-        onChange={(e) => onChange((e.currentTarget.value || null) as StoryCardStyle | null)}
-      >
-        <option value="">{CARD_NAMES[themeStyle]} (from theme)</option>
-        {CARD_STYLES.map((s) => (
-          <option key={s} value={s}>
-            {CARD_NAMES[s]}
-          </option>
-        ))}
-      </select>
-    </label>
-    <p className="lab-tx__note" id="lab-tx-card-note">
-      {replacedBy
-        ? `Not shown now: every story change plays ${describe(replacedBy, fps)}. "Back to the story card" below brings it back.`
-        : `${card.source === "theme" ? "The theme's card plays" : "Your choice plays, whatever the theme,"} at each story change. A transition below replaces it.`}
-    </p>
+    <h3 className="lab-tx__label" id="lab-tx-card-label">
+      Story card
+    </h3>
+    <div
+      className="lab-tx__library"
+      role="group"
+      aria-labelledby="lab-tx-card-label"
+      aria-describedby={replacedBy ? "lab-tx-card-note" : undefined}
+    >
+      {CARD_STYLES.map((s) => {
+        const selected = card.style === s;
+        return (
+          <button
+            key={s}
+            type="button"
+            className="lab-tx__card"
+            aria-pressed={selected}
+            data-state={selected ? (replacedBy ? "replaced" : "applied") : undefined}
+            onClick={() => onChange(s === themeStyle ? null : s)}
+          >
+            <CardDemo style={s} />
+            <span className="lab-tx__name">
+              {CARD_NAMES[s]}
+              {s === themeStyle && <span className="lab-tx__badge lab-tx__badge--theme">theme’s</span>}
+            </span>
+            <span className="lab-tx__blurb">{CARD_BLURBS[s]}</span>
+          </button>
+        );
+      })}
+    </div>
+    {replacedBy && (
+      <p className="lab-tx__note" id="lab-tx-card-note">
+        Not playing now: every story change uses {describe(replacedBy, fps)}. “Back to the story card” below brings it back.
+      </p>
+    )}
   </div>
+);
+
+/** The two scenes every demo shares: A, the beat before, and B, the next one. */
+const Scenes: React.FC = () => (
+  <>
+    <span className="lab-tx__demo-a">A</span>
+    <span className="lab-tx__demo-b">B</span>
+  </>
+);
+
+/** A story card's demo: A, then a tiny "Story 2/5" card entering the way the real one does, then B. */
+const CardDemo: React.FC<{ style: StoryCardStyle }> = ({ style }) => (
+  <span className="lab-tx__demo" data-card={style} aria-hidden="true">
+    <Scenes />
+    <span className="lab-tx__sc">
+      <span className="lab-tx__sc-in">
+        <span className="lab-tx__sc-txt">
+          <span className="lab-tx__sc-num">02</span>
+          <span className="lab-tx__sc-kicker">Story 2/5</span>
+        </span>
+      </span>
+    </span>
+    {style === "band" && <span className="lab-tx__band" />}
+    {(style === "wipe" || style === "glitch") && <span className="lab-tx__slab" />}
+    {style === "glitch" && (
+      <>
+        <span className="lab-tx__rgb lab-tx__rgb--r" />
+        <span className="lab-tx__rgb lab-tx__rgb--c" />
+      </>
+    )}
+  </span>
 );
 
 type LibraryCardProps = {
   kind: TransitionKind;
   name: string;
   blurb: string;
-  settings: Transition;
   /** "applied": on the video now. "draft": picked or adjusted, not applied yet. */
   state: "applied" | "draft" | null;
   onPick: (kind: TransitionKind) => void;
 };
 
-/** One transition: a tiny two-frame demo (it plays while pointed at or focused), its name and a line. */
-const LibraryCard: React.FC<LibraryCardProps> = ({ kind, name, blurb, settings, state, onPick }) => {
-  const incoming = useRef<HTMLSpanElement>(null);
-  const [active, setActive] = useState(false);
-
-  // Loop the transition on the demo's incoming frame while the card is pointed at or focused.
-  useEffect(() => {
-    const el = incoming.current;
-    if (!active || !el || !hasMotion(settings) || reducedMotion() || !el.animate) return;
-    let timer: number | undefined;
-    let anim: Animation | undefined;
-    const ms = (settings.durationFrames / 30) * 1000;
-    const run = () => {
-      anim = el.animate([{ ...poseStyle(poseAt(settings, 0)), filter: poseStyle(poseAt(settings, 0)).filter ?? "none" }, { ...poseStyle(poseAt(settings, 1)), filter: "none" }], {
-        duration: ms,
-        easing: cssEasing(settings.easing),
-        fill: "backwards",
-      });
-      timer = window.setTimeout(run, ms + 900);
-    };
-    run();
-    return () => {
-      window.clearTimeout(timer);
-      anim?.cancel();
-    };
-  }, [active, settings]);
-
-  return (
-    <button
-      type="button"
-      className="lab-tx__card"
-      data-state={state ?? undefined}
-      onPointerEnter={(e) => e.pointerType === "mouse" && setActive(true)}
-      onPointerLeave={() => setActive(false)}
-      onFocus={() => setActive(true)}
-      onBlur={() => setActive(false)}
-      onClick={() => onPick(kind)}
-    >
-      <span className="lab-tx__demo" aria-hidden="true">
-        <span className="lab-tx__demo-a" />
-        {/* At rest the demo holds a still partway through, so each card reads without motion. */}
-        <span className="lab-tx__demo-b" ref={incoming} style={poseStyle(poseAt(settings, 0.55))} />
-      </span>
-      <span className="lab-tx__name">
-        {name}
-        {state && <span className="lab-tx__badge">{state === "draft" ? "draft" : "applied"}</span>}
-      </span>
-      <span className="lab-tx__blurb">{blurb}</span>
-    </button>
-  );
-};
+/**
+ * One transition: a tiny demo of B entering over A with that motion (no card;
+ * a cut swaps at once), its name and a line. The demo shows the preset's
+ * motion, not adjusted settings.
+ */
+const LibraryCard: React.FC<LibraryCardProps> = ({ kind, name, blurb, state, onPick }) => (
+  <button type="button" className="lab-tx__card" data-state={state ?? undefined} onClick={() => onPick(kind)}>
+    <span className="lab-tx__demo" data-tx={kind} aria-hidden="true">
+      <Scenes />
+      {kind === "whip" && <span className="lab-tx__smear" />}
+    </span>
+    <span className="lab-tx__name">
+      {name}
+      {state && <span className="lab-tx__badge">{state === "draft" ? "draft" : "applied"}</span>}
+    </span>
+    <span className="lab-tx__blurb">{blurb}</span>
+  </button>
+);
 
 // ── Cuts on the beat timeline ──────────────────────────────────────────────────
 
