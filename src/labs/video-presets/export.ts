@@ -16,7 +16,7 @@ import { MOTION_NAMES } from "./motion-names";
 import { reportInputs, type ReportInputs } from "./report-inputs";
 import { cardName } from "./story-changes";
 import type { BeatId, CutId, EditionTimeline } from "./timeline";
-import { transitionPreset, type Transition } from "./transitions";
+import { transitionOf, transitionPreset, type Transition } from "./transitions";
 
 export const PRESET_SCHEMA = "jorgemasta.lab.video-presets/preset@1";
 export const EDITS_SCHEMA = "jorgemasta.lab.video-presets/edits@1";
@@ -58,8 +58,6 @@ const orderedLook = (look: Partial<Look>, skipNeutral: boolean): Partial<Look> =
   for (const k of LOOK_KEYS) if (look[k] !== undefined && !(skipNeutral && look[k] === NEUTRAL_LOOK[k])) out[k] = look[k];
   return out;
 };
-
-const transitionOf = (t: Transition): Transition => ({ kind: t.kind, durationFrames: t.durationFrames, easing: t.easing, direction: t.direction });
 
 const rules = (edits: Edits): PresetRules => {
   const out: PresetRules = {};

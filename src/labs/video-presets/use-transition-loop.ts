@@ -7,14 +7,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PlayerRef } from "@remotion/player";
 import { loopStep, type LoopPlan } from "./transition-loop";
 
-/** "done": every run played. "stopped": cancelled (the visitor, Stop, or another loop). */
-export type LoopEnd = "done" | "stopped";
-
 export type LoopStatus = { run: number; repeats: number } | null;
 
 export type LoopControls = {
-  /** Plays `plan`, ending any loop already playing. `onEnd` runs once, however the loop ends. */
-  start: (plan: LoopPlan, onEnd?: (how: LoopEnd) => void) => void;
+  /** Plays `plan`, ending any loop already playing. */
+  start: (plan: LoopPlan) => void;
   /** Ends the loop playing, if any. */
   stop: () => void;
 };
@@ -25,21 +22,21 @@ export const useTransitionLoop = (playerRef: React.RefObject<PlayerRef | null>):
    * Ends the current loop: removes its listeners and, unless `keepSound`, gives
    * the sound back. Returns whether the visitor had it muted. Null when none plays.
    */
-  const end = useRef<((how: LoopEnd, keepSound?: boolean) => boolean) | null>(null);
+  const end = useRef<((keepSound?: boolean) => boolean) | null>(null);
 
-  // Stop (the badge, Reset, Apply…) leaves the video paused where it is.
+  // Stop (the badge, Reset…) leaves the video paused where it is.
   const stop = useCallback(() => {
     if (!end.current) return;
     playerRef.current?.pause(); // its "pause" ends the loop
-    end.current?.("stopped");
+    end.current?.();
   }, [playerRef]);
 
   const start = useCallback(
-    (plan: LoopPlan, onEnd?: (how: LoopEnd) => void) => {
+    (plan: LoopPlan) => {
       const player = playerRef.current;
       // A loop replacing another keeps the visitor's sound setting from before the first:
       // the player still reports the replaced loop's mute until it re-renders.
-      const replaced = end.current?.("stopped", true);
+      const replaced = end.current?.(true);
       if (!player) return;
       let run = 1;
       let own = false;
@@ -65,18 +62,18 @@ export const useTransitionLoop = (playerRef: React.RefObject<PlayerRef | null>):
             player.pause();
             player.seekTo(step.seekTo);
           });
-          finish("done");
+          finish();
         }
       };
       const onVisitor = () => {
-        if (!own) finish("stopped");
+        if (!own) finish();
       };
       // Unmuting during the loop is the visitor's call: keep the sound on afterwards.
       const onMute = (e: { detail: { isMuted: boolean } }) => {
         if (!e.detail.isMuted) wasMuted = false;
       };
 
-      const finish = (how: LoopEnd, keepSound = false): boolean => {
+      const finish = (keepSound = false): boolean => {
         if (end.current !== finish) return wasMuted;
         end.current = null;
         player.removeEventListener("frameupdate", onFrame);
@@ -85,7 +82,6 @@ export const useTransitionLoop = (playerRef: React.RefObject<PlayerRef | null>):
         player.removeEventListener("mutechange", onMute);
         if (!wasMuted && !keepSound) player.unmute();
         setStatus(null);
-        onEnd?.(how);
         return wasMuted;
       };
       end.current = finish;

@@ -3,7 +3,7 @@
 // .lab-layout rules in lab-frame.css and editor.css; change them together.
 import { useSyncExternalStore } from "react";
 
-export const STUDIO_QUERY = "(min-width: 64rem) and (min-height: 36rem)";
+const STUDIO_QUERY = "(min-width: 64rem) and (min-height: 36rem)";
 
 export const isStudio = () => typeof window !== "undefined" && window.matchMedia(STUDIO_QUERY).matches;
 

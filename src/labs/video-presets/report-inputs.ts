@@ -6,7 +6,7 @@
 // generated original is present: an absent prop renders as upstream.
 import { lookToCssFilter, type EffectiveEdition, type Motion, type StoryCardStyle, type ThemeName } from "./edit-model";
 import type { BeatId, Cut } from "./timeline";
-import type { Transition } from "./transitions";
+import { transitionOf, type Transition } from "./transitions";
 
 /** A transition as the Report draws it: from frame `at` (the cut) over the incoming beat's first frames. */
 export type ReportTransition = Transition & { at: number };
@@ -40,7 +40,7 @@ export const reportInputs = (
   for (const cut of cuts) {
     const t = effective.transitions[cut.id];
     if (!t) continue;
-    transitions[cut.toBeat] = { kind: t.kind, durationFrames: t.durationFrames, easing: t.easing, direction: t.direction, at: t.at };
+    transitions[cut.toBeat] = { ...transitionOf(t), at: t.at };
     if (cut.storyChange) noBumper.push(cut.toBeat);
   }
   const motions: Record<BeatId, Motion> = {};

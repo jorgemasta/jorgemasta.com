@@ -1,6 +1,7 @@
 // The Lab's edit model: the generated edition plus the visitor's edits in, the
 // effective edit for every beat out. Pure; the player renders what it returns.
 import { clamp } from "./math";
+import { withKey } from "./records";
 import type { BeatId, Cut, CutId, LabBeat } from "./timeline";
 import type { Transition } from "./transitions";
 import { withTweak, type BeatTweak } from "./tweaks";
@@ -208,14 +209,11 @@ export const setIntensity = (edits: Edits, intensity: number): Edits => ({
   intensity: clamp(intensity, 0, 1),
 });
 
-/** Sets the transition on every story change (null = the generated story card). */
-export const setDefaultTransition = (edits: Edits, transition: Transition | null): Edits => ({ ...edits, defaultTransition: transition });
-
 /** Overrides the transition on one cut (null removes the override: the cut follows the default again). */
-export const setCutTransition = (edits: Edits, cutId: CutId, transition: Transition | null): Edits => {
-  const { [cutId]: _removed, ...rest } = edits.cutTransitions;
-  return { ...edits, cutTransitions: transition ? { ...rest, [cutId]: transition } : rest };
-};
+export const setCutTransition = (edits: Edits, cutId: CutId, transition: Transition | null): Edits => ({
+  ...edits,
+  cutTransitions: withKey(edits.cutTransitions, cutId, transition),
+});
 
 /** "amber-paper" → "Amber paper". */
 export const themeLabel = (name: ThemeName) => {
@@ -244,10 +242,10 @@ export const setStoryChange = (edits: Edits, change: StoryChange): Edits =>
 export const setMotion = (edits: Edits, motion: Motion | null): Edits => ({ ...edits, motion });
 
 /** Overrides one image beat's motion (null removes the override: the beat follows the default again). */
-export const setBeatMotion = (edits: Edits, beatId: BeatId, motion: Motion | null): Edits => {
-  const { [beatId]: _removed, ...rest } = edits.beatMotions;
-  return { ...edits, beatMotions: motion ? { ...rest, [beatId]: motion } : rest };
-};
+export const setBeatMotion = (edits: Edits, beatId: BeatId, motion: Motion | null): Edits => ({
+  ...edits,
+  beatMotions: withKey(edits.beatMotions, beatId, motion),
+});
 
 /** Clears every edit (looks, tweaks, transitions): the generated original. */
 export const reset = (): Edits => NO_EDITS;

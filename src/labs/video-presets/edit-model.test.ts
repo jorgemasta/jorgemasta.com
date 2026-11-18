@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyPreset, effectiveEdition, hasEdits, lookToCssFilter, NO_EDITS, reset, setCutTransition, setDefaultTransition, setIntensity } from "./edit-model";
+import { applyPreset, effectiveEdition, hasEdits, lookToCssFilter, NO_EDITS, reset, setCutTransition, setIntensity, setStoryChange } from "./edit-model";
 import type { Transition } from "./transitions";
 
 // A small edition: one beat of each relevant kind.
@@ -81,7 +81,7 @@ describe("transitions", () => {
   const slide: Transition = { kind: "slide", durationFrames: 8, easing: "ease-in-out", direction: "right" };
 
   it("plays the default transition on every story change, starting on the cut, and leaves other cuts as generated", () => {
-    const edits = setDefaultTransition(NO_EDITS, slide);
+    const edits = setStoryChange(NO_EDITS, { transition: slide });
     expect(effectiveEdition(edition, edits).transitions).toEqual({
       "b1-b2": { ...slide, at: 200, source: "default" },
       "b2-b3": { ...slide, at: 300, source: "default" },
@@ -91,11 +91,16 @@ describe("transitions", () => {
   const whip: Transition = { kind: "whip", durationFrames: 6, easing: "ease-out", direction: "left" };
 
   it("lets one cut override the default, on that cut only", () => {
-    const edits = setCutTransition(setDefaultTransition(NO_EDITS, slide), "b2-b3", whip);
+    const edits = setCutTransition(setStoryChange(NO_EDITS, { transition: slide }), "b2-b3", whip);
     expect(effectiveEdition(edition, edits).transitions).toEqual({
       "b1-b2": { ...slide, at: 200, source: "default" },
       "b2-b3": { ...whip, at: 300, source: "override" },
     });
+  });
+
+  it("returns every story change to the story card when a card is picked again", () => {
+    const edits = setStoryChange(setStoryChange(NO_EDITS, { transition: slide }), { card: null });
+    expect(effectiveEdition(edition, edits).transitions).toEqual({});
   });
 
   it("lets a cut between two beats of a story carry an override with no default set", () => {
@@ -104,14 +109,14 @@ describe("transitions", () => {
   });
 
   it("returns a cut to the default when its override is removed", () => {
-    const edits = setCutTransition(setCutTransition(setDefaultTransition(NO_EDITS, slide), "b2-b3", whip), "b2-b3", null);
+    const edits = setCutTransition(setCutTransition(setStoryChange(NO_EDITS, { transition: slide }), "b2-b3", whip), "b2-b3", null);
     expect(effectiveEdition(edition, edits).transitions["b2-b3"]).toEqual({ ...slide, at: 300, source: "default" });
   });
 
   it("keeps every beat on the voice: a transition starts on its cut and ends within the incoming beat", () => {
     // b3 runs 300–310: a 30-frame slide into it is cut to its 10 frames rather than delaying anything.
     const long = { ...slide, durationFrames: 30 };
-    const edits = setDefaultTransition(NO_EDITS, long);
+    const edits = setStoryChange(NO_EDITS, { transition: long });
     expect(effectiveEdition(edition, edits).transitions).toEqual({
       "b1-b2": { ...long, at: 200, source: "default" },
       "b2-b3": { ...long, durationFrames: 10, at: 300, source: "default" },
@@ -131,7 +136,7 @@ describe("hasEdits: whether there is anything for Reset to undo", () => {
   it("is true once a look, a tweak or a transition is set", () => {
     expect(hasEdits(applyPreset(NO_EDITS, "punch"))).toBe(true);
     expect(hasEdits({ ...NO_EDITS, tweaks: { b0: { hue: 10 } } })).toBe(true);
-    expect(hasEdits(setDefaultTransition(NO_EDITS, whip))).toBe(true);
+    expect(hasEdits(setStoryChange(NO_EDITS, { transition: whip }))).toBe(true);
     expect(hasEdits(setCutTransition(NO_EDITS, "b2-b3", whip))).toBe(true);
   });
 });

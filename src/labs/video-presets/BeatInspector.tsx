@@ -6,8 +6,8 @@
 //
 // Styles in inspector.css (plain CSS, `lab-insp` prefix), loaded with the editor only.
 import React, { useEffect, useRef } from "react";
-import { effectiveEdition, hasMotion, NEUTRAL_LOOK, presetName, setBeatMotion, type Motion } from "./edit-model";
-import { MOTION_NAMES, MOTION_OPTIONS } from "./motion-names";
+import { effectiveEdition, hasMotion, MOTIONS, NEUTRAL_LOOK, presetName, setBeatMotion, type Motion } from "./edit-model";
+import { MOTION_NAMES } from "./motion-names";
 import { formatTime } from "./beat-timeline";
 import { LOOK_PARAMS } from "./look-params";
 import { useLabPlayer } from "./player-context";
@@ -135,7 +135,7 @@ export const BeatInspector: React.FC<BeatInspectorProps> = ({ lab, beatId, onClo
             <option value="">
               {MOTION_NAMES[fallback.motion]} ({fallback.source === "default" ? "all photos" : "as scripted"})
             </option>
-            {MOTION_OPTIONS.map((m) => (
+            {MOTIONS.map((m) => (
               <option key={m} value={m}>
                 {MOTION_NAMES[m]}
               </option>

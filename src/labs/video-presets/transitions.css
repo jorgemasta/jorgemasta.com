@@ -171,12 +171,12 @@
   background: color-mix(in srgb, var(--color-chocolate) 6%, var(--color-paper));
 }
 
-/* The demos: the same two scenes in every card, A (the beat before) and B (the next one).
+/* The mini previews: the same two scenes in every card, A (the beat before) and B (the next one).
    A story card plays A → card → B; a transition plays A → B moving, with no card.
    One 4 s loop: A holds, the change plays from 25 %, B holds to the end. Transform and
    opacity only. Paused (on a frame partway through, from the negative delay) unless the
    section is on screen or the card is pointed at or focused; held there with reduced motion. */
-.lab-tx__demo {
+.lab-tx__mini {
   position: relative;
   display: block;
   height: 3rem;
@@ -186,7 +186,7 @@
   isolation: isolate;
 }
 
-.lab-tx__demo > * {
+.lab-tx__mini > * {
   position: absolute;
   inset: 0;
   /* Slow enough to read, and still until asked: hover or focus on desktop, a tap on touch. */
@@ -201,43 +201,43 @@
 
 /* Each still caught mid-change, so the options read apart at rest: the band mid-sweep, the
    slab mid-wipe, the RGB jolt, the card still big, the whip's smear, the zoom's crossfade. */
-.lab-tx__demo[data-card="band"] {
+.lab-tx__mini[data-card="band"] {
   --lab-tx-still: -1.12s;
 }
 
-.lab-tx__demo[data-card="glitch"] {
+.lab-tx__mini[data-card="glitch"] {
   --lab-tx-still: -1.36s;
 }
 
-.lab-tx__demo[data-card="wipe"] {
+.lab-tx__mini[data-card="wipe"] {
   --lab-tx-still: -1.16s;
 }
 
-.lab-tx__demo[data-card="zoom"] {
+.lab-tx__mini[data-card="zoom"] {
   --lab-tx-still: -1.2s;
 }
 
-.lab-tx__demo[data-tx="whip"] {
+.lab-tx__mini[data-tx="whip"] {
   --lab-tx-still: -1.56s;
 }
 
-.lab-tx__demo[data-tx="zoom"] {
+.lab-tx__mini[data-tx="zoom"] {
   --lab-tx-still: -1.6s;
 }
 
-.lab-tx__card[data-demo] .lab-tx__demo > *,
-.lab-tx__card:focus-visible .lab-tx__demo > * {
+.lab-tx__card[data-mini-playing] .lab-tx__mini > *,
+.lab-tx__card:focus-visible .lab-tx__mini > * {
   animation-play-state: running;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .lab-tx__card:hover .lab-tx__demo > * {
+  .lab-tx__card:hover .lab-tx__mini > * {
     animation-play-state: running;
   }
 }
 
-.lab-tx__demo-a,
-.lab-tx__demo-b {
+.lab-tx__mini-a,
+.lab-tx__mini-b {
   padding: 0.2rem 0.35rem;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -245,16 +245,16 @@
   color: rgb(255 255 255 / 0.9);
 }
 
-.lab-tx__demo-a {
+.lab-tx__mini-a {
   background: #3f74b1;
 }
 
-.lab-tx__demo-b {
+.lab-tx__mini-b {
   background: #e3893a;
 }
 
 /* ── Story cards: B waits under the card; the card covers A, holds, then leaves on B. ── */
-.lab-tx__demo[data-card] .lab-tx__demo-b {
+.lab-tx__mini[data-card] .lab-tx__mini-b {
   animation-name: lab-tx-b-after-card;
 }
 
@@ -336,7 +336,7 @@
 }
 
 /* Band: a hard cut to the card, an accent band sweeping down over it on the way in and out. */
-.lab-tx__demo[data-card="band"] .lab-tx__sc {
+.lab-tx__mini[data-card="band"] .lab-tx__sc {
   animation-name: lab-tx-card-hard;
 }
 
@@ -385,13 +385,13 @@
 
 /* Wipe and glitch: the card wipes in from the left behind a skewed violet slab and wipes out to
    the right (the card slides, its contents counter-slide so they stay put: a wipe). */
-.lab-tx__demo[data-card="wipe"] .lab-tx__sc,
-.lab-tx__demo[data-card="glitch"] .lab-tx__sc {
+.lab-tx__mini[data-card="wipe"] .lab-tx__sc,
+.lab-tx__mini[data-card="glitch"] .lab-tx__sc {
   animation-name: lab-tx-wipe;
 }
 
-.lab-tx__demo[data-card="wipe"] .lab-tx__sc-in,
-.lab-tx__demo[data-card="glitch"] .lab-tx__sc-in {
+.lab-tx__mini[data-card="wipe"] .lab-tx__sc-in,
+.lab-tx__mini[data-card="glitch"] .lab-tx__sc-in {
   animation-name: lab-tx-wipe-counter;
 }
 
@@ -525,7 +525,7 @@
 }
 
 /* Pop (the "zoom" style): the card pops in from big, holds, and shrinks away. */
-.lab-tx__demo[data-card="zoom"] .lab-tx__sc {
+.lab-tx__mini[data-card="zoom"] .lab-tx__sc {
   animation-name: lab-tx-card-zoom;
 }
 
@@ -556,7 +556,7 @@
 }
 
 /* ── Transitions: no card; B itself comes in over A at 30 %, pushing A out (a cut just covers it). ── */
-.lab-tx__demo[data-tx="cut"] .lab-tx__demo-b {
+.lab-tx__mini[data-tx="cut"] .lab-tx__mini-b {
   animation-name: lab-tx-cut;
 }
 
@@ -571,7 +571,7 @@
   }
 }
 
-.lab-tx__demo[data-tx="slide"] .lab-tx__demo-b {
+.lab-tx__mini[data-tx="slide"] .lab-tx__mini-b {
   animation-name: lab-tx-slide;
 }
 
@@ -588,7 +588,7 @@
 }
 
 /* Slide: B comes up from below, pushing A out the top, edge to edge. */
-.lab-tx__demo[data-tx="slide"] .lab-tx__demo-a {
+.lab-tx__mini[data-tx="slide"] .lab-tx__mini-a {
   animation-name: lab-tx-slide-out;
 }
 
@@ -605,7 +605,7 @@
 }
 
 /* Whip: fast, with a soft smear on its leading edge until it lands. */
-.lab-tx__demo[data-tx="whip"] .lab-tx__demo-b {
+.lab-tx__mini[data-tx="whip"] .lab-tx__mini-b {
   animation-name: lab-tx-whip;
 }
 
@@ -651,7 +651,7 @@
 }
 
 /* A is thrown out with B, the same way. */
-.lab-tx__demo[data-tx="whip"] .lab-tx__demo-a {
+.lab-tx__mini[data-tx="whip"] .lab-tx__mini-a {
   animation-name: lab-tx-whip-out;
 }
 
@@ -668,7 +668,7 @@
 }
 
 /* Zoom: A swells a little and fades as B punches in over it. */
-.lab-tx__demo[data-tx="zoom"] .lab-tx__demo-a {
+.lab-tx__mini[data-tx="zoom"] .lab-tx__mini-a {
   animation-name: lab-tx-zoom-out;
 }
 
@@ -685,7 +685,7 @@
   }
 }
 
-.lab-tx__demo[data-tx="zoom"] .lab-tx__demo-b {
+.lab-tx__mini[data-tx="zoom"] .lab-tx__mini-b {
   animation-name: lab-tx-zoom;
 }
 
@@ -707,7 +707,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lab-tx .lab-tx__demo > * {
+  .lab-tx .lab-tx__mini > * {
     animation-play-state: paused !important;
   }
 }

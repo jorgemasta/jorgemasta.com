@@ -24,6 +24,9 @@ export type Transition = {
   direction: TransitionDirection;
 };
 
+/** Just a transition's own settings, from anything that carries them (an effective transition, imported JSON). */
+export const transitionOf = (t: Transition): Transition => ({ kind: t.kind, durationFrames: t.durationFrames, easing: t.easing, direction: t.direction });
+
 export type TransitionPreset = { id: TransitionKind; name: string; blurb: string; settings: Transition };
 
 export const TRANSITIONS = [
@@ -79,8 +82,6 @@ export const EASING_CURVES: Record<TransitionEasing, readonly [number, number, n
   "ease-in-out": [0.65, 0, 0.35, 1],
   overshoot: [0.34, 1.56, 0.64, 1],
 };
-
-export const cssEasing = (e: TransitionEasing): string => `cubic-bezier(${EASING_CURVES[e].join(", ")})`;
 
 /**
  * The incoming beat's pose `p` (0–1) of the way through a transition: where it
@@ -153,5 +154,3 @@ export const adjustTransition = (t: Transition, change: Partial<Omit<Transition,
   return next;
 };
 
-export const sameTransition = (a: Transition | null | undefined, b: Transition | null | undefined): boolean =>
-  !!a && !!b && a.kind === b.kind && a.durationFrames === b.durationFrames && a.easing === b.easing && a.direction === b.direction;

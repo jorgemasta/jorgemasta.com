@@ -11,8 +11,8 @@
 // a transition of its own, or back to the default. A card can't go on one cut,
 // so the card row is off there.
 //
-// Every option carries a tiny demo of the same two scenes, A then B: a card
-// plays "A → card → B", a transition "A → B moving". The demos are CSS keyframes
+// Every option carries a mini preview of the same two scenes, A then B: a card
+// plays "A → card → B", a transition "A → B moving". The mini previews are CSS keyframes
 // that rest on a still and play on hover or focus (a tap on touch).
 //
 // Styles live in transitions.css (plain CSS, `lab-tx` prefix), not Tailwind,
@@ -101,7 +101,7 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   const groupRef = useRef<HTMLDivElement>(null);
   const fps = timeline.fps;
 
-  // A card's demo rests on its still and plays only when asked: hover or focus with a mouse,
+  // A card's mini preview rests on its still and plays only when asked: hover or focus with a mouse,
   // a tap on touch (twice, next to the replay on the video). Whenever it stops it goes back
   // to the still, not wherever it was.
   useEffect(() => {
@@ -113,17 +113,17 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
     const onClick = (e: MouseEvent) => {
       const card = (e.target as Element).closest(".lab-tx__card");
       if (!touch || !card) return;
-      el.querySelectorAll(".lab-tx__card[data-demo]").forEach((c) => {
-        c.removeAttribute("data-demo");
+      el.querySelectorAll(".lab-tx__card[data-mini-playing]").forEach((c) => {
+        c.removeAttribute("data-mini-playing");
         toStill(c);
       });
       window.clearTimeout(timers.get(card));
       toStill(card);
-      card.setAttribute("data-demo", "");
+      card.setAttribute("data-mini-playing", "");
       timers.set(
         card,
         window.setTimeout(() => {
-          card.removeAttribute("data-demo");
+          card.removeAttribute("data-mini-playing");
           toStill(card);
         }, 8000),
       );
@@ -132,7 +132,7 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
     const onLeave = (e: MouseEvent | FocusEvent) => {
       const card = (e.target as Element).closest(".lab-tx__card");
       const to = e.relatedTarget as Node | null;
-      if (card && !(to && card.contains(to)) && !card.hasAttribute("data-demo")) toStill(card);
+      if (card && !(to && card.contains(to)) && !card.hasAttribute("data-mini-playing")) toStill(card);
     };
     el.addEventListener("click", onClick);
     el.addEventListener("mouseout", onLeave);
@@ -359,17 +359,17 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   );
 };
 
-/** The two scenes every demo shares: A, the beat before, and B, the next one. */
+/** The two scenes every mini preview shares: A, the beat before, and B, the next one. */
 const Scenes: React.FC = () => (
   <>
-    <span className="lab-tx__demo-a">A</span>
-    <span className="lab-tx__demo-b">B</span>
+    <span className="lab-tx__mini-a">A</span>
+    <span className="lab-tx__mini-b">B</span>
   </>
 );
 
-/** A card's demo: A, then a tiny "Story 2/5" card entering the way the real one does, then B. */
-const CardDemo: React.FC<{ style: StoryCardStyle }> = ({ style }) => (
-  <span className="lab-tx__demo" data-card={style} aria-hidden="true">
+/** A card's mini preview: A, then a tiny "Story 2/5" card entering the way the real one does, then B. */
+const CardMini: React.FC<{ style: StoryCardStyle }> = ({ style }) => (
+  <span className="lab-tx__mini" data-card={style} aria-hidden="true">
     <Scenes />
     <span className="lab-tx__sc">
       <span className="lab-tx__sc-in">
@@ -390,9 +390,9 @@ const CardDemo: React.FC<{ style: StoryCardStyle }> = ({ style }) => (
   </span>
 );
 
-/** A transition's demo: B coming in over A with the preset's motion, pushing A out (a cut swaps at once). */
-const MoveDemo: React.FC<{ kind: TransitionKind }> = ({ kind }) => (
-  <span className="lab-tx__demo" data-tx={kind} aria-hidden="true">
+/** A transition's mini preview: B coming in over A with the preset's motion, pushing A out (a cut swaps at once). */
+const MoveMini: React.FC<{ kind: TransitionKind }> = ({ kind }) => (
+  <span className="lab-tx__mini" data-tx={kind} aria-hidden="true">
     <Scenes />
     {kind === "whip" && <span className="lab-tx__smear" />}
   </span>
@@ -409,7 +409,7 @@ type OptionCardProps = {
   onPick: (option: Chosen) => void;
 };
 
-/** One option, a radio in the story change group: its demo, name and a line. */
+/** One option, a radio in the story change group: its mini preview, name and a line. */
 const OptionCard: React.FC<OptionCardProps> = ({ option, checked, disabled, tabbable, theme, onPick }) => (
   <button
     type="button"
@@ -422,7 +422,7 @@ const OptionCard: React.FC<OptionCardProps> = ({ option, checked, disabled, tabb
     data-option={`${option.kind}:${option.id}`}
     onClick={() => onPick(option)}
   >
-    {option.kind === "card" ? <CardDemo style={option.id} /> : <MoveDemo kind={option.id} />}
+    {option.kind === "card" ? <CardMini style={option.id} /> : <MoveMini kind={option.id} />}
     <span className="lab-tx__name">
       {option.name}
       {theme && <span className="lab-tx__badge">theme’s</span>}

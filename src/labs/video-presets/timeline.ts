@@ -9,15 +9,15 @@ import { clamp } from "./math";
 
 export type { ScriptBeat, Timeline, Visual };
 
-export const FPS = 30;
-export const WIDTH = 1920;
-export const HEIGHT = 1080;
+const FPS = 30;
+const WIDTH = 1920;
+const HEIGHT = 1080;
 /** Intro sting inserted after the cold open (3.5 s). */
-export const INTRO_FRAMES = Math.round(3.5 * FPS);
+const INTRO_FRAMES = Math.round(3.5 * FPS);
 /** Silence after the intro before the voice resumes. */
-export const INTRO_GAP_FRAMES = Math.round(0.45 * FPS);
+const INTRO_GAP_FRAMES = Math.round(0.45 * FPS);
 /** Hold after the last word. */
-export const TAIL_FRAMES = Math.round(0.8 * FPS);
+const TAIL_FRAMES = Math.round(0.8 * FPS);
 /** How many spoken words ahead the aligner looks for a script word. */
 const LOOKAHEAD = 8;
 
