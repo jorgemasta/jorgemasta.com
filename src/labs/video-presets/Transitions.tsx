@@ -1,40 +1,41 @@
-// Transitions and story cards. The generated story card (a 0.9 s card at each
-// story change) takes a style, from the theme unless the visitor picks one; a
-// transition applied to a story change replaces the card there.
+// Story changes: what plays where one story hands over to the next, as one
+// choice. Either the generated story card in one of its styles (a title card
+// between stories; the theme's style unless the visitor picks another) or a
+// transition and no card (the next story moves straight in). Exactly one is on;
+// picking applies it at once and replays it on the video around a story change
+// three times (muted); "Try it" plays it once. With reduced motion the video
+// holds a still partway through instead. The options, what a pick does and the
+// status line live in story-changes.ts.
 //
-// Transitions: a small library (cut, whip, slide, zoom), each a named set of
-// settings the visitor can open and adjust. A transition is applied either as
-// the default for every story change or to one cut picked on the timeline,
-// where overrides show. Picking or adjusting one, or picking a story card,
-// replays it on the video around the cut three times (muted); "Try it" plays it
-// once. A draft plays without being committed. With reduced motion it holds a
-// still mid-transition instead.
+// A cut picked on the timeline (tablet and up) takes the same choice for itself:
+// a transition of its own, or back to the default. A card can't go on one cut,
+// so the card row is off there.
 //
-// Every card carries a tiny looping demo of the same two scenes, A then B: a
-// story card plays "A → card → B", a transition "A → B moving", so the two
-// choices read side by side. The demos are CSS keyframes that run while the
-// section is on screen (and on hover or focus); with reduced motion they hold
-// a still partway through.
+// Every option carries a tiny demo of the same two scenes, A then B: a card
+// plays "A → card → B", a transition "A → B moving". The demos are CSS keyframes
+// that rest on a still and play on hover or focus (a tap on touch).
 //
 // Styles live in transitions.css (plain CSS, `lab-tx` prefix), not Tailwind,
 // so the stylesheet every page shares does not change for the Lab.
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatTime } from "./beat-timeline";
-import {
-  effectiveEdition,
-  setCutTransition,
-  setDefaultTransition,
-  setStoryCard,
-  type EffectiveTransition,
-  type Edits,
-  type StoryCardStyle,
-} from "./edit-model";
+import { effectiveEdition, setCutTransition, setStoryChange, type EffectiveTransition, type Edits, type StoryCardStyle } from "./edit-model";
 import { useLabPlayer } from "./player-context";
 import { PRESETS as THEME_PRESETS } from "./destilados-snapshot/src/themes";
 import { BUMPER_FRAMES } from "./destilados-snapshot/src/StoryBumper";
 import { planLoop } from "./transition-loop";
-import type { LoopEnd } from "./use-transition-loop";
-import type { Cut, CutId } from "./timeline";
+import type { Cut } from "./timeline";
+import {
+  CARD_OPTIONS,
+  chosenOn,
+  pickOption,
+  STORY_CHANGE_OPTIONS,
+  storyChangeStatus,
+  TRANSITION_OPTIONS,
+  type Chosen,
+  type CutTarget,
+  type StoryChangeOption,
+} from "./story-changes";
 import {
   adjustTransition,
   DIRECTIONS,
@@ -42,9 +43,7 @@ import {
   hasMotion,
   MAX_FRAMES,
   MIN_FRAMES,
-  sameTransition,
   transitionPreset,
-  TRANSITIONS,
   type Transition,
   type TransitionDirection,
   type TransitionEasing,
@@ -53,8 +52,7 @@ import {
 import type { LabEdits } from "./use-lab-edits";
 import "./transitions.css";
 
-/** What a transition is applied to: every story change, or one cut (by id). */
-export type CutTarget = CutId | null;
+export type { CutTarget };
 
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -74,51 +72,34 @@ const DIRECTION_NAMES: Record<TransitionDirection, string> = {
   out: "Zoom out",
 };
 
-const CARD_STYLES: readonly StoryCardStyle[] = ["band", "glitch", "wipe", "zoom"];
-const CARD_NAMES: Record<StoryCardStyle, string> = { band: "Band", glitch: "Glitch", wipe: "Wipe", zoom: "Zoom" };
-const CARD_BLURBS: Record<StoryCardStyle, string> = {
-  band: "Cuts to the card, a band sweeps down.",
-  glitch: "A slab wipes it in, with a glitch.",
-  wipe: "A slab wipes it in and out.",
-  zoom: "The card punches in and out.",
-};
-
 const seconds = (frames: number, fps: number) => `${(frames / fps).toFixed(2).replace(/0$/, "")} s`;
 
 const nameOf = (t: Transition) => transitionPreset(t.kind).name;
 
-const describe = (t: Transition, fps: number) => (hasMotion(t) ? `${nameOf(t)}, ${seconds(t.durationFrames, fps)}` : nameOf(t));
-
 /** "beat N" as the visitor counts, from 1. */
 const beatNumber = (cut: Cut) => cut.toBeatIndex + 1;
 
-/** The edits with `t` applied to `target`. */
-const applyTo = (edits: Edits, target: CutTarget, t: Transition | null): Edits =>
-  target === null ? setDefaultTransition(edits, t) : setCutTransition(edits, target, t);
-
-/** The committed transition on a target (null = as generated / follows the default). */
-const committedOn = (edits: Edits, target: CutTarget): Transition | null =>
-  target === null ? edits.defaultTransition : (edits.cutTransitions[target] ?? null);
-
-export type TransitionsProps = { lab: LabEdits; target: CutTarget; onTarget: (target: CutTarget) => void };
-
 /** How many times a pick replays on the video. */
 const REPLAYS = 3;
+
+/** Keys that move the duration slider: letting go of one replays the change. */
+const SLIDER_KEYS = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"]);
+
+const sameChoice = (a: Chosen | null, b: Chosen) => !!a && a.kind === b.kind && a.id === b.id;
+
+export type TransitionsProps = { lab: LabEdits; target: CutTarget; onTarget: (target: CutTarget) => void };
 
 export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget }) => {
   const { playerRef, timeline, loop } = useLabPlayer();
   const { edits, setEdits, setPreview, effective } = lab;
   const cut = target ? timeline.cuts.find((c) => c.id === target) : undefined;
-  const committed = committedOn(edits, target);
-  /** A transition picked or adjusted but not applied yet (null = nothing pending). */
-  const [draft, setDraft] = useState<Transition | null>(null);
+  const chosen = chosenOn(timeline, edits, target);
+  /** The transition set on the target itself (null: a card, or a cut following the default). */
+  const own = target === null ? edits.defaultTransition : (edits.cutTransitions[target] ?? null);
   const [open, setOpen] = useState(false);
-  /** The cut a preview is playing on, if one is. */
-  const [previewing, setPreviewing] = useState<{ cut: Cut; what: string; draft: boolean } | null>(null);
-  const previewingRef = useRef(false);
-  /** Drops a preview held after it played (see `hold`). */
-  const release = useRef<(() => void) | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
+  const groupRef = useRef<HTMLDivElement>(null);
+  const fps = timeline.fps;
 
   // A card's demo rests on its still and plays only when asked: hover or focus with a mouse,
   // a tap on touch (twice, next to the replay on the video). Whenever it stops it goes back
@@ -164,138 +145,79 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
     };
   }, []);
 
-  // Picking another target shows what it carries; a draft carries over to a target with nothing on it.
-  useEffect(() => {
-    if (committedOn(edits, target)) setDraft(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the target changes
-  }, [target]);
-
-  /** What the cards, settings and Try it act on: the draft, else what is applied. */
-  const shown = draft ?? committed;
-
-  const stopPreview = useCallback(() => {
-    if (!previewingRef.current) return; // never drop a preview another control (the looks) owns
-    previewingRef.current = false;
-    release.current?.();
-    release.current = null;
-    loop.stop();
-    setPreviewing(null);
-    setPreview(null);
-  }, [setPreview, loop]);
-
-  // A preview never outlives a change of target. (A new draft starts its own.)
-  useEffect(() => stopPreview, [target, stopPreview]);
-
   /**
-   * Keeps the preview on the paused frame it ended on (so a draft "Cut" doesn't
-   * turn back into the story card there) until the visitor plays or seeks.
+   * Replays what `next` plays on the target `repeats` times around its cut (the
+   * picked cut, else the next story change from the playhead), or with reduced
+   * motion shows a still halfway through it.
    */
-  const hold = useCallback(() => {
+  const replay = (next: Edits, repeats: number) => {
     const player = playerRef.current;
     if (!player) return;
-    const drop = () => stopPreview();
-    player.addEventListener("play", drop);
-    player.addEventListener("seeked", drop);
-    release.current = () => {
-      player.removeEventListener("play", drop);
-      player.removeEventListener("seeked", drop);
-    };
-  }, [playerRef, stopPreview]);
-
-  type Play = {
-    /** The edits to preview. */
-    edited: Edits;
-    /** How long what plays at the cut lasts. */
-    durationFrames: number;
-    /** What plays, for the status line, and whether it is a draft. */
-    what: string;
-    draft: boolean;
-    repeats: number;
-    /** The cut to play on; else the next story change from the playhead. */
-    on?: Cut;
-  };
-
-  /**
-   * Shows edits on the video: replays them `repeats` times around the cut, or
-   * with reduced motion shows a still halfway through what plays there.
-   */
-  const play = ({ edited, durationFrames, what, draft: isDraft, repeats, on }: Play) => {
-    const player = playerRef.current;
-    if (!player) return;
-    const plan = planLoop(timeline, player.getCurrentFrame(), { durationFrames, cut: on, repeats });
+    const t = cut ? (next.cutTransitions[cut.id] ?? (cut.storyChange ? next.defaultTransition : null)) : next.defaultTransition;
+    const durationFrames = t ? t.durationFrames : !cut || cut.storyChange ? BUMPER_FRAMES : 0;
+    const plan = planLoop(timeline, player.getCurrentFrame(), { durationFrames, cut, repeats });
     if (!plan) return;
-    // Hand over from a preview already showing without stopping it: a loop playing is
-    // replaced inside `loop.start`, so the sound the visitor had before it comes back once.
-    release.current?.();
-    release.current = null;
-    previewingRef.current = false; // the replaced loop's end must not drop the new preview
-    const still = reducedMotion();
-    if (still) {
+    if (reducedMotion()) {
       loop.stop();
       player.pause();
       player.seekTo(plan.still);
     } else {
-      loop.start(plan, (how: LoopEnd) => (how === "done" ? hold() : stopPreview()));
+      loop.start(plan);
     }
-    setPreview(edited);
-    previewingRef.current = true;
-    setPreviewing({ cut: plan.cut, what, draft: isDraft });
-    if (still) hold();
   };
 
-  /** Plays transition `t` on the target (null: as without one). */
-  const playTransition = (t: Transition | null, repeats: number) =>
-    play({
-      edited: applyTo(edits, target, t),
-      durationFrames: t?.durationFrames ?? 0,
-      what: t ? describe(t, timeline.fps) : asIs,
-      draft: !(t === committed || sameTransition(t, committed)),
-      repeats,
-      on: cut,
-    });
-
-  const tryIt = () => playTransition(shown, 1);
-
-  const commit = (t: Transition | null) => {
-    stopPreview();
-    setDraft(null);
-    setEdits(applyTo(edits, target, t));
+  /** Commits `next` and replays it. */
+  const apply = (next: Edits) => {
+    setPreview(null); // a look hovered elsewhere never stays on top of the pick
+    setEdits(next);
+    replay(next, REPLAYS);
   };
 
-  const overrides = Object.keys(edits.cutTransitions).length;
-  const fps = timeline.fps;
-  const cutLabel = cut ? `the cut into beat ${beatNumber(cut)} at ${formatTime(cut.at, fps)}` : "";
-  const asIs = cut ? "the default" : "the story card";
+  const pick = (option: Chosen) => apply(pickOption(timeline, edits, target, option));
 
-  const status = previewing
-    ? `Showing ${previewing.what} on ${cut ? cutLabel : `the story change at ${formatTime(previewing.cut.at, fps)}`}.${
-        previewing.draft ? " Not applied yet." : ""
-      }`
-    : draft
-      ? `Draft: ${describe(draft, fps)}, not applied yet.`
-      : cut
-        ? committed
-          ? `${describe(committed, fps)} on ${cutLabel} (overrides the default).`
-          : `${cutLabel[0].toUpperCase()}${cutLabel.slice(1)} follows the default.`
-        : `Story changes: ${edits.defaultTransition ? describe(edits.defaultTransition, fps) : "the story card"}${
-            overrides ? ` · ${overrides} cut${overrides > 1 ? "s" : ""} overridden` : ""
-          }.`;
-
-  /** Makes `next` the draft (null when it is what is applied) and replays it on the video. */
-  const show = (next: Transition) => {
-    setDraft(sameTransition(next, committed) ? null : next);
-    playTransition(next, REPLAYS);
+  /** The edits with the target's transition adjusted. */
+  const adjusted = (change: Partial<Omit<Transition, "kind">>): Edits | null => {
+    if (!own) return null;
+    const t = adjustTransition(own, change);
+    return target === null ? setStoryChange(edits, { transition: t }) : setCutTransition(edits, target, t);
   };
 
-  const pick = (kind: TransitionKind) => {
-    // Picking the card already shown replays it as it is; another starts from its preset.
-    show(shown?.kind === kind ? shown : committed?.kind === kind ? committed : transitionPreset(kind).settings);
+  const cardsOff = !!cut;
+  const enabled = STORY_CHANGE_OPTIONS.filter((o) => !(cardsOff && o.kind === "card"));
+  /** The option that takes Tab: the one chosen, else the first that can be. */
+  const tabStop = enabled.find((o) => sameChoice(chosen, o)) ?? enabled[0];
+
+  // Radio keys: arrows move to the next or previous option (skipping ones that are off) and pick it.
+  const onGroupKey = (e: React.KeyboardEvent) => {
+    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    const home = e.key === "Home" ? 0 : e.key === "End" ? enabled.length - 1 : -1;
+    if (!step && home < 0) return;
+    e.preventDefault();
+    const at = enabled.findIndex((o) => sameChoice(tabStop, o));
+    const to = enabled[home >= 0 ? home : (at + step + enabled.length) % enabled.length];
+    pick(to);
+    groupRef.current?.querySelector<HTMLElement>(`[data-option="${to.kind}:${to.id}"]`)?.focus();
   };
 
-  const adjust = (change: Partial<Omit<Transition, "kind">>) => {
-    if (shown) show(adjustTransition(shown, change));
+  const themeStyle = THEME_PRESETS[effective.theme.name].transition;
+  const moving = own && hasMotion(own) ? own : null;
+  const status = storyChangeStatus(timeline, edits, cut, fps);
+
+  const renderOption = (o: StoryChangeOption) => {
+    const checked = sameChoice(chosen, o);
+    const off = cardsOff && o.kind === "card";
+    return (
+      <OptionCard
+        key={`${o.kind}:${o.id}`}
+        option={o}
+        checked={checked}
+        disabled={off}
+        tabbable={!off && sameChoice(tabStop, o)}
+        theme={o.kind === "card" && o.id === themeStyle}
+        onPick={pick}
+      />
+    );
   };
-  const still = !shown || !hasMotion(shown);
 
   return (
     <section
@@ -304,38 +226,9 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
       aria-labelledby="lab-tx-title"
       style={{ "--lab-tx-accent2": THEME_PRESETS[effective.theme.name].accent2 } as React.CSSProperties}
     >
-      <div className="lab-tx__head">
-        <h2 id="lab-tx-title" className="lab-tx__title">
-          Transitions &amp; story cards
-        </h2>
-      </div>
-      <p className="lab-tx__intro">
-        At each story change, play a card between stories, or skip the card and move straight into the next one.
-      </p>
-
-      <StoryCardRow
-        card={effective.storyCard}
-        themeStyle={THEME_PRESETS[effective.theme.name].transition}
-        replacedBy={edits.defaultTransition}
-        fps={fps}
-        onChange={(style) => {
-          const next = setStoryCard(edits, style);
-          setEdits(next);
-          // Replay the card on a story change: the picked cut if it is one, else the next.
-          play({
-            edited: next,
-            durationFrames: BUMPER_FRAMES,
-            what: `the ${CARD_NAMES[effectiveEdition(timeline, next).storyCard.style]} story card`,
-            draft: false,
-            repeats: REPLAYS,
-            on: cut?.storyChange ? cut : undefined,
-          });
-        }}
-      />
-
-      <h3 className="lab-tx__label" id="lab-tx-library-label">
-        Or a transition, no card
-      </h3>
+      <h2 id="lab-tx-title" className="lab-tx__title">
+        Story changes
+      </h2>
       <p className="lab-tx__status" aria-live="polite">
         {status}
       </p>
@@ -354,24 +247,34 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
         <p className="lab-tx__hint">Pick a cut on the timeline to make an exception.</p>
       )}
 
-      <div className="lab-tx__library" role="group" aria-labelledby="lab-tx-library-label">
-        {TRANSITIONS.map((t) => {
-          const isDraft = draft?.kind === t.id;
-          const isApplied = committed?.kind === t.id;
-          return (
-            <LibraryCard
-              key={t.id}
-              kind={t.id}
-              name={t.name}
-              blurb={t.blurb}
-              state={isDraft ? "draft" : isApplied ? "applied" : null}
-              onPick={pick}
-            />
-          );
-        })}
+      <h3 className="lab-tx__label" id="lab-tx-group-label">
+        {cut ? `At the cut into beat ${beatNumber(cut)}` : "At each story change"}
+      </h3>
+      <div ref={groupRef} className="lab-tx__group" role="radiogroup" aria-labelledby="lab-tx-group-label" onKeyDown={onGroupKey}>
+        <div className="lab-tx__kind" data-off={cardsOff || undefined}>
+          <p className="lab-tx__kind-head" id="lab-tx-cards">
+            <span className="lab-tx__kind-chip">Card</span> A title card between stories
+          </p>
+          <div className="lab-tx__library">
+            {CARD_OPTIONS.map(renderOption)}
+          </div>
+          {cardsOff && (
+            <p className="lab-tx__note" id="lab-tx-cards-off">
+              A card is one style for every story change; pick it under “All story changes”.
+            </p>
+          )}
+        </div>
+        <div className="lab-tx__kind">
+          <p className="lab-tx__kind-head" id="lab-tx-moves">
+            <span className="lab-tx__kind-chip">No card</span> The next story moves straight in
+          </p>
+          <div className="lab-tx__library">
+            {TRANSITION_OPTIONS.map(renderOption)}
+          </div>
+        </div>
       </div>
 
-      {shown && (
+      {moving && (
         <button
           type="button"
           className="lab-tx__disclosure"
@@ -382,7 +285,7 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
           {open ? "Hide settings" : "Adjust settings"} <span aria-hidden="true">{open ? "▴" : "▾"}</span>
         </button>
       )}
-      {shown && open && (
+      {moving && open && (
         <div id="lab-tx-settings" className="lab-tx__settings">
           <label className="lab-tx__field">
             <span>Duration</span>
@@ -391,18 +294,25 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
               min={MIN_FRAMES}
               max={MAX_FRAMES}
               step={1}
-              value={still ? MIN_FRAMES : shown.durationFrames}
-              disabled={still}
-              onChange={(e) => adjust({ durationFrames: Number(e.currentTarget.value) })}
+              value={moving.durationFrames}
+              // Live while dragging; the replay waits for the release.
+              onChange={(e) => {
+                const next = adjusted({ durationFrames: Number(e.currentTarget.value) });
+                if (next) setEdits(next);
+              }}
+              onPointerUp={() => replay(edits, REPLAYS)}
+              onKeyUp={(e) => SLIDER_KEYS.has(e.key) && replay(edits, REPLAYS)}
             />
-            <output className="lab-tx__value">{still ? "–" : seconds(shown.durationFrames, fps)}</output>
+            <output className="lab-tx__value">{seconds(moving.durationFrames, fps)}</output>
           </label>
           <label className="lab-tx__field">
             <span>Easing</span>
             <select
-              value={shown.easing}
-              disabled={still}
-              onChange={(e) => adjust({ easing: e.currentTarget.value as TransitionEasing })}
+              value={moving.easing}
+              onChange={(e) => {
+                const next = adjusted({ easing: e.currentTarget.value as TransitionEasing });
+                if (next) apply(next);
+              }}
             >
               {EASINGS.map((e) => (
                 <option key={e} value={e}>
@@ -414,12 +324,13 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
           <label className="lab-tx__field">
             <span>Direction</span>
             <select
-              value={still ? "" : shown.direction}
-              disabled={still}
-              onChange={(e) => adjust({ direction: e.currentTarget.value as TransitionDirection })}
+              value={moving.direction}
+              onChange={(e) => {
+                const next = adjusted({ direction: e.currentTarget.value as TransitionDirection });
+                if (next) apply(next);
+              }}
             >
-              {still && <option value="">–</option>}
-              {DIRECTIONS[shown.kind].map((d) => (
+              {DIRECTIONS[moving.kind].map((d) => (
                 <option key={d} value={d}>
                   {DIRECTION_NAMES[d]}
                 </option>
@@ -430,92 +341,23 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
       )}
 
       <div className="lab-tx__actions">
-        <button type="button" className="lab-tx__button" onClick={previewing ? stopPreview : tryIt}>
-          {previewing ? "Stop" : "Try it"}
+        <button type="button" className="lab-tx__button" onClick={() => replay(edits, 1)}>
+          Try it
         </button>
-        {draft ? (
-          <>
-            <button type="button" className="lab-tx__button lab-tx__button--primary" onClick={() => commit(draft)}>
-              {cut ? "Apply to this cut" : "Apply to all story changes"}
-            </button>
-            <button
-              type="button"
-              className="lab-tx__button"
-              onClick={() => {
-                stopPreview();
-                setDraft(null);
-              }}
-            >
-              Discard draft
-            </button>
-          </>
-        ) : (
-          committed && (
-            <button type="button" className="lab-tx__button" onClick={() => commit(null)}>
-              {cut ? "Remove override" : "Back to the story card"}
-            </button>
-          )
+        {cut && (
+          <button
+            type="button"
+            className="lab-tx__chip"
+            aria-pressed={!own}
+            onClick={() => apply(setCutTransition(edits, cut.id, null))}
+          >
+            Follow the default
+          </button>
         )}
       </div>
     </section>
   );
 };
-
-type StoryCardRowProps = {
-  card: { style: StoryCardStyle; source: "theme" | "visitor" };
-  /** The style the current theme brings. */
-  themeStyle: StoryCardStyle;
-  /** The transition on every story change, which plays instead of the card. */
-  replacedBy: Transition | null;
-  fps: number;
-  /** A style, or null to follow the theme again. */
-  onChange: (style: StoryCardStyle | null) => void;
-};
-
-/**
- * The four story card styles as cards, the one playing pressed. The theme's
- * style is marked; picking it follows the theme again (null), so a theme
- * change brings its own card.
- */
-const StoryCardRow: React.FC<StoryCardRowProps> = ({ card, themeStyle, replacedBy, fps, onChange }) => (
-  <div className="lab-tx__storycard">
-    <h3 className="lab-tx__label" id="lab-tx-card-label">
-      Story card
-    </h3>
-    <div
-      className="lab-tx__library"
-      role="group"
-      aria-labelledby="lab-tx-card-label"
-      aria-describedby={replacedBy ? "lab-tx-card-note" : undefined}
-    >
-      {CARD_STYLES.map((s) => {
-        const selected = card.style === s;
-        return (
-          <button
-            key={s}
-            type="button"
-            className="lab-tx__card"
-            aria-pressed={selected}
-            data-state={selected ? (replacedBy ? "replaced" : "applied") : undefined}
-            onClick={() => onChange(s === themeStyle ? null : s)}
-          >
-            <CardDemo style={s} />
-            <span className="lab-tx__name">
-              {CARD_NAMES[s]}
-              {s === themeStyle && <span className="lab-tx__badge lab-tx__badge--theme">theme’s</span>}
-            </span>
-            <span className="lab-tx__blurb">{CARD_BLURBS[s]}</span>
-          </button>
-        );
-      })}
-    </div>
-    {replacedBy && (
-      <p className="lab-tx__note" id="lab-tx-card-note">
-        Not playing now: every story change uses {describe(replacedBy, fps)}. “Back to the story card” below brings it back.
-      </p>
-    )}
-  </div>
-);
 
 /** The two scenes every demo shares: A, the beat before, and B, the next one. */
 const Scenes: React.FC = () => (
@@ -525,7 +367,7 @@ const Scenes: React.FC = () => (
   </>
 );
 
-/** A story card's demo: A, then a tiny "Story 2/5" card entering the way the real one does, then B. */
+/** A card's demo: A, then a tiny "Story 2/5" card entering the way the real one does, then B. */
 const CardDemo: React.FC<{ style: StoryCardStyle }> = ({ style }) => (
   <span className="lab-tx__demo" data-card={style} aria-hidden="true">
     <Scenes />
@@ -548,31 +390,44 @@ const CardDemo: React.FC<{ style: StoryCardStyle }> = ({ style }) => (
   </span>
 );
 
-type LibraryCardProps = {
-  kind: TransitionKind;
-  name: string;
-  blurb: string;
-  /** "applied": on the video now. "draft": picked or adjusted, not applied yet. */
-  state: "applied" | "draft" | null;
-  onPick: (kind: TransitionKind) => void;
+/** A transition's demo: B coming in over A with the preset's motion, pushing A out (a cut swaps at once). */
+const MoveDemo: React.FC<{ kind: TransitionKind }> = ({ kind }) => (
+  <span className="lab-tx__demo" data-tx={kind} aria-hidden="true">
+    <Scenes />
+    {kind === "whip" && <span className="lab-tx__smear" />}
+  </span>
+);
+
+type OptionCardProps = {
+  option: StoryChangeOption;
+  checked: boolean;
+  disabled: boolean;
+  /** Whether Tab lands on it (one option in the group does). */
+  tabbable: boolean;
+  /** The theme's card style, marked. */
+  theme: boolean;
+  onPick: (option: Chosen) => void;
 };
 
-/**
- * One transition: a tiny demo of B entering over A with that motion (no card;
- * a cut swaps at once), its name and a line. The demo shows the preset's
- * motion, not adjusted settings.
- */
-const LibraryCard: React.FC<LibraryCardProps> = ({ kind, name, blurb, state, onPick }) => (
-  <button type="button" className="lab-tx__card" data-state={state ?? undefined} onClick={() => onPick(kind)}>
-    <span className="lab-tx__demo" data-tx={kind} aria-hidden="true">
-      <Scenes />
-      {kind === "whip" && <span className="lab-tx__smear" />}
-    </span>
+/** One option, a radio in the story change group: its demo, name and a line. */
+const OptionCard: React.FC<OptionCardProps> = ({ option, checked, disabled, tabbable, theme, onPick }) => (
+  <button
+    type="button"
+    role="radio"
+    className="lab-tx__card"
+    aria-checked={checked}
+    disabled={disabled}
+    tabIndex={tabbable ? 0 : -1}
+    aria-describedby={disabled ? "lab-tx-cards lab-tx-cards-off" : option.kind === "card" ? "lab-tx-cards" : "lab-tx-moves"}
+    data-option={`${option.kind}:${option.id}`}
+    onClick={() => onPick(option)}
+  >
+    {option.kind === "card" ? <CardDemo style={option.id} /> : <MoveDemo kind={option.id} />}
     <span className="lab-tx__name">
-      {name}
-      {state && <span className="lab-tx__badge">{state === "draft" ? "draft" : "applied"}</span>}
+      {option.name}
+      {theme && <span className="lab-tx__badge">theme’s</span>}
     </span>
-    <span className="lab-tx__blurb">{blurb}</span>
+    <span className="lab-tx__blurb">{option.blurb}</span>
   </button>
 );
 

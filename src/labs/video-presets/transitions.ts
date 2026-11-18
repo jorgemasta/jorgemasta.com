@@ -30,25 +30,25 @@ export const TRANSITIONS = [
   {
     id: "cut",
     name: "Cut",
-    blurb: "A dry cut, no card.",
+    blurb: "Straight to the next story, nothing between.",
     settings: { kind: "cut", durationFrames: 0, easing: "linear", direction: "left" },
   },
   {
     id: "whip",
     name: "Whip",
-    blurb: "The next beat throws this one out in a blur.",
+    blurb: "A fast sideways throw, blurred.",
     settings: { kind: "whip", durationFrames: 12, easing: "ease-out", direction: "right" },
   },
   {
     id: "slide",
     name: "Slide",
-    blurb: "The next beat pushes this one out.",
-    settings: { kind: "slide", durationFrames: 20, easing: "ease-in-out", direction: "right" },
+    blurb: "The next story pushes up from below.",
+    settings: { kind: "slide", durationFrames: 20, easing: "ease-in-out", direction: "down" },
   },
   {
     id: "zoom",
     name: "Zoom",
-    blurb: "The next beat punches in as this one fades.",
+    blurb: "The next story zooms in through a crossfade.",
     settings: { kind: "zoom", durationFrames: 18, easing: "overshoot", direction: "in" },
   },
 ] as const satisfies readonly TransitionPreset[];

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { setTweak } from "./tweaks";
-import { applyPreset, effectiveEdition, hasEdits, reset, NO_EDITS, setCustomLook, setIntensity, setBeatMotion, setMotion, setStoryCard, setTheme } from "./edit-model";
+import { applyPreset, effectiveEdition, hasEdits, reset, NO_EDITS, setCustomLook, setIntensity, setBeatMotion, setMotion, setStoryChange, setTheme } from "./edit-model";
 
 // An amber-paper edition: two photo beats with their scripted motions, a title, and a GIF.
 const edition = {
@@ -45,14 +45,37 @@ describe("theme", () => {
 
 describe("story card style", () => {
   it("an explicit style overrides the theme's, whichever theme is on", () => {
-    const zoomCard = setStoryCard(NO_EDITS, "zoom");
+    const zoomCard = setStoryChange(NO_EDITS, { card: "zoom" });
     expect(effectiveEdition(edition, zoomCard).storyCard).toEqual({ style: "zoom", source: "visitor" });
     expect(effectiveEdition(edition, setTheme(zoomCard, "cyan-grid")).storyCard).toEqual({ style: "zoom", source: "visitor" });
   });
 
   it("follows the theme again once the explicit style is removed", () => {
-    const edits = setStoryCard(setStoryCard(setTheme(NO_EDITS, "violet-grain"), "band"), null);
+    const edits = setStoryChange(setStoryChange(setTheme(NO_EDITS, "violet-grain"), { card: "band" }), { card: null });
     expect(effectiveEdition(edition, edits).storyCard).toEqual({ style: "glitch", source: "theme" });
+  });
+});
+
+describe("what plays at every story change: a card or a transition, never both", () => {
+  const slide = { kind: "slide", durationFrames: 20, easing: "ease-in-out", direction: "down" } as const;
+  const withCuts = { ...edition, cuts: [{ id: "b1-b2", at: 100, toBeat: "b2", storyChange: true }] } as const;
+
+  it("a card replaces a transition on every story change, in the style picked", () => {
+    const edits = setStoryChange(setStoryChange(NO_EDITS, { transition: slide }), { card: "glitch" });
+    const out = effectiveEdition(withCuts, edits);
+    expect(out.transitions).toEqual({});
+    expect(out.storyCard).toEqual({ style: "glitch", source: "visitor" });
+  });
+
+  it("the theme's card follows the theme again", () => {
+    const edits = setStoryChange(setStoryChange(NO_EDITS, { card: "zoom" }), { card: null });
+    expect(effectiveEdition(edition, setTheme(edits, "cyan-grid")).storyCard).toEqual({ style: "wipe", source: "theme" });
+    expect(hasEdits(edits)).toBe(false);
+  });
+
+  it("a transition plays instead of the card", () => {
+    const edits = setStoryChange(NO_EDITS, { transition: slide });
+    expect(effectiveEdition(withCuts, edits).transitions["b1-b2"]).toMatchObject({ kind: "slide", source: "default" });
   });
 });
 
@@ -123,7 +146,7 @@ describe("reset", () => {
   it("clears the theme, the story card, the motions and the Custom look along with everything else", () => {
     const custom = { saturation: 0.6, contrast: 1.3, brightness: 0.9, warmth: 0.2, hue: 10 };
     const everything = setBeatMotion(
-      setMotion(setStoryCard(setTheme(applyPreset(setCustomLook(NO_EDITS, custom), "custom"), "pink-scan"), "zoom"), "pan"),
+      setMotion(setStoryChange(setTheme(applyPreset(setCustomLook(NO_EDITS, custom), "custom"), "pink-scan"), { card: "zoom" }), "pan"),
       "b0",
       "still",
     );
@@ -139,7 +162,7 @@ describe("reset", () => {
 
   it("has something to undo once any one of the new options is set", () => {
     expect(hasEdits(setTheme(NO_EDITS, "cyan-grid"))).toBe(true);
-    expect(hasEdits(setStoryCard(NO_EDITS, "wipe"))).toBe(true);
+    expect(hasEdits(setStoryChange(NO_EDITS, { card: "wipe" }))).toBe(true);
     expect(hasEdits(setMotion(NO_EDITS, "still"))).toBe(true);
     expect(hasEdits(setBeatMotion(NO_EDITS, "b0", "pan"))).toBe(true);
     expect(hasEdits(setBeatMotion(setBeatMotion(NO_EDITS, "b0", "pan"), "b0", null))).toBe(false);

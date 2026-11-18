@@ -51,7 +51,7 @@ export const LookPresets: React.FC<LookPresetsProps> = ({ lab }) => {
 
   const [customOpen, setCustomOpen] = useState(false);
   const applied = edits.preset;
-  // Only a look preview counts here (Try it on a transition previews other edits).
+  // Only a look preview counts here.
   const previewing = preview && preview.preset !== edits.preset ? preview.preset : null;
   const percent = Math.round(edits.intensity * 100);
   const status = previewing

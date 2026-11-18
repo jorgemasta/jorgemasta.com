@@ -57,3 +57,16 @@ describe("the transition defaults", () => {
     expect(frames("whip")).toBeLessThan(frames("slide"));
   });
 });
+
+describe("the transition presets read apart at a glance", () => {
+  const halfway = (k: "whip" | "slide" | "zoom") => poseAt(transitionPreset(k).settings, 0.5);
+
+  it("a whip throws sideways, blurred; a slide pushes up from below, sharp; a zoom scales in place", () => {
+    expect(halfway("whip")).toMatchObject({ y: 0 });
+    expect(halfway("whip").x).not.toBe(0);
+    expect(halfway("whip").blur).toBeGreaterThan(0);
+    expect(halfway("slide")).toMatchObject({ x: 0, y: 50, blur: 0 });
+    expect(halfway("zoom")).toMatchObject({ x: 0, y: 0 });
+    expect(halfway("zoom").scale).not.toBe(1);
+  });
+});

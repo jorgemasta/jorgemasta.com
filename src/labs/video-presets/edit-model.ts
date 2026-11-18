@@ -218,10 +218,18 @@ export const setCutTransition = (edits: Edits, cutId: CutId, transition: Transit
 export const setTheme = (edits: Edits, theme: ThemeName | null): Edits => ({ ...edits, theme });
 
 /**
- * Sets the style of the generated story card (null = the theme's). A transition
- * applied to a story change still replaces the card there.
+ * What plays at every story change: the generated story card in a style (null =
+ * the theme's, which follows a theme change), or a transition and no card.
  */
-export const setStoryCard = (edits: Edits, style: StoryCardStyle | null): Edits => ({ ...edits, storyCard: style });
+export type StoryChange = { card: StoryCardStyle | null } | { transition: Transition };
+
+/**
+ * Sets what plays at every story change. A card clears the default transition
+ * (the two never play together); a transition plays instead of the card.
+ * Per-cut exceptions are left as they are.
+ */
+export const setStoryChange = (edits: Edits, change: StoryChange): Edits =>
+  "card" in change ? { ...edits, storyCard: change.card, defaultTransition: null } : { ...edits, defaultTransition: change.transition };
 
 /** Sets the motion of every image beat (null = each one's scripted motion). */
 export const setMotion = (edits: Edits, motion: Motion | null): Edits => ({ ...edits, motion });

@@ -1,17 +1,10 @@
-/* The Lab's transitions panel and the cut markers on the beat timeline (Transitions.tsx).
+/* The Lab's story changes panel and the cut markers on the beat timeline (Transitions.tsx).
    Plain CSS, loaded with the editor only. Only theme variables the site already uses:
    a new one would land in the stylesheet every page shares. */
 .lab-tx {
   margin-top: 1.5rem;
   font-family: var(--font-sans, system-ui, sans-serif);
   color: var(--color-charcoal);
-}
-
-.lab-tx__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 0.75rem;
 }
 
 .lab-tx__title {
@@ -24,7 +17,7 @@
 }
 
 .lab-tx__status {
-  margin: 0.875rem 0 0;
+  margin: 0.375rem 0 0;
   font-size: 0.875rem;
   color: var(--color-muted);
 }
@@ -73,27 +66,46 @@
   color: var(--color-green);
 }
 
-.lab-tx__intro {
-  margin: 0.375rem 0 0;
-  font-size: 0.875rem;
-  line-height: 1.45;
-}
-
-/* Each row's heading: the story card, or a transition instead. */
+/* The choice's heading: every story change, or the cut picked. */
 .lab-tx__label {
-  margin: 0.875rem 0 0;
-  font-size: 0.8125rem;
+  margin: 1rem 0 0;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
-/* The generated story card's style: what plays at a story change with no transition on it. */
-.lab-tx__storycard {
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--color-rule);
+/* One choice in two rows: the cards, then the transitions with no card. */
+.lab-tx__kind {
+  margin-top: 0.625rem;
 }
 
-.lab-tx__storycard + .lab-tx__label {
-  margin-top: 0.75rem;
+.lab-tx__kind + .lab-tx__kind {
+  margin-top: 0.875rem;
+}
+
+.lab-tx__kind-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.lab-tx__kind-chip {
+  flex: none;
+  border: 1px solid var(--color-rule);
+  border-radius: 9999px;
+  padding: 0.0625rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-charcoal);
+}
+
+/* On a single cut a card can't be picked: the row stays visible, quieter. */
+.lab-tx__kind[data-off] .lab-tx__library {
+  opacity: 0.5;
 }
 
 .lab-tx__note {
@@ -108,7 +120,7 @@
   color: var(--color-muted);
 }
 
-/* The library: a strip that snaps on phones, a row of four from tablet width. */
+/* Each row: a strip that snaps on phones, a row of four from tablet width. */
 .lab-tx__library {
   display: grid;
   grid-auto-flow: column;
@@ -141,23 +153,18 @@
   user-select: none;
 }
 
-/* Selected looks only for what is on the video; a draft is dashed until it is applied. */
-.lab-tx__card[data-state="applied"] {
+/* The one option on: what plays on the video. */
+.lab-tx__card[aria-checked="true"] {
   border-color: var(--color-green);
   box-shadow: inset 0 0 0 1px var(--color-green);
+  background: color-mix(in srgb, var(--color-green) 6%, var(--color-paper));
 }
 
-.lab-tx__card[data-state="draft"] {
-  border: 1px dashed var(--color-terracotta);
-  box-shadow: none;
+.lab-tx__card:disabled {
+  cursor: default;
 }
 
-/* The story card picked, while a transition plays instead of it. */
-.lab-tx__card[data-state="replaced"] {
-  border: 1px dashed var(--color-muted);
-}
-
-.lab-tx__card:active,
+.lab-tx__card:active:not(:disabled),
 .lab-tx__button:active,
 .lab-tx__chip:active,
 .lab-tx__disclosure:active {
@@ -166,7 +173,7 @@
 
 /* The demos: the same two scenes in every card, A (the beat before) and B (the next one).
    A story card plays A → card → B; a transition plays A → B moving, with no card.
-   One 2.4 s loop: A holds, the change plays from 25 %, B holds to the end. Transform and
+   One 4 s loop: A holds, the change plays from 25 %, B holds to the end. Transform and
    opacity only. Paused (on a frame partway through, from the negative delay) unless the
    section is on screen or the card is pointed at or focused; held there with reduced motion. */
 .lab-tx__demo {
@@ -184,11 +191,38 @@
   inset: 0;
   /* Slow enough to read, and still until asked: hover or focus on desktop, a tap on touch. */
   animation-duration: 4s;
-  animation-delay: -1.8s; /* the still: 45% in, the card up / B half in */
+  /* The still: the moment that tells each option apart (below), else 45% in. */
+  animation-delay: var(--lab-tx-still, -1.8s);
   animation-iteration-count: infinite;
   animation-play-state: paused;
   animation-timing-function: linear;
   animation-fill-mode: both;
+}
+
+/* Each still caught mid-change, so the options read apart at rest: the band mid-sweep, the
+   slab mid-wipe, the RGB jolt, the card still big, the whip's smear, the zoom's crossfade. */
+.lab-tx__demo[data-card="band"] {
+  --lab-tx-still: -1.12s;
+}
+
+.lab-tx__demo[data-card="glitch"] {
+  --lab-tx-still: -1.36s;
+}
+
+.lab-tx__demo[data-card="wipe"] {
+  --lab-tx-still: -1.16s;
+}
+
+.lab-tx__demo[data-card="zoom"] {
+  --lab-tx-still: -1.2s;
+}
+
+.lab-tx__demo[data-tx="whip"] {
+  --lab-tx-still: -1.56s;
+}
+
+.lab-tx__demo[data-tx="zoom"] {
+  --lab-tx-still: -1.6s;
 }
 
 .lab-tx__card[data-demo] .lab-tx__demo > *,
@@ -490,7 +524,7 @@
   }
 }
 
-/* Zoom: the card punches in from big, holds, and shrinks away. */
+/* Pop (the "zoom" style): the card pops in from big, holds, and shrinks away. */
 .lab-tx__demo[data-card="zoom"] .lab-tx__sc {
   animation-name: lab-tx-card-zoom;
 }
@@ -544,16 +578,16 @@
 @keyframes lab-tx-slide {
   0%,
   30% {
-    transform: translateX(101%);
+    transform: translateY(101%);
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   60%,
   100% {
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
-/* Slide: A is pushed out the other way, edge to edge with B. */
+/* Slide: B comes up from below, pushing A out the top, edge to edge. */
 .lab-tx__demo[data-tx="slide"] .lab-tx__demo-a {
   animation-name: lab-tx-slide-out;
 }
@@ -561,12 +595,12 @@
 @keyframes lab-tx-slide-out {
   0%,
   30% {
-    transform: translateX(0);
+    transform: translateY(0);
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   60%,
   100% {
-    transform: translateX(-101%);
+    transform: translateY(-101%);
   }
 }
 
@@ -687,19 +721,12 @@
   font-weight: 600;
 }
 
+/* "theme's": the style the theme brings. */
 .lab-tx__badge {
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-green);
-}
-
-.lab-tx__card[data-state="draft"] .lab-tx__badge {
-  color: var(--color-terracotta);
-}
-
-.lab-tx__card .lab-tx__badge--theme {
   color: var(--color-muted);
 }
 
@@ -760,10 +787,6 @@
   background: var(--color-paper);
 }
 
-.lab-tx__field :disabled {
-  opacity: 0.45;
-}
-
 .lab-tx__value {
   min-width: 4.5ch;
   font-variant-numeric: tabular-nums;
@@ -774,6 +797,7 @@
 .lab-tx__actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
   margin-top: 0.75rem;
 }
@@ -786,21 +810,6 @@
   color: var(--color-green);
   font-size: 0.875rem;
   font-weight: 500;
-}
-
-.lab-tx__button--primary {
-  border-color: var(--color-green);
-  background: var(--color-green);
-  color: var(--color-paper);
-}
-
-.lab-tx__button--primary:active {
-  background: color-mix(in srgb, var(--color-chocolate) 25%, var(--color-green));
-}
-
-.lab-tx__button:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 
 /* Cuts on the beat timeline: a thin divider between rows with the transition it carries. */
@@ -864,15 +873,10 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .lab-tx__card:hover,
+  .lab-tx__card:hover:not(:disabled, [aria-checked="true"]),
   .lab-tx__chip:hover,
   .lab-tx__button:hover {
     border-color: var(--color-terracotta);
-  }
-
-  .lab-tx__button--primary:hover:not(:disabled) {
-    border-color: var(--color-green);
-    background: color-mix(in srgb, var(--color-chocolate) 15%, var(--color-green));
   }
 
   .lab-tx__disclosure:hover {
