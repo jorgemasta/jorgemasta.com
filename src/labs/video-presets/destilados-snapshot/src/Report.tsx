@@ -31,6 +31,9 @@ export type ReportProps = {
   // own first frames, or as is); `noBumper` = ids of first beats of stories whose story card a transition replaces.
   entrance?: (beatId: string, visual: React.ReactNode) => React.ReactNode;
   noBumper?: readonly string[];
+  // LAB PATCH: `exit` = the outgoing side of a transition, by the NEXT beat's `id`: how many frames the beat before it
+  // stays drawn (under the next one) past the cut, and how it is drawn (`cutAt` = the cut, in frames into the beat).
+  exit?: (nextBeatId: string) => { frames: number; render: (visual: React.ReactNode, cutAt: number) => React.ReactNode } | undefined;
   // LAB PATCH: the visitor's whole-video options. `theme` replaces the edition's (accent2, texture, story card);
   // `storyCard` replaces the story card's style alone; `motions` = beat `id` → image motion, for changed beats only.
   theme?: ThemeName;
@@ -273,7 +276,7 @@ export const storyStarts = (tl: Timeline) => {
   return out;
 };
 
-export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entrance, noBumper, theme: themeName, storyCard, motions }) => {
+export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entrance, exit, noBumper, theme: themeName, storyCard, motions }) => {
   if (!timeline) return <AbsoluteFill style={{ backgroundColor: color.bg }} />;
   const splitFrame = Math.round(timeline.voiceSplitSec * 30);
   const audio = staticFile(timeline.audio);
@@ -282,11 +285,21 @@ export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entr
   return (
     <LocaleContext.Provider value={STRINGS[timeline.lang].locale}>
     <AbsoluteFill style={{ backgroundColor: color.bg }}>
-      {timeline.beats.map((b, i) => (
+      {timeline.beats.map((b, i) => {
+        // LAB PATCH: when the next beat enters with a visitor transition, this one stays drawn under it for those
+        // frames (never past the next beat's end), leaving as the transition says. Only when the next beat follows on
+        // the cut: across the intro there is no beat to push. Only the picture is extended: the beat's sound effect
+        // keeps its own Sequence of the beat's original length, so it neither replays nor doubles.
+        const dur = Math.max(1, b.to - b.from);
+        const next = timeline.beats[i + 1];
+        const out = exit && next?.id && next.from === b.to ? exit(next.id) : undefined;
+        const over = out ? Math.max(0, Math.min(Math.round(out.frames), next.to - next.from)) : 0;
+        const visual = entrance && b.id ? entrance(b.id, <BeatVisual beat={b} edition={edition} />) : <BeatVisual beat={b} edition={edition} />;
+        return (
+        <React.Fragment key={i}>
         <Sequence
-          key={i}
           from={b.from}
-          durationInFrames={Math.max(1, b.to - b.from)}
+          durationInFrames={dur + over}
           layout="none"
         >
           <AbsoluteFill>
@@ -294,20 +307,24 @@ export const Report: React.FC<ReportProps> = ({ edition, timeline, filters, entr
             <BeatFilterContext.Provider value={(b.id && filters?.[b.id]) || ""}>
               {/* LAB PATCH: the visitor's image motion for this beat, if changed. */}
               <BeatMotionContext.Provider value={(b.id && motions?.[b.id]) || null}>
-                {/* LAB PATCH: the visitor's transition into this beat, if any. */}
-                {entrance && b.id ? entrance(b.id, <BeatVisual beat={b} edition={edition} />) : <BeatVisual beat={b} edition={edition} />}
+                {/* LAB PATCH: the visitor's transition into this beat, if any, and out of it into the next. */}
+                {out && over > 0 ? out.render(visual, dur) : visual}
               </BeatMotionContext.Provider>
             </BeatFilterContext.Provider>
             {/* 4 Nov 2026: dry cuts between beats (Fireship); the old every-3rd-beat white flash is gone. */}
           </AbsoluteFill>
-          {b.sfx && (
+        </Sequence>
+        {b.sfx && (
+          <Sequence from={b.from} durationInFrames={dur} layout="none">
             <Audio
               src={staticFile(`sfx/${b.sfx}.mp3`)}
               volume={SFX_VOLUME[b.sfx]}
             />
-          )}
-        </Sequence>
-      ))}
+          </Sequence>
+        )}
+        </React.Fragment>
+        );
+      })}
 
       {/* Theme texture over the beats, under the separators and the top bar (5 Nov 2026). */}
       <ThemeTexture texture={theme.texture} accent2={theme.accent2} />

@@ -5,7 +5,9 @@
 // A transition never moves a beat. It plays over the opening frames of the
 // incoming beat, starting on the cut, so every beat stays where the voice puts
 // it (overlapping beats, as Remotion's TransitionSeries does, would shorten the
-// video and drift the pictures away from the voice).
+// video and drift the pictures away from the voice). The outgoing beat stays
+// drawn under it for those frames, leaving the way the next one pushes it, so
+// the change reads as one scene replacing another.
 
 import { clamp } from "./math";
 
@@ -34,20 +36,20 @@ export const TRANSITIONS = [
   {
     id: "whip",
     name: "Whip",
-    blurb: "A fast blurred pan.",
-    settings: { kind: "whip", durationFrames: 8, easing: "ease-out", direction: "right" },
+    blurb: "The next beat throws this one out in a blur.",
+    settings: { kind: "whip", durationFrames: 12, easing: "ease-out", direction: "right" },
   },
   {
     id: "slide",
     name: "Slide",
-    blurb: "The next beat slides in.",
-    settings: { kind: "slide", durationFrames: 14, easing: "ease-in-out", direction: "right" },
+    blurb: "The next beat pushes this one out.",
+    settings: { kind: "slide", durationFrames: 20, easing: "ease-in-out", direction: "right" },
   },
   {
     id: "zoom",
     name: "Zoom",
-    blurb: "The next beat punches in.",
-    settings: { kind: "zoom", durationFrames: 12, easing: "overshoot", direction: "in" },
+    blurb: "The next beat punches in as this one fades.",
+    settings: { kind: "zoom", durationFrames: 18, easing: "overshoot", direction: "in" },
   },
 ] as const satisfies readonly TransitionPreset[];
 
@@ -102,7 +104,32 @@ export const poseAt = (t: Transition, p: number): Pose => {
       // Comes in fast from off-frame, smeared until it lands.
       return { ...rest, ...away(100 * left), blur: 36 * clamp(left * 1.5, 0, 1) };
     case "zoom":
-      return { ...rest, scale: 1 + (t.direction === "out" ? -0.45 : 0.6) * left, opacity: clamp(p * 2.5, 0, 1) };
+      // Fades in over most of it, a crossfade with the outgoing beat fading under it.
+      return { ...rest, scale: 1 + (t.direction === "out" ? -0.45 : 0.6) * left, opacity: clamp(p * 1.25, 0, 1) };
+  }
+};
+
+/**
+ * The outgoing beat's pose `p` (0–1) of the way through the same transition: 0
+ * is the beat as it was on the cut. A slide pushes it out the opposite way in
+ * lockstep with the incoming beat (edge to edge), a whip throws it out with the
+ * same smear, a zoom scales it a little and fades it under the incoming beat.
+ */
+export const exitPoseAt = (t: Transition, p: number): Pose => {
+  const rest: Pose = { x: 0, y: 0, scale: 1, blur: 0, opacity: 1 };
+  const toward = (d: number) => ({
+    x: t.direction === "left" ? d : t.direction === "right" ? -d : 0,
+    y: t.direction === "up" ? d : t.direction === "down" ? -d : 0,
+  });
+  switch (t.kind) {
+    case "cut":
+      return rest;
+    case "slide":
+      return { ...rest, ...toward(100 * p) };
+    case "whip":
+      return { ...rest, ...toward(100 * p), blur: 36 * clamp(p * 1.5, 0, 1) };
+    case "zoom":
+      return { ...rest, scale: 1 + (t.direction === "out" ? -0.15 : 0.2) * p, opacity: clamp(1 - p, 0, 1) };
   }
 };
 

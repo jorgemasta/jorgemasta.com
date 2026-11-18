@@ -47,6 +47,14 @@ Every change from the upstream files is marked `LAB PATCH` (or `LAB FILE`):
   visitor's transition plays over the beat's first frames, inside its own
   `<Sequence>`, so no beat moves off the voice) and `noBumper` (ids of the first beats of
   stories whose generated story card a visitor transition replaces).
+- `src/Report.tsx`: optional `exit` (by the next beat's `id`: how many frames
+  a beat stays drawn past the cut, under the next one, and how it leaves), so a
+  visitor transition pushes the outgoing beat out instead of moving the
+  incoming one over the empty background. Only the beat's picture `<Sequence>`
+  is extended, only when the next beat starts on its cut (not across the
+  intro) and never past the next beat's end; its sound effect moved to its
+  own `<Sequence>` of the beat's original length, so it neither replays nor
+  doubles, and no beat moves off the voice.
 - `src/Report.tsx`: optional `theme` (plays the whole video in another of the
   six themes: accent, texture and story card), `storyCard` (the story card's
   style alone) and `motions` (beat `id` → image motion, for the beats the visitor

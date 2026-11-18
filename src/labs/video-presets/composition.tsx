@@ -4,7 +4,8 @@
 // with the whole-video options (theme, story card style).
 import React from "react";
 import { Report } from "./destilados-snapshot/src/Report";
-import { CutEntrance } from "./CutEntrance";
+import { CutEntrance, CutExit } from "./CutEntrance";
+import { hasMotion } from "./transitions";
 import { lookToCssFilter, type EffectiveEdition, type EffectiveTransition } from "./edit-model";
 import type { BeatId, Cut, Timeline } from "./timeline";
 
@@ -47,6 +48,22 @@ export const LabComposition: React.FC<LabCompositionProps> = ({ edition, report,
     },
     [into],
   );
+  // The beat before a moving transition stays on under it, leaving the way it is pushed.
+  const exit = React.useCallback(
+    (nextBeatId: string) => {
+      const t = into.get(nextBeatId);
+      if (!t || !hasMotion(t) || t.durationFrames <= 0) return undefined;
+      return {
+        frames: t.durationFrames,
+        render: (visual: React.ReactNode, cutAt: number) => (
+          <CutExit transition={t} cutAt={cutAt}>
+            {visual}
+          </CutExit>
+        ),
+      };
+    },
+    [into],
+  );
   return (
     <Report
       edition={edition}
@@ -54,6 +71,7 @@ export const LabComposition: React.FC<LabCompositionProps> = ({ edition, report,
       timeline={report}
       filters={filters}
       entrance={entrance}
+      exit={exit}
       noBumper={noBumper}
       theme={effective?.theme.name}
       storyCard={effective?.storyCard.style}
