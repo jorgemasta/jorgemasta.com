@@ -24,7 +24,7 @@ export default function VideoPresetsLab({ poster }: VideoPresetsLabProps) {
     <div>
       {/* Server-rendered with the poster, so it is there before the editor loads and nothing shifts.
           The intro keeps the reading column; only the editor (or its poster) widens. */}
-      <p className="lab-intro">Pick a look, tweak a single beat by hand, then try a theme and the story transitions.</p>
+      <p className="lab-intro">Pick a look, tweak a single beat by hand, then try a theme and what plays at each story change.</p>
       <div className="lab-wide">
         {Editor ? (
           <Editor />
