@@ -182,15 +182,16 @@
 .lab-tx__demo > * {
   position: absolute;
   inset: 0;
-  animation-duration: 2.4s;
-  animation-delay: -1.08s;
+  /* Slow enough to read, and still until asked: hover or focus on desktop, a tap on touch. */
+  animation-duration: 4s;
+  animation-delay: -1.8s; /* the still: 45% in, the card up / B half in */
   animation-iteration-count: infinite;
   animation-play-state: paused;
   animation-timing-function: linear;
   animation-fill-mode: both;
 }
 
-.lab-tx[data-playing] .lab-tx__demo > *,
+.lab-tx__card[data-demo] .lab-tx__demo > *,
 .lab-tx__card:focus-visible .lab-tx__demo > * {
   animation-play-state: running;
 }

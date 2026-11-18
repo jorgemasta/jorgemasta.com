@@ -119,15 +119,49 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
   /** Drops a preview held after it played (see `hold`). */
   const release = useRef<(() => void) | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
-  /** Whether the section is on screen: the cards' demos only loop then. */
-  const [onScreen, setOnScreen] = useState(false);
 
+  // A card's demo rests on its still and plays only when asked: hover or focus with a mouse,
+  // a tap on touch (twice, next to the replay on the video). Whenever it stops it goes back
+  // to the still, not wherever it was.
   useEffect(() => {
     const el = sectionRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting), { threshold: 0.15 });
-    io.observe(el);
-    return () => io.disconnect();
+    if (!el) return;
+    const toStill = (card: Element) => card.getAnimations({ subtree: true }).forEach((a) => (a.currentTime = 0));
+    const timers = new Map<Element, number>();
+    const touch = window.matchMedia("(hover: none)").matches;
+    const onClick = (e: MouseEvent) => {
+      const card = (e.target as Element).closest(".lab-tx__card");
+      if (!touch || !card) return;
+      el.querySelectorAll(".lab-tx__card[data-demo]").forEach((c) => {
+        c.removeAttribute("data-demo");
+        toStill(c);
+      });
+      window.clearTimeout(timers.get(card));
+      toStill(card);
+      card.setAttribute("data-demo", "");
+      timers.set(
+        card,
+        window.setTimeout(() => {
+          card.removeAttribute("data-demo");
+          toStill(card);
+        }, 8000),
+      );
+    };
+    // Leaving a card (mouse out, focus out) puts it back on its still.
+    const onLeave = (e: MouseEvent | FocusEvent) => {
+      const card = (e.target as Element).closest(".lab-tx__card");
+      const to = e.relatedTarget as Node | null;
+      if (card && !(to && card.contains(to)) && !card.hasAttribute("data-demo")) toStill(card);
+    };
+    el.addEventListener("click", onClick);
+    el.addEventListener("mouseout", onLeave);
+    el.addEventListener("focusout", onLeave);
+    return () => {
+      el.removeEventListener("click", onClick);
+      el.removeEventListener("mouseout", onLeave);
+      el.removeEventListener("focusout", onLeave);
+      timers.forEach((t) => window.clearTimeout(t));
+    };
   }, []);
 
   // Picking another target shows what it carries; a draft carries over to a target with nothing on it.
@@ -268,7 +302,6 @@ export const Transitions: React.FC<TransitionsProps> = ({ lab, target, onTarget 
       ref={sectionRef}
       className="lab-tx"
       aria-labelledby="lab-tx-title"
-      data-playing={onScreen || undefined}
       style={{ "--lab-tx-accent2": THEME_PRESETS[effective.theme.name].accent2 } as React.CSSProperties}
     >
       <div className="lab-tx__head">
