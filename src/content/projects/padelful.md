@@ -21,7 +21,7 @@ links:
     url: "https://www.npmjs.com/package/@padelful/mcp-server"
 ---
 
-Padelful helps padel players pick a racket and find the best price for it. It crawls more than 20 stores every day, plus affiliate feeds, and a matcher ties each listing to the right racket. When a listing is ambiguous, an agent investigates it.
+Padelful helps padel players pick a racket and find the best price for it. Every day it reads 16 store feeds across 13 countries, and a matcher ties each listing to the right racket. When a listing is ambiguous, an agent investigates it.
 
 The problem I'm exploring is how far that agent can go on messy catalogue data before a person has to step in. The same data is open to other developers through a public API and an MCP server, and developers using the API already send feedback.
 
