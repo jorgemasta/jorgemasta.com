@@ -17,7 +17,7 @@ export const ROLES: Role[] = [
     title: "Engineer III",
     start: "Mar 2024",
     impact:
-      "Second-largest contributor to the customer portal, in a team of 4–6 where I lead some projects. I defined the spec and tooling for moving it from MUI to our internal design system, led the switch from GitLab to GitHub Actions, and built the React checkout that replaced the old one, which back-office and marketing configure themselves. I integrated Salesforce into both, built support's back-office for customer chat, and helped about 25 engineers adopt AI-assisted development: AGENTS.md, reusable Claude skills and a spec-driven workflow with OpenSpec.",
+      "Second-largest contributor to the customer portal, in a team of 4–6 where I lead some projects. I defined the spec and tooling for moving it from MUI to our internal design system, led the switch from GitLab to GitHub Actions, and built the React checkout that replaced the old one, which back-office and marketing configure themselves. I integrated Salesforce into both, built support's back-office for customer chat, and drove AI-assisted development across the 200+ engineer org, sharing workflows, reusable Claude skills, AGENTS.md and a spec-driven workflow with OpenSpec.",
     url: "https://www.nexcess.net",
   },
   {
