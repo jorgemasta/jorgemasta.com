@@ -1,5 +1,10 @@
 ---
+import { Font, fontData } from "astro:assets";
 import { OPENPANEL_CLIENT_ID } from "../lib/consts";
+
+// Preload only the latin file of each family: the first variant in astro.config.mjs.
+// <Font preload> can't filter local fonts by subset, and would also fetch latin-ext.
+const fontPreloads = (["--font-inter", "--font-newsreader"] as const).map((v) => fontData[v][0].src[0].url);
 
 interface Props {
   title: string;
@@ -19,6 +24,11 @@ const openPanelClientId = import.meta.env.PROD ? OPENPANEL_CLIENT_ID : undefined
 <meta name="theme-color" content="#F4F0E8" />
 <link rel="icon" type="image/png" href="/favicon.png" />
 <meta name="generator" content={Astro.generator} />
+
+<!-- Fonts: only the latin files are preloaded; latin-ext loads on demand via unicode-range. -->
+<Font cssVariable="--font-inter" />
+<Font cssVariable="--font-newsreader" />
+{fontPreloads.map((href) => <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />)}
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
