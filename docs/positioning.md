@@ -185,8 +185,7 @@ technologies → contact form.
 
 Reference structure (the homepage ships no client-side script):
 
-1. **Hero** — one claim: "Hi, I'm Jorge. I build and improve digital
-   products." Then one short paragraph, professional proof first and side
+1. **Hero** — one claim: "Hi, I'm Jorge. I build digital products." Then one short paragraph, professional proof first and side
    projects last: product engineer, nine years shipping web and mobile products
    for teams like Harvard, Vimeo and BigCommerce, now at Nexcess; on his own he
    runs Padelful and Destilados. AI is not named in the hero.
