@@ -32,6 +32,8 @@
    */
   --ease-standard: ease;
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  /* The hero stroke drawing across the line: on-screen movement, not an arrival. */
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
   --duration-fast: 150ms;
   --duration-enter: 260ms;
   --duration-page: 200ms;
@@ -76,10 +78,14 @@
     transition-timing-function: var(--ease-standard);
   }
 
-  /* Hover only where hover is real, so a tap on a phone leaves no sticky underline. */
+  /*
+   * Hover only where hover is real, so a tap on a phone leaves no sticky underline.
+   * A link answers with its underline, never its text colour: the rule turns
+   * terracotta, the site's one accent, and the words stay put.
+   */
   @media (hover: hover) {
     a:hover {
-      text-decoration-color: currentColor;
+      text-decoration-color: var(--color-terracotta);
     }
   }
 
@@ -147,13 +153,29 @@
     .action:hover,
     .link-quiet:hover,
     .group:hover .link-quiet {
-      text-decoration-color: currentColor;
+      text-decoration-color: var(--color-terracotta);
     }
   }
 
   /* Keyboard users get the same title underline when they tab onto a card. */
   .group:focus-visible .link-quiet {
-    text-decoration-color: currentColor;
+    text-decoration-color: var(--color-terracotta);
+  }
+
+  /*
+   * A hand-drawn terracotta stroke under a phrase: the emphasis is the
+   * underline, not a colour swap. The brush shape is a filled path, so
+   * stretching it to the phrase keeps its taper instead of distorting a stroke.
+   * box-decoration-break: clone gives each wrapped line its own stroke.
+   */
+  .marker {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 7.5C40 4.6 90 3.4 140 4.1c22 .3 40 1 56 2.2.9.1 1.4.9 1.2 1.7-.2.8-1 1.3-1.8 1.2C150 7.6 100 7.4 52 8.6 36 9 20 9.7 3.6 10.6 2.3 10.7 1 9.8 1 8.6c0-.6.4-1 1-1.1Z' fill='%23b65f3c'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 0.2em;
+    padding-bottom: 0.08em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
 
   /* Header section link. The current section carries a terracotta underline. */
@@ -405,5 +427,22 @@
   from {
     opacity: 0.01;
     transform: translateY(8px);
+  }
+}
+
+/*
+ * The hero stroke draws itself once, left to right, as the heading settles.
+ * A one-off on first paint, so it may take longer than UI motion. Reduced
+ * motion shows it already drawn.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-enter .marker {
+    animation: marker-draw 520ms var(--ease-in-out-strong) 240ms backwards;
+  }
+}
+
+@keyframes marker-draw {
+  from {
+    background-size: 0% 0.2em;
   }
 }

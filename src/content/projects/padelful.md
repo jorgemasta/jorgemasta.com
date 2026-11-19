@@ -25,4 +25,4 @@ Padelful helps padel players pick a racket and find the best price for it. It cr
 
 The problem I'm exploring is how far that agent can go on messy catalogue data before a person has to step in. The same data is open to other developers through a public API and an MCP server, and developers using the API already send feedback.
 
-More than 40,000 people used it in September 2026, most of them arriving from organic search.
+In November 2026 it passed 70,000 monthly unique visitors and 400,000 pageviews, grown through SEO with zero paid acquisition.
